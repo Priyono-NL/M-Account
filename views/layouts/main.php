@@ -7,13 +7,13 @@
     <title><?= $title ?? 'M-Account' ?></title>
     
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/m-account/vendors/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <!-- FontAwesome for Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/m-account/vendors/fontawesome-free-6.4.2-web/css/all.min.css">
     <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/m-account/vendors/select2-4.1.0-rc.0/dist/css/select2.min.css">
     <!-- Toastify CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="/m-account/vendors/toastify-js-1.12.0/src/toastify.css">
     
     <!-- Custom CSS (Universal) -->
     <link rel="stylesheet" href="assets/css/style.css">
@@ -40,13 +40,13 @@
 </div>
 
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="/m-account/vendors/jquery-3.7.1.min.js"></script>
 <!-- Bootstrap JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/m-account/vendors/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="/m-account/vendors/select2-4.1.0-rc.0/dist/js/select2.min.js"></script>
 <!-- Toastify JS -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="/m-account/vendors/toastify-js-1.12.0/src/toastify.js"></script>
 
 <!-- Universal JS -->
 <script src="assets/js/main.js"></script>
