@@ -9,13 +9,13 @@ class BuyerController extends BaseController {
     }
 
     public function index() {
-        $buyers = $this->model->getFilteredItems();
+        $buyers = $this->model->getFiltered();
         BuyerView::render($buyers);
     }
 
     public function filter_api() {
         $search   = $this->getPost('search', '');
-        $items = $this->model->getFilteredItems($search);
+        $items = $this->model->getFiltered($search);
                 
         return $this->jsonSuccess("Data Filtered", $items);
     }

@@ -7,7 +7,7 @@ class ItemsModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getFilteredItems($search = '', $category = '') {
+    public function getFiltered($search = '', $category = '') {
         $sql = "SELECT * FROM items WHERE is_active=0";
         $params = [];
 
@@ -23,17 +23,6 @@ class ItemsModel extends DatabaseHelper {
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function searchProducts($keyword) {
-        $sql = "SELECT id, item_code, item_name, unit_price 
-                FROM items 
-                WHERE is_active = 0 
-                AND (item_name LIKE :keyword OR item_code LIKE :keyword) 
-                LIMIT 20";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(['keyword' => "%{$keyword}%"]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

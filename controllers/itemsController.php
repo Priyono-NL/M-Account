@@ -9,7 +9,7 @@ class ItemsController extends BaseController {
     }
 
     public function index() {
-        $items = $this->model->getFilteredItems();
+        $items = $this->model->getFiltered();
         ItemsView::render($items);
     }
 
@@ -17,7 +17,7 @@ class ItemsController extends BaseController {
         $search   = $this->getPost('search', '');
         $category = $this->getPost('category', '');
 
-        $items = $this->model->getFilteredItems($search, $category);
+        $items = $this->model->getFiltered($search, $category);
         
         return $this->jsonSuccess("Data Filtered", $items);
     }

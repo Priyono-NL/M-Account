@@ -39,7 +39,10 @@ class DatabaseHelper {
         
         $sql = "INSERT INTO {$table} ({$fields}) VALUES ({$placeholders})";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($data);
+        if (!$stmt->execute($data)) {
+            $errorInfo = $stmt->errorInfo();
+            throw new Exception("Error di tabel {$table}: " . $errorInfo[2]);
+        }
         return $this->db->lastInsertId();
     }
 

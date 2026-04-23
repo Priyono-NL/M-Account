@@ -10,7 +10,7 @@ class ReportsController extends BaseController {
     }
 
     public function index() {
-        $transactions = $this->model->getFilteredTransactions();
+        $transactions = $this->model->getFiltered();
         ReportsHistoryView::render($transactions);
     }
 
@@ -20,7 +20,7 @@ class ReportsController extends BaseController {
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
 
-        $items = $this->model->getFilteredTransactions($search, $warehouse, $startDate, $endDate);
+        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
         
         return $this->jsonSuccess("Data Filtered", $items);
     }

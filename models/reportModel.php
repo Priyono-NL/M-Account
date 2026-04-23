@@ -6,7 +6,7 @@ class ReportModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getFilteredTransactions($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
         $sql = "SELECT t.*, i.item_name, i.item_code 
                 FROM item_transactions t
                 LEFT JOIN items i ON t.item_id = i.id

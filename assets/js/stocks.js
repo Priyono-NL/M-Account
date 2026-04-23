@@ -27,7 +27,6 @@ $(document).ready(function() {
                         
                         let dateObj = new Date(t.date || t.transaction_date); // Antisipasi nama kolom date/transaction_date
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                        let formattedTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
                         let qtyInStr = t.qty_in > 0 ? `<span class="text-success">+${t.qty_in}</span>` : '0';
                         let qtyOutStr = t.qty_out > 0 ? `<span class="text-danger">-${t.qty_out}</span>` : '0';
@@ -36,7 +35,6 @@ $(document).ready(function() {
                             <tr>
                                 <td class="ps-4 text-muted">
                                     ${formattedDate}<br>
-                                    <small style="font-size: 10px;"><i class="fa-regular fa-clock me-1"></i>${formattedTime}</small>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">

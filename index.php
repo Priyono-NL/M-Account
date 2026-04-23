@@ -41,14 +41,13 @@ $app = new $controllerName();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    $method = str_replace(['_item', '_buyer'], '', $action);
-    
-    if (method_exists($app, $method)) {
-        $app->$method();
+    if (method_exists($app, $action)) {
+        $app->$action();
     } else {
         header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'message' => "Method '{$method}' tidak ditemukan di {$controllerName}"]);
+        echo json_encode(['status' => 'error', 'message' => "Fungsi '{$action}' tidak ditemukan!"]);
     }
+    exit;
     
 } else {
     $app->index();

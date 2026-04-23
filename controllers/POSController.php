@@ -2,12 +2,12 @@
 require_once 'BaseController.php';
 
 class POSController extends BaseController {
-    private $itemsModel;
+    private $stocksModel;
     private $buyerModel;
     private $salesModel;
 
     public function __construct() {
-        $this->itemsModel = new ItemsModel();
+        $this->stocksModel = new StocksModel();
         $this->buyerModel = new BuyerModel();
         $this->salesModel = new SalesModel();
     }
@@ -16,18 +16,19 @@ class POSController extends BaseController {
         POSView::render();
     }
 
-    public function search_product() {
+    public function get_products() {
         $keyword = $this->getPost('keyword', '');
-        $results = $this->itemsModel->searchProducts($keyword); 
+        $warehouse = $this->getPost('warehouse', '');
+        $results = $this->stocksModel->getFiltered($keyword, $warehouse); 
         
         header('Content-Type: application/json');
         echo json_encode($results);
         exit;
     }
 
-    public function search_buyer() {
+    public function get_buyers() {
         $keyword = $this->getPost('keyword', '');        
-        $results = $this->buyerModel->searchBuyers($keyword);
+        $results = $this->buyerModel->getFiltered($keyword);
 
         header('Content-Type: application/json');
         echo json_encode($results);
@@ -36,29 +37,22 @@ class POSController extends BaseController {
 
     public function checkout() {
         $cartRaw = $this->getPost('cart');
-        $buyerId = $this->getPost('buyer_id');
-        $warehouse = $this->getPost('warehouse', 1);
+        $buyer_id   = $this->getPost('buyer_id');
+        $warehouse  = $this->getPost('warehouse');
+        $sales_date = $this->getPost('sales_date');
+        $sales_type = $this->getPost('sales_type');
 
-        if (empty($cartRaw)) {
-            return $this->jsonError("Keranjang belanja kosong.");
-        }
+        if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
         $cart = json_decode($cartRaw, true);
-        if (!$cart) {
-            return $this->jsonError("Data keranjang tidak valid.");
-        }
+        if (!$cart) return $this->jsonError("Data keranjang tidak valid.");
 
-        if (empty($buyerId)) {
-            return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
-        }
+        if (empty($buyer_id)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
 
-        $result = $this->salesModel->saveTransaction($cart, $buyerId, $warehouse);
+        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type);
         
-        if ($result) {
-            return $this->jsonSuccess("Transaksi berhasil disimpan.");
-        } else {
-            return $this->jsonError("Gagal menyimpan transaksi ke database.");
-        }
+        if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
+        else return $this->jsonError("Gagal menyimpan transaksi ke database.");
     }
 }
 ?>

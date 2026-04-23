@@ -7,7 +7,19 @@ class StocksModel extends DatabaseHelper {
     }
 
     public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
-        $sql = "SELECT s.*, i.item_name, i.item_code 
+        $sql = "SELECT 
+                    s.id as stock_id,
+                    i.id as id,
+                    i.item_name, 
+                    i.item_code, 
+                    i.unit_price, 
+                    i.item_uom,
+                    s.warehouse,
+                    s.qty_open,
+                    s.qty_in,
+                    s.qty_out,
+                    s.qty_close,
+                    s.date
                 FROM stocks s
                 INNER JOIN (
                     SELECT item_id, warehouse, MAX(id) as max_id 
