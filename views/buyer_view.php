@@ -18,32 +18,27 @@ class BuyerView {
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">
-            <form method="GET" action="index.php" class="card border-0 shadow-sm mb-3 bg-white">
-                <input type="hidden" name="page" value="buyers"> 
-                <div class="card-body p-3">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                                </span>
-                                
-                                <input type="text" class="form-control border-start-0 border-end-0 shadow-none" name="q" id="searchField" placeholder="Cari nama atau kode barang..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
-                                
-                                <button class="btn border border-start-0 bg-white text-muted" type="button" onclick="document.getElementById('searchField').value=''; this.form.submit();" title="Bersihkan Pencarian">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
+            <div class="card-body p-3">
+                <div class="row g-2">
+
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari nama atau kode barang...">
+                            <button class="btn border border-start-0 bg-white text-muted" type="button" id="btnClearSearch" title="Bersihkan Pencarian">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
                     </div>
+                    
                 </div>
-            </form>
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm overflow-hidden">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="buyerTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
                             <tr>
                                 <th class="ps-4 py-3">Kode</th>

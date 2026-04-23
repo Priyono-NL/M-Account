@@ -13,10 +13,15 @@ class BuyerController extends BaseController {
     }
 
     public function index() {
-        $search   = $_GET['q'] ?? '';
-
-        $buyers = $this->model->getFilteredItems($search);
+        $buyers = $this->model->getFilteredItems();
         BuyerView::render($buyers);
+    }
+
+    public function filter_api() {
+        $search   = $this->getPost('search', '');
+        $items = $this->model->getFilteredItems($search);
+                
+        return $this->jsonSuccess("Data Filtered", $items);
     }
 
     public function add() {

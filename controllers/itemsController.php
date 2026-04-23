@@ -13,11 +13,17 @@ class ItemsController extends BaseController {
     }
 
     public function index() {
-        $search   = $_GET['q'] ?? '';
-        $category = $_GET['c'] ?? '';
+        $items = $this->model->getFilteredItems();
+        ItemsView::render($items);
+    }
+
+    public function filter_api() {
+        $search   = $this->getPost('search', '');
+        $category = $this->getPost('category', '');
 
         $items = $this->model->getFilteredItems($search, $category);
-        ItemsView::render($items);
+        
+        return $this->jsonSuccess("Data Filtered", $items);
     }
 
     public function add() {

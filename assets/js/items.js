@@ -1,9 +1,64 @@
-// =========================================================================
-// ITEMS MASTER LOGIC (assets/js/items.js)
-// =========================================================================
-
 $(document).ready(function() {
-    
+
+    function loadFilteredItems() {
+        $.ajax({
+            url: "index.php?page=items",
+            type: "POST",
+            dataType: "json",
+            data: {
+                action: "filter_api",
+                search: $("#search").val(),
+                category: $("#filterCategory").val(),
+            },
+            success: function(res) {
+                if (res.status === "success") {
+                    let tbody = $("#itemTable tbody");
+                    tbody.empty();
+
+                    if (res.data.length === 0) {
+                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada data yang ditemukan.</td></tr>');
+                        return;
+                    }
+
+                    res.data.forEach(function(item) {
+                        let catBadge = item.category == '1' ? 'ByProduct' : 'Sampah';
+                        let price = parseInt(item.unit_price).toLocaleString('id-ID');
+                        let itemJson = JSON.stringify(item).replace(/'/g, "&#39;");
+
+                        let tr = `
+                            <tr>
+                                <td class="ps-4 fw-medium text-primary">${item.item_code}</td>
+                                <td class="fw-bold">${item.item_name}</td>
+                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary border-0 fw-normal px-2">${catBadge}</span></td>
+                                <td class="text-center">${item.item_uom}</td>
+                                <td class="text-end fw-bold text-dark">Rp ${price}</td>
+                                <td class="text-center pe-4">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${itemJson}'>
+                                            <i class="fa-solid fa-pen-to-square text-primary"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light border btn-action delete-btn" data-id="${item.id}" data-name="${item.item_name}">
+                                            <i class="fa-solid fa-trash text-danger"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(tr);
+                    });
+                }
+            }
+        });
+    }
+
+    $("#search").on("keyup", loadFilteredItems);
+    $("#filterCategory, #filterStatus").on("change", loadFilteredItems);
+
+    $("#btnClearSearch").click(function() {
+        $("#search").val("");
+        loadFilteredItems();
+    });
+
     $("#btnAddItem").click(function() {
         $("#formItem")[0].reset();
         $("#itemId").val("");
@@ -11,9 +66,8 @@ $(document).ready(function() {
         $("#modalItem").modal("show");
     });
 
-    $(".edit-btn").click(function() {
+    $(document).on("click", ".edit-btn", function() {
         const data = $(this).data("item");
-        
         $("#itemId").val(data.id);
         $("#itemCode").val(data.item_code);
         $("#itemName").val(data.item_name);
@@ -21,18 +75,15 @@ $(document).ready(function() {
         $("#itemUom").val(data.item_uom);
         $("#itemPrice").val(data.unit_price);
         $("#itemCost").val(data.unit_cost);
-        
         $("#modalTitle").text("Edit Barang");
         $("#modalItem").modal("show");
     });
 
     $("#formItem").submit(function(e) {
         e.preventDefault();
-        
         const action = $("#itemId").val() ? "update" : "add";
         const btn = $("#btnSave");
         const originalText = btn.text();
-
         btn.prop('disabled', true).text('Menyimpan...');
 
         $.ajax({
@@ -42,22 +93,18 @@ $(document).ready(function() {
             data: $(this).serialize() + "&action=" + action,
             success: function(res) {
                 if(res.status === "success") {
-                    // Jika sukses, reload halaman untuk memperbarui tabel
-                    location.reload();
+                    $("#modalItem").modal("hide");
+                    loadFilteredItems(); 
+                    showNotification("Data berhasil disimpan!", "success");
                 } else {
                     showNotification(res.message || "Gagal menyimpan data", "danger");
                 }
             },
-            error: function() {
-                showNotification("Terjadi kesalahan pada server", "danger");
-            },
-            complete: function() {
-                btn.prop('disabled', false).text(originalText);
-            }
+            complete: function() { btn.prop('disabled', false).text(originalText); }
         });
     });
 
-    $(".delete-btn").click(function() {
+    $(document).on("click", ".delete-btn", function() {
         const id = $(this).data("id");
         const name = $(this).data("name");
         
@@ -69,13 +116,10 @@ $(document).ready(function() {
                 data: { action: "delete", id: id },
                 success: function(res) {
                     if(res.status === "success") {
-                        location.reload();
+                        loadFilteredItems();
                     } else {
-                        showNotification(res.message || "Gagal menghapus data", "danger");
+                        showNotification(res.message, "danger");
                     }
-                },
-                error: function() {
-                    showNotification("Terjadi kesalahan sistem", "danger");
                 }
             });
         }

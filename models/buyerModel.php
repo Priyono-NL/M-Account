@@ -11,7 +11,7 @@ class BuyerModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getFilteredItems($search = '', $category = '') {
+    public function getFilteredItems($search = '') {
         $sql = "SELECT * FROM buyer WHERE is_active=0";
         $params = [];
 
