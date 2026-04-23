@@ -13,7 +13,10 @@ class ItemsController extends BaseController {
     }
 
     public function index() {
-        $items = $this->model->getAllProducts();
+        $search   = $_GET['q'] ?? '';
+        $category = $_GET['c'] ?? '';
+
+        $items = $this->model->getFilteredItems($search, $category);
         ItemsView::render($items);
     }
 

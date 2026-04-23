@@ -14,8 +14,12 @@ class ReportsController extends BaseController {
     }
 
     public function index() {
+        $search   = $_GET['q'] ?? '';
+        $warehouse = $_GET['w'] ?? '';
+        $startDate = $_GET['f'] ?? '';
+        $endDate   = $_GET['e'] ?? '';
         // 1. Ambil data log transaksi
-        $transactions = $this->reportModel->getItemTransactions();
+        $transactions = $this->reportModel->getFilteredTransactions($search, $warehouse, $startDate, $endDate);
         
         // 2. Paparkan View
         ReportsHistoryView::render($transactions);

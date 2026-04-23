@@ -13,7 +13,9 @@ class BuyerController extends BaseController {
     }
 
     public function index() {
-        $buyers = $this->model->getAllBuyers();
+        $search   = $_GET['q'] ?? '';
+
+        $buyers = $this->model->getFilteredItems($search);
         BuyerView::render($buyers);
     }
 

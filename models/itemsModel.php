@@ -11,8 +11,23 @@ class ItemsModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getAllProducts() {
-        return $this->getAll('items', 'is_active = 0');
+    public function getFilteredItems($search = '', $category = '') {
+        $sql = "SELECT * FROM items WHERE is_active=0";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (item_code LIKE :search OR item_name LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        
+        if ($category !== '') {
+            $sql .= " AND category = :category";
+            $params['category'] = $category;
+        }        
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function searchProducts($keyword) {

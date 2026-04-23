@@ -4,6 +4,7 @@
 // =========================================================================
 class ItemsView {
     public static function render($items) {
+        $title = "Master Data Barang - MyPOS";
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,38 +13,62 @@ class ItemsView {
                 <p class="text-muted small mb-0">Kelola daftar inventaris, harga jual, dan status barang.</p>
             </div>
             <button class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm" id="btnAddItem">
-                <i class="fa-solid fa-plus me-1"></i> Add Item
+                <i class="fa-solid fa-plus me-1"></i> Tambah Barang
             </button>
         </div>
 
-        <!-- Tabel Master Data -->
+        <div class="card border-0 shadow-sm mb-3 bg-white">
+            <form method="GET" action="index.php" class="card border-0 shadow-sm mb-3 bg-white">
+                <input type="hidden" name="page" value="items"> <div class="card-body p-3">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                </span>                                
+                                <input type="text" class="form-control border-start-0 border-end-0 shadow-none" name="q" id="searchField" placeholder="Cari nama atau kode barang..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">                                
+                                <button class="btn border border-start-0 bg-white text-muted" type="button" onclick="document.getElementById('searchField').value=''; this.form.submit();" title="Bersihkan Pencarian">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" name="c" onchange="this.form.submit()">
+                                <option value="">Semua Kategori</option>
+                                <option value="1" <?= isset($_GET['c']) && $_GET['c'] === '1' ? 'selected' : '' ?>>ByProduct</option>
+                                <option value="2" <?= isset($_GET['c']) && $_GET['c'] === '2' ? 'selected' : '' ?>>Sampah</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
         <div class="card border-0 shadow-sm overflow-hidden">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="itemTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
                             <tr>
-                                <th class="ps-4 py-3">Code</th>
-                                <th>Name</th>
-                                <th>Category</th>
-                                <th class="text-center">UoM</th>
-                                <th class="text-end">Unit Price</th>
-                                <th class="text-center pe-4">Action</th>
+                                <th class="ps-4 py-3">Kode</th>
+                                <th>Nama Barang</th>
+                                <th>Kategori</th>
+                                <th class="text-center">UOM</th>
+                                <th class="text-end">Harga Jual</th>
+                                <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
                             <?php if (empty($items)): ?>
-                                <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted italic">Belum ada data barang.</td>
-                                </tr>
+                                <tr id="emptyRow"><td colspan="7" class="text-center py-5 text-muted italic">Belum ada data barang.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($items as $item): ?>
-                                    <tr>
-                                        <td class="ps-4 fw-medium text-primary"><?= htmlspecialchars($item['item_code']) ?></td>
-                                        <td class="fw-bold"><?= htmlspecialchars($item['item_name']) ?></td>
+                                    <tr class="data-row" data-category="<?= $item['category'] ?>" data-status="<?= $item['is_active'] ?>">
+                                        <td class="ps-4 fw-medium text-primary item-code"><?= htmlspecialchars($item['item_code']) ?></td>
+                                        <td class="fw-bold item-name"><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td>
                                             <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 fw-normal px-2">
-                                                <?= $item['category'] == '1' ? 'ByProd' : 'Sampah' ?>
+                                                <?= $item['category'] == '1' ? 'ByProduct' : 'Sampah' ?>
                                             </span>
                                         </td>
                                         <td class="text-center"><?= htmlspecialchars($item['item_uom']) ?></td>
@@ -67,30 +92,29 @@ class ItemsView {
             </div>
         </div>
 
-        <!-- MODAL FORM ITEM -->
         <div class="modal fade" id="modalItem" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow">
                     <div class="modal-header border-0 pb-0">
-                        <h6 class="modal-title fw-bold" id="modalTitle">Add Item</h6>
+                        <h6 class="modal-title fw-bold" id="modalTitle">Tambah Barang</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <form id="formItem">
                         <div class="modal-body py-4">
                             <input type="hidden" name="id" id="itemId">
                             <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">ITEM CODE</label>
+                                <label class="form-label text-muted small fw-bold">KODE BARANG</label>
                                 <input type="text" class="form-control form-control-sm" name="item_code" id="itemCode" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">ITEM NAME</label>
+                                <label class="form-label text-muted small fw-bold">NAMA BARANG</label>
                                 <input type="text" class="form-control form-control-sm" name="item_name" id="itemName" required>
                             </div>
                             <div class="row">
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">CATEGORY</label>
+                                    <label class="form-label text-muted small fw-bold">KATEGORI</label>
                                     <select class="form-select form-select-sm" name="category" id="itemCategory">
-                                        <option value="1">By Product</option>
+                                        <option value="1">ByProd</option>
                                         <option value="2">Sampah</option>
                                     </select>
                                 </div>
@@ -101,18 +125,18 @@ class ItemsView {
                             </div>
                             <div class="row">
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">UNIT PRICE</label>
+                                    <label class="form-label text-muted small fw-bold">HARGA JUAL</label>
                                     <input type="number" class="form-control form-control-sm" name="unit_price" id="itemPrice" required>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">UNIT COST</label>
-                                    <input type="number" class="form-control form-control-sm" name="unit_cost" id="itemCost" required>
+                                    <label class="form-label text-muted small fw-bold">HARGA COST</label>
+                                    <input type="number" class="form-control form-control-sm" name="unit_price" id="itemCost" required>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer border-0 pt-0">
-                            <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary btn-sm px-3" id="btnSave">Save</button>
+                            <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-3" id="btnSave">Simpan</button>
                         </div>
                     </form>
                 </div>
@@ -121,7 +145,6 @@ class ItemsView {
 
         <?php
         $content = ob_get_clean();
-        // Memanggil file JS eksternal
         $extra_js = '<script src="assets/js/items.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }

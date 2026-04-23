@@ -14,6 +14,51 @@ class ReportsHistoryView {
             </div>
         </div>
 
+        <div class="card border-0 shadow-sm mb-3 bg-white">
+            <form method="GET" action="index.php" class="card border-0 shadow-sm mb-3 bg-white">
+                <input type="hidden" name="page" value="history"> 
+                <div class="card-body p-3">
+                    <div class="row g-2">
+
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                </span>
+                                
+                                <input type="text" class="form-control border-start-0 border-end-0 shadow-none" name="q" id="searchField" placeholder="Cari nama atau kode barang..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+                                
+                                <button class="btn border border-start-0 bg-white text-muted" type="button" onclick="document.getElementById('searchField').value=''; this.form.submit();" title="Bersihkan Pencarian">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light">Dari</span>
+                                <input type="date" class="form-control" name="start_date" value="<?= htmlspecialchars($_GET['f'] ?? '') ?>">
+                                <span class="input-group-text bg-light border-start-0 border-end-0">Sampai</span>
+                                <input type="date" class="form-control" name="end_date" value="<?= htmlspecialchars($_GET['e'] ?? '') ?>">
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" name="w" onchange="this.form.submit()">
+                                <option value="">Semua Gudang</option>
+                                <option value="1" <?= isset($_GET['w']) && $_GET['w'] === '1' ? 'selected' : '' ?>>Gudang BS</option>
+                                <option value="2" <?= isset($_GET['w']) && $_GET['w'] === '2' ? 'selected' : '' ?>>Gudang Sampah</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-dark btn-sm w-100">Find</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
         <div class="card border-0 shadow-sm overflow-hidden">
             <div class="card-body p-0">
                 <div class="table-responsive">

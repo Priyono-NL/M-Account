@@ -11,8 +11,18 @@ class BuyerModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getAllBuyers() {
-        return $this->getAll('buyer', 'is_active = 0');
+    public function getFilteredItems($search = '', $category = '') {
+        $sql = "SELECT * FROM buyer WHERE is_active=0";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (buyer_code LIKE :search OR buyer_name LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function searchBuyers($keyword) {
