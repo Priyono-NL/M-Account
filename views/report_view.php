@@ -1,10 +1,6 @@
 <?php
-// =========================================================================
-// VIEW: Laporan Riwayat Transaksi (Log)
-// =========================================================================
 class ReportsHistoryView {
     public static function render($transactions) {
-        $title = "Riwayat Transaksi - MyPOS";
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -22,8 +18,7 @@ class ReportsHistoryView {
                             <span class="input-group-text bg-light border-end-0">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
                             </span>
-                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="searchHistory" placeholder="Cari No Referensi atau Nama Barang...">
-                            
+                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari No Referensi atau Nama Barang...">                            
                             <button class="btn border border-start-0 bg-white text-muted" type="button" id="btnClearSearch">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -49,8 +44,8 @@ class ReportsHistoryView {
                                 </select>
                             </div>
                             <div class="col-4">
-                                <button type="button" id="btnResetAll" class="btn btn-outline-secondary btn-sm w-100">
-                                    <i class="fa-solid fa-rotate-right me-1"></i> Reset
+                                <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
+                                    <i class="fa-solid fa-rotate-right"></i>
                                 </button>
                             </div>
                         </div>

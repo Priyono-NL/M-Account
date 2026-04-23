@@ -39,6 +39,13 @@
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
+            <a href="index.php?page=stocks" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'stocks') ? 'active' : '' ?>">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span class="link-text">Stock Item</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a href="index.php?page=history" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'history') ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock-rotate-left"></i>
                 <span class="link-text">Item History</span>

@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// POS CONTROLLER (Logika Halaman Kasir)
-// =========================================================================
-
 require_once 'BaseController.php';
 
 class POSController extends BaseController {

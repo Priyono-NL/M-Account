@@ -1,10 +1,6 @@
 <?php
-// =========================================================================
-// VIEW: Master Data Pelanggan (Buyer)
-// =========================================================================
 class BuyerView {
     public static function render($buyers) {
-        $title = "Master Data Pelanggan - MyPOS";
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">

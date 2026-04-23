@@ -1,17 +1,17 @@
 <?php
 require_once 'BaseController.php';
 
-class ReportsController extends BaseController {
+class StocksController extends BaseController {
     private $model;
 
     public function __construct() {
         // Memuatkan model laporan
-        $this->model = new ReportModel();
+        $this->model = new StocksModel();
     }
 
     public function index() {
-        $transactions = $this->model->getFilteredTransactions();
-        ReportsHistoryView::render($transactions);
+        $stocks = $this->model->getFiltered();
+        StocksView::render($stocks);
     }
 
     public function filter_api() {
@@ -20,7 +20,7 @@ class ReportsController extends BaseController {
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
 
-        $items = $this->model->getFilteredTransactions($search, $warehouse, $startDate, $endDate);
+        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
         
         return $this->jsonSuccess("Data Filtered", $items);
     }

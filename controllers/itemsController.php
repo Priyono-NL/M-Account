@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// ITEMS CONTROLLER (Master Data Barang)
-// =========================================================================
-
 require_once 'BaseController.php';
 
 class ItemsController extends BaseController {

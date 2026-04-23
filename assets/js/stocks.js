@@ -2,7 +2,7 @@ $(document).ready(function() {
 
     function loadFilteredHistory() {
         $.ajax({
-            url: "index.php?page=history",
+            url: "index.php?page=stocks",
             type: "POST",
             dataType: "json",
             data: {
@@ -14,7 +14,7 @@ $(document).ready(function() {
             },
             success: function(res) {
                 if (res.status === "success") {
-                    let tbody = $("#historyTable tbody");
+                    let tbody = $("#stockTable tbody");
                     tbody.empty();
 
                     if (res.data.length === 0) {
@@ -25,31 +25,32 @@ $(document).ready(function() {
                     res.data.forEach(function(t) {
                         let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
                         
-                        let typeBadge = t.type === 'IN' 
-                            ? '<span class="badge bg-success bg-opacity-10 text-success border-0 px-2 py-1">MASUK</span>' 
-                            : '<span class="badge bg-danger bg-opacity-10 text-danger border-0 px-2 py-1">KELUAR</span>';
-                        
-                        let qtySymbol = t.type === 'IN' ? '+' : '-';
-                        
-                        let dateObj = new Date(t.transaction_date);
+                        let dateObj = new Date(t.date || t.transaction_date); // Antisipasi nama kolom date/transaction_date
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                         let formattedTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                        let qtyInStr = t.qty_in > 0 ? `<span class="text-success">+${t.qty_in}</span>` : '0';
+                        let qtyOutStr = t.qty_out > 0 ? `<span class="text-danger">-${t.qty_out}</span>` : '0';
 
                         let tr = `
                             <tr>
                                 <td class="ps-4 text-muted">
                                     ${formattedDate}<br>
-                                    <small style="font-size: 10px;">${formattedTime}</small>
+                                    <small style="font-size: 10px;"><i class="fa-regular fa-clock me-1"></i>${formattedTime}</small>
                                 </td>
-                                <td class="fw-medium text-dark">${t.reference_no}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">
+                                        ${warehouseName}
+                                    </span>
+                                </td>
                                 <td>
-                                    <div class="fw-bold text-primary">${t.item_name}</div>
+                                    <div class="fw-bold text-dark">${t.item_name}</div>
                                     <small class="text-muted" style="font-size: 11px;">${t.item_code}</small>
                                 </td>
-                                <td class="text-center fw-medium">${warehouseName}</td>
-                                <td class="text-center">${typeBadge}</td>
-                                <td class="text-center fw-bold fs-6">${qtySymbol}${t.qty}</td>
-                                <td class="pe-4 text-muted small">${t.notes || '-'}</td>
+                                <td class="text-center fw-medium text-muted">${t.qty_open}</td>
+                                <td class="text-center fw-bold">${qtyInStr}</td>
+                                <td class="text-center fw-bold">${qtyOutStr}</td>
+                                <td class="text-center fw-bold fs-6 text-primary pe-4">${t.qty_close}</td>
                             </tr>
                         `;
                         tbody.append(tr);
@@ -57,12 +58,11 @@ $(document).ready(function() {
                 }
             },
             error: function() {
-                console.error("Gagal menarik data riwayat.");
+                console.error("Gagal menarik data.");
             }
         });
     }
 
-    // Event listener: hapus #filterType dari sini
     $("#search").on("keyup", loadFilteredHistory);
     $("#filterWarehouse, #startDate, #endDate").on("change", loadFilteredHistory);
 

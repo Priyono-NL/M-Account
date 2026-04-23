@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// HELPER: Base Model untuk menangani operasi CRUD standar
-// =========================================================================
-
 class DatabaseHelper {
     protected $db;
 

@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// MODEL: Mengelola data Produk (Items) dan Transaksi
-// =========================================================================
-
 require_once '_dbHelper.php';
 
 class ItemsModel extends DatabaseHelper {

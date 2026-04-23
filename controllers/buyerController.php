@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// BUYER CONTROLLER (Master Data Pelanggan)
-// =========================================================================
-
 require_once 'BaseController.php';
 
 class BuyerController extends BaseController {

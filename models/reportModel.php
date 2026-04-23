@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// MODEL: Mengelola data Laporan dan Riwayat
-// =========================================================================
-
 require_once '_dbHelper.php';
 
 class ReportModel extends DatabaseHelper {

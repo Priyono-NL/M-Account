@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// MODEL: Mengelola data Penjualan (sales & sales_detail)
-// =========================================================================
-
 require_once '_dbHelper.php';
 
 class SalesModel extends DatabaseHelper {

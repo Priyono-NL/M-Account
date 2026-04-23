@@ -1,10 +1,6 @@
 <?php
-// =========================================================================
-// VIEW: Master Data Barang (Items)
-// =========================================================================
 class ItemsView {
     public static function render($items) {
-        $title = "Master Data Barang - MyPOS";
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">

@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// BASE CONTROLLER (Template API)
-// =========================================================================
-
 class BaseController {
     
     protected function jsonSuccess($message = "Success", $data = []) {

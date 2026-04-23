@@ -1,8 +1,4 @@
 <?php
-// =========================================================================
-// MODEL: Mengelola data Pelanggan (Buyer)
-// =========================================================================
-
 require_once '_dbHelper.php';
 
 class BuyerModel extends DatabaseHelper {

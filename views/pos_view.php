@@ -1,15 +1,10 @@
 <?php
-// =========================================================================
-// VIEW: Kasir (POS)
-// File ini berada di folder views/pos_view.php
-// =========================================================================
 class POSView {
     /**
      * Render halaman POS. 
      * Parameter dihapus karena data item dan buyer sekarang dimuat via AJAX (Select2).
      */
     public static function render() {
-        $title = "Kasir (POS) - MyPOS MVC";
         ob_start();
         ?>
         
