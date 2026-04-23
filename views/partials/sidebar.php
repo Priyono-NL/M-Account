@@ -7,7 +7,7 @@
     <ul class="nav flex-column mt-3">
         <!-- Dashboard / POS -->
         <li class="nav-item">
-            <a href="index.php?page=pos" class="nav-link <?= (!isset($_GET['page']) || $_GET['page'] == 'pos') ? 'active' : '' ?>">
+            <a href="/m-account/pos" class="nav-link <?= (!isset($_GET['page']) || $_GET['page'] == 'pos') ? 'active' : '' ?>">
                 <i class="fa-solid fa-cash-register"></i>
                 <span class="link-text">Kasir (POS)</span>
             </a>
@@ -20,13 +20,13 @@
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
-            <a href="index.php?page=items" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'items') ? 'active' : '' ?>">
+            <a href="/m-account/items" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'items') ? 'active' : '' ?>">
                 <i class="fa-solid fa-box"></i>
                 <span class="link-text">Data Barang</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="index.php?page=buyers" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'buyers') ? 'active' : '' ?>">
+            <a href="/m-account/buyers" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'buyers') ? 'active' : '' ?>">
                 <i class="fa-solid fa-users"></i>
                 <span class="link-text">Data Buyer</span>
             </a>
@@ -39,14 +39,14 @@
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
-            <a href="index.php?page=stocks" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'stocks') ? 'active' : '' ?>">
+            <a href="/m-account/stocks" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'stocks') ? 'active' : '' ?>">
                 <i class="fa-solid fa-boxes-stacked"></i>
                 <span class="link-text">Stock Item</span>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="index.php?page=history" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'history') ? 'active' : '' ?>">
+            <a href="/m-account/history" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'history') ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock-rotate-left"></i>
                 <span class="link-text">Item History</span>
             </a>
@@ -54,10 +54,3 @@
         
     </ul>
 </nav>
-
-<style>
-/* Memunculkan label kategori menu ketika sidebar di-expand */
-#sidebar.expanded .sidebar-label {
-    display: block !important;
-}
-</style>
