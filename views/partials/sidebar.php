@@ -1,6 +1,6 @@
 <?php
 $current_uri = explode('/', trim($_SERVER['REQUEST_URI'], '/'));
-$uri_page   = $current_uri[1] ?? ''; 
+$uri_page   = $current_uri[1] ?? 'dashboard';
 $uri_action = $current_uri[2] ?? '';
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
@@ -9,10 +9,19 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
 <nav id="sidebar">
     <div class="sidebar-header">
         <i class="fa-solid fa-store text-primary"></i>
-        <span class="logo-text">MyPOS</span>
+        <span class="logo-text">M-Account</span>
     </div>
 
     <ul class="nav flex-column mt-3">
+
+        <li class="nav-item">
+            <a href="/m-account/dashboard" class="nav-link <?= ($uri_page == 'dashboard' || $uri_page == '') ? 'active' : '' ?>">
+                <i class="fa-solid fa-house"></i>
+                <span class="link-text">Dashboard</span>
+            </a>
+        </li>
+
+        <hr class="mx-3 my-2 text-secondary opacity-25">
         
         <li class="nav-item">
             <?php 
