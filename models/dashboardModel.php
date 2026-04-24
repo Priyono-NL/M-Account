@@ -11,9 +11,13 @@ class DashboardModel extends DatabaseHelper {
         $results = [];
 
         $q_items = "SELECT SUM(qty_close) AS total 
-                    FROM stocks 
-                    WHERE warehouse = :warehouse 
-                    AND date = (SELECT MAX(date) FROM stocks WHERE warehouse = :warehouse)";
+                    FROM stocks s
+                    WHERE s.id IN (
+                        SELECT MAX(id) 
+                        FROM stocks 
+                        WHERE warehouse = :warehouse 
+                        GROUP BY item_id
+                    )";
         $stmt_items = $this->db->prepare($q_items);
         $stmt_items->execute(['warehouse' => $warehouse]);
         $res_items = $stmt_items->fetch(PDO::FETCH_ASSOC);

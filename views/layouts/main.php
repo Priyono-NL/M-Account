@@ -11,9 +11,9 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="/m-account/vendors/fontawesome-free-6.4.2-web/css/all.min.css">
     <!-- Select2 CSS -->
-    <link rel="stylesheet" href="/m-account/vendors/select2-4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="/m-account/vendors/select2-4.1.0-rc.0/css/select2.min.css">
     <!-- Toastify CSS -->
-    <link rel="stylesheet" href="/m-account/vendors/toastify-js-1.12.0/src/toastify.css">
+    <link rel="stylesheet" href="/m-account/vendors/toastify-js-1.12.0/toastify.css">
     
     <!-- Custom CSS (Universal) -->
     <link rel="stylesheet" href="/m-account/assets/css/style.css">
@@ -44,9 +44,9 @@
 <!-- Bootstrap JS Bundle -->
 <script src="/m-account/vendors/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <!-- Select2 JS -->
-<script src="/m-account/vendors/select2-4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="/m-account/vendors/select2-4.1.0-rc.0/js/select2.min.js"></script>
 <!-- Toastify JS -->
-<script src="/m-account/vendors/toastify-js-1.12.0/src/toastify.js"></script>
+<script src="/m-account/vendors/toastify-js-1.12.0/toastify.js"></script>
 
 <!-- Universal JS -->
 <script src="/m-account/assets/js/main.js"></script>
