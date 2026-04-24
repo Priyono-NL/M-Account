@@ -13,6 +13,13 @@
             </a>
         </li>
 
+        <li class="nav-item">
+            <a href="/m-account/receive" class="nav-link <?= (!isset($_GET['page']) || $_GET['page'] == 'receive') ? 'active' : '' ?>">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span class="link-text">Receivement</span>
+            </a>
+        </li>
+
         <!-- Group: Master Data -->
         <li class="px-3 mt-4 mb-1 text-muted d-none sidebar-label" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
             Master Data

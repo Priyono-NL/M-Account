@@ -2,8 +2,8 @@ let cart = [];
 
 $(document).ready(function() {
     
-    $('#buyerSelect').select2({
-        placeholder: "-- Cari Pelanggan --",
+    $('#personSelect').select2({
+        placeholder: "-- Cari Nama Penerima --",
         allowClear: true,
         ajax: {
             url: window.location.href,
@@ -42,7 +42,6 @@ $(document).ready(function() {
                 return {
                     action: 'get_products',
                     keyword: params.term || '',
-                    warehouse: $('#warehouseSelect').val()
                 };
             },
             processResults: function (data) {
@@ -50,11 +49,9 @@ $(document).ready(function() {
                     results: $.map(data, function (item) {
                         return {
                             id: item.id,
-                            text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_close),
+                            text: item.item_code + ' | ' + item.item_name,
                             nama: item.item_name,
                             kode: item.item_code,
-                            harga: item.unit_price,
-                            stok: parseFloat(item.qty_close)
                         }
                     })
                 };
@@ -70,26 +67,14 @@ $(document).ready(function() {
 
         let nama = data.nama;
         let kode = data.kode;
-        let harga = parseFloat(data.harga) || 0;
-        let stok = parseFloat(data.stok) || 0;
-
-        if (stok <= 0) {
-            showNotification(`Stok ${nama} di gudang ini kosong/habis!`, 'danger');
-            $('#productSearch').val(null).trigger('change');
-            return;
-        }
 
         let existingItem = cart.find(item => item.id == id);
 
         if (existingItem) {
-            if (existingItem.qty + 1 > stok) {
-                showNotification(`Maksimal Qty untuk ${nama} adalah ${stok}!`, 'warning');
-            } else {
-                existingItem.qty += 1;
-                showNotification(`Qty ${nama} ditambahkan`, 'success');
-            }
+            existingItem.qty += 1;
+            showNotification(`Qty ${nama} ditambahkan`, 'success');
         } else {
-            cart.push({ id: id, kode: kode, nama: nama, harga: harga, qty: 1, stok: stok });
+            cart.push({ id: id, kode: kode, nama: nama, qty: 1, });
             showNotification(`Ditambahkan: ${nama}`, 'success');
         }
 
@@ -124,7 +109,6 @@ $(document).ready(function() {
                             <div class="fw-bold text-dark">${item.nama}</div>
                             <small class="text-muted" style="font-size: 11px;">${item.kode}</small>
                         </td>
-                        <td class="text-center align-middle text-muted">Rp ${formatRupiah(item.harga)}</td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center align-items-center gap-1">
                                 <button class="btn btn-sm btn-light border btn-action btn-minus" data-index="${index}"><i class="fa-solid fa-minus" style="font-size: 10px;"></i></button>
@@ -132,7 +116,6 @@ $(document).ready(function() {
                                 <button class="btn btn-sm btn-light border btn-action btn-plus" data-index="${index}"><i class="fa-solid fa-plus" style="font-size: 10px;"></i></button>
                             </div>
                         </td>
-                        <td class="text-end align-middle fw-bold text-dark">Rp ${formatRupiah(totalHarga)}</td>
                         <td class="text-center align-middle pe-3">
                             <button class="btn btn-sm btn-outline-danger btn-action btn-remove" data-index="${index}">
                                 <i class="fa-solid fa-trash"></i>
@@ -144,10 +127,6 @@ $(document).ready(function() {
             });
         }
 
-        let grandTotal = subtotal;
-
-        $('#summarySubtotal').text('Rp ' + formatRupiah(subtotal));
-        $('#summaryTotal').text('Rp ' + formatRupiah(grandTotal));
     }
 
     $(document).on('click', '.btn-plus', function() {
@@ -200,11 +179,10 @@ $(document).ready(function() {
             }
         }
         cart = [];
-        $('#buyerSelect').val(null).trigger('change');
+        $('#personSelect').val(null).trigger('change');
         $('#productSearch').val(null).trigger('change');
-        $('#salesType').val('SLS');
         $('#warehouseSelect').val('1');
-        $('#salesDate').val(new Date().toISOString().split('T')[0]); // Set ke hari ini
+        $('#transDate').val(new Date().toISOString().split('T')[0]); // Set ke hari ini
         renderCart();
     });
 
@@ -214,13 +192,13 @@ $(document).ready(function() {
             return;
         }
 
-        let buyerId = $('#buyerSelect').val();
+        let doc_number = $('#docNumber').val();
+        let received_by = $('#personSelect').val();
         let warehouse = $('#warehouseSelect').val();
-        let salesDate = $('#salesDate').val();
-        let salesType = $('#salesType').val();
+        let transDate = $('#date_receive').val();
 
-        if (!buyerId) {
-            showNotification('Harap pilih Pembeli (Buyer)!', 'warning');
+        if (!personSelect ) {
+            showNotification('Harap pilih Penerima!', 'warning');
             return;
         }
 
@@ -233,10 +211,10 @@ $(document).ready(function() {
             dataType: 'json',
             data: {
                 action: 'checkout',
-                buyer_id: buyerId,
+                doc_number: doc_number,
+                received_by: received_by,
                 warehouse: warehouse,
-                sales_date: salesDate,
-                sales_type: salesType,
+                date_receive: transDate,
                 cart: JSON.stringify(cart)
             },
             success: function(response) {
@@ -244,7 +222,7 @@ $(document).ready(function() {
                     showNotification(response.message || 'Transaksi berhasil disimpan!', 'success');
                     
                     cart = [];
-                    $('#buyerSelect').val(null).trigger('change');
+                    $('#personSelect').val(null).trigger('change');
                     $('#productSearch').val(null).trigger('change');
                     renderCart();
 
