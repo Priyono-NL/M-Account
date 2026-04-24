@@ -1,3 +1,30 @@
+function viewDetail(id) {
+    let form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("action", "/m-account/pos");
+
+    let actionInput = document.createElement("input");
+    actionInput.setAttribute("type", "hidden");
+    actionInput.setAttribute("name", "action");
+    actionInput.setAttribute("value", "index");
+    form.appendChild(actionInput);
+
+    let invoiceInput = document.createElement("input");
+    invoiceInput.setAttribute("type", "hidden");
+    invoiceInput.setAttribute("name", "id");
+    invoiceInput.setAttribute("value", id);
+    form.appendChild(invoiceInput);
+
+    let modeInput = document.createElement("input");
+    modeInput.setAttribute("type", "hidden");
+    modeInput.setAttribute("name", "mode");
+    modeInput.setAttribute("value", "view");
+    form.appendChild(modeInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
 $(document).ready(function() {
 
     function loadFilteredHistory() {
@@ -56,11 +83,8 @@ $(document).ready(function() {
                                 <td class="text-end fw-bold text-dark">${formattedTotal}</td>                                
                                 <td class="text-center pe-4">
                                     <div class="btn-group shadow-sm">
-                                        <button type="button" class="btn btn-light btn-sm border text-primary" title="Lihat Detail Transaksi" onclick="viewDetail('${t.invoice_no}')">
+                                        <button type="button" class="btn btn-light btn-sm border text-primary" title="Lihat Detail Transaksi" onclick="viewDetail('${t.id}')">
                                             <i class="fa-solid fa-eye"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-light btn-sm border text-secondary" title="Cetak Ulang Struk" onclick="printReceipt('${t.invoice_no}')">
-                                            <i class="fa-solid fa-print"></i>
                                         </button>
                                     </div>
                                 </td>

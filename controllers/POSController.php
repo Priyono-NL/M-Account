@@ -13,7 +13,29 @@ class POSController extends BaseController {
     }
 
     public function index() {
-        POSView::render();
+        $mode = $_POST['mode'] ?? 'create';
+        $sales_id = $_POST['id'] ?? null;
+        $transactionData = null;
+
+        if ($mode === 'view' && $sales_id) {
+            $header = $this->salesModel->getById('sales', $sales_id);
+            
+            if ($header) {
+                $id_pelanggan = $header['buyer']; 
+                $buyerData = $this->salesModel->getById('buyer', $id_pelanggan);
+                $header['buyer_name'] = $buyerData ? $buyerData['buyer_name'] : 'Pelanggan Tidak Ditemukan';
+
+                $id_aman = intval($sales_id);
+                $items = $this->salesModel->getTransactionItems($id_aman);
+                
+                $transactionData = [
+                    'header' => $header,
+                    'items'  => $items
+                ];
+            }
+        }
+        
+        POSView::render($transactionData);
     }
 
     public function history() {

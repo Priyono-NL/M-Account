@@ -114,5 +114,16 @@ class SalesModel extends DatabaseHelper {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getTransactionItems($sale_id) {
+        $sql = "SELECT sd.*, i.item_code, i.item_name, i.unit_price, i.item_uom
+                FROM sales_detail sd 
+                LEFT JOIN items i ON sd.item_id = i.id 
+                WHERE sd.sale_id = :sale_id";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['sale_id' => $sale_id]);
+        return $stmt->fetchAll();
+    }
 }
 ?>
