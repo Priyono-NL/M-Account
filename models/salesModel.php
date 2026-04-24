@@ -66,7 +66,7 @@ class SalesModel extends DatabaseHelper {
             }
 
             $this->db->commit();
-            return ['status' => 'success', 'message' => 'Transaksi berhasil disimpan!'];
+            return ['sale_id' => $sale_id,'status' => 'success', 'message' => 'Transaksi berhasil disimpan!'];
 
         } catch (Exception $e) {
             $this->db->rollBack();
@@ -113,6 +113,21 @@ class SalesModel extends DatabaseHelper {
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getSalesHeader($sales_id) {
+        $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
+                    (SELECT SUM(sd.item_qty * i.unit_price) 
+                    FROM sales_detail sd
+                    JOIN items i ON sd.item_id = i.id
+                    WHERE sd.sale_id = s.id) as total
+                FROM sales s
+                LEFT JOIN buyer b ON s.buyer = b.id
+                WHERE s.id = :id";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $sales_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function getTransactionItems($sale_id) {

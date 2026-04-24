@@ -1,5 +1,15 @@
 let cart = [];
 
+function printReceipt(id) {
+    if (!id) {
+        alert("ID Transaksi tidak ditemukan.");
+        return;
+    }
+    
+    const printUrl = '/m-account/pos/print_invoice?id=' + id;
+    window.open(printUrl, '_blank');
+}
+
 $(document).ready(function() {
 
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
@@ -273,7 +283,7 @@ $(document).ready(function() {
                         $('#productSearch').val(null).trigger('change');
                         renderCart();
 
-                        // window.open('cetak_invoice.php?id=' + response.sale_id, '_blank');
+                        window.open('/m-account/pos/print_invoice?id=' + response.data.sale_id, '_blank');
                     } else {
                         showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
                     }

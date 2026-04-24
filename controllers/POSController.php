@@ -18,13 +18,9 @@ class POSController extends BaseController {
         $transactionData = null;
 
         if ($mode === 'view' && $sales_id) {
-            $header = $this->salesModel->getById('sales', $sales_id);
+            $header = $this->salesModel->getSalesHeader($sales_id);
             
             if ($header) {
-                $id_pelanggan = $header['buyer']; 
-                $buyerData = $this->salesModel->getById('buyer', $id_pelanggan);
-                $header['buyer_name'] = $buyerData ? $buyerData['buyer_name'] : 'Pelanggan Tidak Ditemukan';
-
                 $id_aman = intval($sales_id);
                 $items = $this->salesModel->getTransactionItems($id_aman);
                 
@@ -90,7 +86,7 @@ class POSController extends BaseController {
 
         $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type);
         
-        if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
+        if ($result) return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
         else return $this->jsonError("Gagal menyimpan transaksi ke database.");
     }
 
@@ -138,6 +134,16 @@ class POSController extends BaseController {
         $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
+    }
+
+    public function print_invoice() {
+        $sales_id = $_GET['id'] ?? null;
+        if (!$sales_id) die("ID Transaksi tidak ditemukan.");
+
+        $header = $this->salesModel->getSalesHeader($sales_id);
+        $items = $this->salesModel->getTransactionItems($sales_id);
+        
+        InvoiceView::render($header, $items);
     }
 }
 ?>

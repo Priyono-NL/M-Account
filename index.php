@@ -18,6 +18,7 @@ require_once 'models/stockInModel.php';
 require_once 'views/dashboard_view.php';
 require_once 'views/pos_view.php';
 require_once 'views/sales_view.php';
+require_once 'views/invoice_view.php';
 require_once 'views/items_view.php';
 require_once 'views/buyer_view.php';
 require_once 'views/report_view.php';

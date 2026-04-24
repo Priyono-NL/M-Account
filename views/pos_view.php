@@ -25,7 +25,8 @@ class POSView {
                                 <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='/m-account/pos/history'">
                                     <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                                 </button>
-                                <button type="button" class="btn btn-sm btn-primary shadow-sm" onclick="printReceipt('<?= $transactionData['header']['invoice_no'] ?>')">
+                                <button type="button" class="btn btn-sm btn-primary shadow-sm" 
+                                        onclick="printReceipt('<?= $transactionData['header']['id'] ?>')">
                                     <i class="fa-solid fa-print me-1"></i> Reprint
                                 </button>
                             </div>
