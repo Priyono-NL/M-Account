@@ -1,12 +1,12 @@
 <?php
-class Sales_view {
+class Receive_view {
     public static function render($sales) {
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="fw-bold mb-0">Laporan Transaksi Keluar</h5>
-                <p class="text-muted small mb-0">Laporan Penjualan Barang.</p>
+                <h5 class="fw-bold mb-0">Laporan Transaksi Masuk</h5>
+                <p class="text-muted small mb-0">Laporan Penerimaan Barang.</p>
             </div>
             <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
@@ -41,21 +41,14 @@ class Sales_view {
 
                     <div class="col-md-4">
                         <div class="row g-1">
-                            <div class="col-5">
+                            <div class="col-8">
                                 <select class="form-select form-select-sm" id="filterWarehouse">
                                     <option value="">Semua Gudang</option>
                                     <option value="1">Gudang BS</option>
                                     <option value="2">Gudang Sampah</option>
                                 </select>
                             </div>
-                            <div class="col-5">
-                                <select class="form-select form-select-sm" id="filterType">
-                                    <option value="">Semua Tipe</option>
-                                    <option value="SLS">Normal</option>
-                                    <option value="EXP">Expense</option>
-                                </select>
-                            </div>
-                            <div class="col-2">
+                            <div class="col-4">
                                 <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
                                     <i class="fa-solid fa-rotate-right"></i>
                                 </button>
@@ -73,11 +66,9 @@ class Sales_view {
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
                             <tr>
                                 <th class="text-center">Warehouse</th>
-                                <th class="text-center">Tipe</th>
-                                <th>Invoice Number</th>                                
-                                <th>Buyer</th>
-                                <th>Tanggal Transaksi</th>
-                                <th>Total</th>
+                                <th>Document Number</th>
+                                <th>Penerima</th>
+                                <th>Tanggal Terima</th>
                                 <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
@@ -95,7 +86,7 @@ class Sales_view {
         </div>
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="/m-account/assets/js/sales.js"></script>';
+        $extra_js = '<script src="/m-account/assets/js/r_history.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

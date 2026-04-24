@@ -71,8 +71,44 @@ class StockInModel extends DatabaseHelper {
         }
     }
 
-    public function getSalesHistory() {
-        return $this->getAll('sales', null, 'date_receive DESC');
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+        $sql = "SELECT r.* FROM receivement r WHERE 1=1";
+        
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (r.received_by LIKE :search OR r.doc_number LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        
+        if ($warehouse !== '') {
+            $sql .= " AND r.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+
+        if (!empty($startDate)) {
+            $sql .= " AND DATE(r.date_receive) >= :start_date";
+            $params['start_date'] = $startDate;
+        }
+        if (!empty($endDate)) {
+            $sql .= " AND DATE(r.date_receive) <= :end_date";
+            $params['end_date'] = $endDate;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTransactionItems($receive_id) {
+        $sql = "SELECT rd.*, i.item_code, i.item_name, i.unit_price, i.item_uom
+                FROM receivement_detail rd
+                LEFT JOIN items i ON rd.item_id = i.id 
+                WHERE rd.receive_id = :receive_id";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['receive_id' => $receive_id]);
+        return $stmt->fetchAll();
     }
 }
 ?>

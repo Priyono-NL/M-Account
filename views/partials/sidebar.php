@@ -1,68 +1,84 @@
-<!-- Sidebar -->
+<?php
+$current_uri = explode('/', trim($_SERVER['REQUEST_URI'], '/'));
+$uri_page   = $current_uri[1] ?? ''; 
+$uri_action = $current_uri[2] ?? '';
+
+$isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
+?>
+
 <nav id="sidebar">
     <div class="sidebar-header">
-        <i class="fa-solid fa-store"></i>
+        <i class="fa-solid fa-store text-primary"></i>
         <span class="logo-text">MyPOS</span>
     </div>
+
     <ul class="nav flex-column mt-3">
-        <!-- Dashboard / POS -->
+        
         <li class="nav-item">
-            <a href="/m-account/pos" class="nav-link <?= (!isset($_GET['page']) || $_GET['page'] == 'pos') ? 'active' : '' ?>">
+            <?php 
+                $activePOS = ($uri_page == 'pos' && $uri_action != 'history' && !$isView) ? 'active' : ''; 
+            ?>
+            <a href="/m-account/pos" class="nav-link <?= $activePOS ?>">
                 <i class="fa-solid fa-cash-register"></i>
                 <span class="link-text">Kasir (POS)</span>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="/m-account/receive" class="nav-link <?= (!isset($_GET['page']) || $_GET['page'] == 'receive') ? 'active' : '' ?>">
+            <a href="/m-account/receive" class="nav-link <?= ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '' ?>">
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span class="link-text">Receivement</span>
             </a>
         </li>
 
-        <!-- Group: Master Data -->
-        <li class="px-3 mt-4 mb-1 text-muted d-none sidebar-label" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
-            Master Data
-        </li>
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
-            <a href="/m-account/items" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'items') ? 'active' : '' ?>">
+            <a href="/m-account/items" class="nav-link <?= ($uri_page == 'items') ? 'active' : '' ?>">
                 <i class="fa-solid fa-box"></i>
                 <span class="link-text">Data Barang</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="/m-account/buyers" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'buyers') ? 'active' : '' ?>">
+            <a href="/m-account/buyers" class="nav-link <?= ($uri_page == 'buyers') ? 'active' : '' ?>">
                 <i class="fa-solid fa-users"></i>
                 <span class="link-text">Data Buyer</span>
             </a>
         </li>
 
-        <!-- Group: Laporan -->
-        <li class="px-3 mt-4 mb-1 text-muted d-none sidebar-label" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
-            Laporan
-        </li>
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
-            <a href="/m-account/stocks" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'stocks') ? 'active' : '' ?>">
+            <a href="/m-account/stocks" class="nav-link <?= ($uri_page == 'stocks') ? 'active' : '' ?>">
                 <i class="fa-solid fa-boxes-stacked"></i>
                 <span class="link-text">Stock Item</span>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="/m-account/history" class="nav-link <?= (isset($_GET['page']) && $_GET['page'] == 'history') ? 'active' : '' ?>">
+            <a href="/m-account/history" class="nav-link <?= ($uri_page == 'history') ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock-rotate-left"></i>
                 <span class="link-text">Item History</span>
             </a>
         </li>
 
         <li class="nav-item">
-            <a href="/m-account/pos/history" class="nav-link <?= ($page == 'pos' && $action_get == 'history') ? 'active' : '' ?>">
-                <i class="fa-solid fa-receipt"></i>
+            <?php 
+                $activeSalesHistory = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
+            ?> 
+            <a href="/m-account/pos/history" class="nav-link <?= $activeSalesHistory ?>">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
                 <span class="link-text">Laporan Penjualan</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <?php 
+                $activeReceiveHistory = ($uri_page == 'receive' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
+            ?>
+            <a href="/m-account/receive/history" class="nav-link <?= $activeReceiveHistory ?>">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span class="link-text">Laporan Penerimaan</span>
             </a>
         </li>
         

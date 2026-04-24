@@ -13,7 +13,41 @@ class StockInController extends BaseController {
     }
 
     public function index() {
-        StockIn_view::render();
+        $mode = $_POST['mode'] ?? 'create';
+        $receive_id = $_POST['id'] ?? null;
+        $transactionData = null;
+
+        if ($mode === 'view' && $receive_id) {
+            $header = $this->stockInModel->getById('receivement', $receive_id);
+            
+            if ($header) {
+                $id_aman = intval($receive_id);
+                $items = $this->stockInModel->getTransactionItems($id_aman);
+                
+                $transactionData = [
+                    'header' => $header,
+                    'items'  => $items
+                ];
+            }
+        }
+        
+        StockIn_view::render($transactionData);
+    }
+
+    public function history() {
+        $receivement = $this->stockInModel->getFiltered();
+        Receive_view::render($receivement);
+    }
+
+    public function filter_api() {
+        $search   = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+
+        $items = $this->stockInModel->getFiltered($search, $warehouse, $startDate, $endDate);
+        
+        return $this->jsonSuccess("Data Filtered", $items);
     }
 
     public function get_products() {
@@ -52,6 +86,43 @@ class StockInController extends BaseController {
         
         if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
         else return $this->jsonError("Gagal menyimpan transaksi ke database.");
+    }
+
+    public function export_xls() {
+        $search    = $_POST['search'] ?? '';
+        $warehouse = $_POST['warehouse'] ?? '';
+        $startDate = $_POST['start_date'] ?? '';
+        $endDate   = $_POST['end_date'] ?? '';
+
+        $data = $this->stockInModel->getFiltered($search, $warehouse, $startDate, $endDate);
+
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Gudang</b>',
+            '<b>Document Number</b>',  
+            '<b>Penerima</b>',
+            '<b>Tanggal Terima</b>', 
+        ]];
+
+        foreach ($data as $index => $item) {
+            $namaGudang = $item['warehouse'];
+            if ($item['warehouse'] == '1') $namaGudang = 'Gudang BS';
+            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang Sampah';
+
+            $tanggal = date('d M Y', strtotime($item['date_receive']));
+
+            $rows[] = [
+                $index + 1,
+                $namaGudang,
+                $item['doc_number'],
+                $item['received_by'],
+                $tanggal,
+            ];
+        }
+
+        $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
     }
 }
 ?>

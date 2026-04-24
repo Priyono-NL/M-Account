@@ -21,6 +21,7 @@ require_once 'views/buyer_view.php';
 require_once 'views/report_view.php';
 require_once 'views/stocks_view.php';
 require_once 'views/stockIn_view.php';
+require_once 'views/receive_view.php';
 
 $url_path = $_GET['page'] ?? 'pos';
 $url_path = rtrim($url_path, '/');
