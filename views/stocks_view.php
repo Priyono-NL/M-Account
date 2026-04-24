@@ -10,6 +10,11 @@ class StocksView {
                 </h5>
                 <p class="text-muted small mb-0">Pantau stok awal, pergerakan, dan stok akhir barang.</p>
             </div>
+            <div>
+                <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
+                    <i class="fa-solid fa-file-excel me-2"></i> Export Excel
+                </button>
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">

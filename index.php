@@ -47,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'index';
 
     if (method_exists($app, $action)) {
-        header('Content-Type: application/json');
         $app->$action();
     } else {
         header('Content-Type: application/json');

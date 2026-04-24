@@ -1,5 +1,6 @@
 <?php
 require_once 'BaseController.php';
+require_once './vendors/SimpleXLSXGen.php.php';
 
 class StocksController extends BaseController {
     private $model;
@@ -23,6 +24,45 @@ class StocksController extends BaseController {
         $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
         
         return $this->jsonSuccess("Data Filtered", $items);
+    }
+
+    public function export_xls() {
+        $search    = $_POST['search'] ?? '';
+        $warehouse = $_POST['warehouse'] ?? '';
+        $startDate = $_POST['start_date'] ?? '';
+        $endDate   = $_POST['end_date'] ?? '';
+        $data = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
+
+        $rows = [[
+            '<b>No</b>', '<b>Tanggal Update</b>', 
+            '<b>Kode Barang</b>', '<b>Nama Barang</b>', '<b>Gudang</b>',
+            '<b>Qty Awal</b>', '<b>Qty Masuk</b>', '<b>Qty Keluar</b>', '<b>Saldo Akhir</b>'
+            ]];
+
+        foreach ($data as $index => $item) {
+            $namaGudang = $item['warehouse'];
+            if ($item['warehouse'] == '1') {
+                $namaGudang = 'Gudang BS';
+            } elseif ($item['warehouse'] == '2') {
+                $namaGudang = 'Gudang Sampah';
+            }
+
+            $rows[] = [
+                $index + 1,
+                $item['date'],
+                $item['item_code'],
+                $item['item_name'],
+                $namaGudang,
+                (float)$item['qty_open'],
+                (float)$item['qty_in'],
+                (float)$item['qty_out'],
+                (float)$item['qty_close']
+            ];
+        }
+
+        $fileName = "Laporan_Stok_" . date('Ymd_His') . ".xlsx";
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
     }
 
 }

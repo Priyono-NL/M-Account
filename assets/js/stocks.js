@@ -78,4 +78,16 @@ $(document).ready(function() {
         loadFilteredHistory();
     });
 
+    $("#btnExportExcel").click(function() {
+        let payload = {
+            action: 'export_xls',
+            search: $("#search").val() || "",
+            start_date: $("#startDate").val() || "",
+            end_date: $("#endDate").val() || "",
+            warehouse: $("#filterWarehouse").val() || ""
+        };
+
+        downloadExcelAjax(this, '/m-account/stocks', payload, 'Laporan_Stok');
+    });
+
 });

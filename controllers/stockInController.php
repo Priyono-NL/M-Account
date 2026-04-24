@@ -49,10 +49,6 @@ class StockInController extends BaseController {
         if (empty($received_by)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
 
         $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive);
-
-        header('Content-Type: application/json');
-        echo json_encode($result);
-        exit;
         
         if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
         else return $this->jsonError("Gagal menyimpan transaksi ke database.");

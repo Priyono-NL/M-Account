@@ -62,7 +62,6 @@ $(document).ready(function() {
         });
     }
 
-    // Event listener: hapus #filterType dari sini
     $("#search").on("keyup", loadFilteredHistory);
     $("#filterWarehouse, #startDate, #endDate").on("change", loadFilteredHistory);
 
@@ -78,6 +77,18 @@ $(document).ready(function() {
         $("#endDate").val("");
         
         loadFilteredHistory();
+    });
+
+    $("#btnExportExcel").click(function() {
+        let payload = {
+            action: 'export_xls',
+            search: $("#search").val() || "",
+            start_date: $("#startDate").val() || "",
+            end_date: $("#endDate").val() || "",
+            warehouse: $("#filterWarehouse").val() || ""
+        };
+
+        downloadExcelAjax(this, '/m-account/history', payload, 'Laporan_Transaksi');
     });
 
 });
