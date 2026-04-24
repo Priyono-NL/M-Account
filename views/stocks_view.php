@@ -79,32 +79,12 @@ class StocksView {
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
-                            <?php if (empty($stocks)): ?>
-                                <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted italic">Belum ada data stok yang tercatat.</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($stocks as $t): ?>
-                                    <tr>
-                                        <td class="ps-4 text-muted">
-                                            <?= date('d M Y', strtotime($t['date'])) ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">
-                                                <?= $t['warehouse'] == '1' ? 'Gudang BS' : ($t['warehouse'] == '2' ? 'Gudang Sampah' : htmlspecialchars($t['warehouse'])) ?>
-                                            </span>
-                                        </td>                                        
-                                        <td>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($t['item_name']) ?></div>
-                                            <small class="text-muted" style="font-size: 11px;"><?= htmlspecialchars($t['item_code']) ?></small>
-                                        </td>
-                                        <td class="text-center fw-medium text-muted"><?= $t['qty_open'] ?></td>
-                                        <td class="text-center fw-bold text-success"><?= $t['qty_in'] > 0 ? '+'.$t['qty_in'] : '0' ?></td>
-                                        <td class="text-center fw-bold text-danger"><?= $t['qty_out'] > 0 ? '-'.$t['qty_out'] : '0' ?></td>
-                                        <td class="text-center fw-bold fs-6 text-primary pe-4"><?= $t['qty_close'] ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                            <tr id="loadingRow">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
+                                    Memuat data ...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -113,7 +93,7 @@ class StocksView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="assets/js/stocks.js"></script>';
+        $extra_js = '<script src="/m-account/assets/js/stocks.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

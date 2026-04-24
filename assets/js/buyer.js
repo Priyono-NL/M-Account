@@ -46,6 +46,8 @@ $(document).ready(function() {
         });
     }
 
+    loadFilteredBuyers();
+
     $("#search").on("keyup", loadFilteredBuyers);
     
     $("#btnClearSearch").click(function() {

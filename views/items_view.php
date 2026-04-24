@@ -54,35 +54,13 @@ class ItemsView {
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
-                            <?php if (empty($items)): ?>
-                                <tr id="emptyRow"><td colspan="7" class="text-center py-5 text-muted italic">Belum ada data barang.</td></tr>
-                            <?php else: ?>
-                                <?php foreach ($items as $item): ?>
-                                    <tr class="data-row" data-category="<?= $item['category'] ?>" data-status="<?= $item['is_active'] ?>">
-                                        <td class="ps-4 fw-medium text-primary item-code"><?= htmlspecialchars($item['item_code']) ?></td>
-                                        <td class="fw-bold item-name"><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td>
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 fw-normal px-2">
-                                                <?= $item['category'] == '1' ? 'ByProduct' : 'Sampah' ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center"><?= htmlspecialchars($item['item_uom']) ?></td>
-                                        <td class="text-end fw-bold text-dark">Rp <?= number_format($item['unit_price'], 0, ',', '.') ?></td>
-                                        <td class="text-center pe-4">
-                                            <div class="btn-group">
-                                                <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='<?= json_encode($item) ?>'>
-                                                    <i class="fa-solid fa-pen-to-square text-primary"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-light border btn-action delete-btn" data-id="<?= $item['id'] ?>" data-name="<?= htmlspecialchars($item['item_name']) ?>">
-                                                    <i class="fa-solid fa-trash text-danger"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                            <tr id="loadingRow">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
+                                    Memuat data ...
+                                </td>
+                            </tr>
                         </tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -140,7 +118,7 @@ class ItemsView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="assets/js/items.js"></script>';
+        $extra_js = '<script src="/m-account/assets/js/items.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

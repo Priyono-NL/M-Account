@@ -58,6 +58,13 @@
                 <span class="link-text">Item History</span>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a href="/m-account/pos/history" class="nav-link <?= ($page == 'pos' && $action_get == 'history') ? 'active' : '' ?>">
+                <i class="fa-solid fa-receipt"></i>
+                <span class="link-text">Laporan Penjualan</span>
+            </a>
+        </li>
         
     </ul>
 </nav>

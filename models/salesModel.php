@@ -74,8 +74,45 @@ class SalesModel extends DatabaseHelper {
         }
     }
 
-    public function getSalesHistory() {
-        return $this->getAll('sales', null, 'sales_date DESC');
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+        $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
+                    (SELECT SUM(sd.item_qty * i.unit_price) 
+                    FROM sales_detail sd
+                    JOIN items i ON sd.item_id = i.id
+                    WHERE sd.sale_id = s.id) as total
+                FROM sales s
+                LEFT JOIN buyer b ON s.buyer = b.id
+                WHERE 1=1";
+        
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (b.buyer_name LIKE :search OR b.buyer_code LIKE :search OR s.invoice_no LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        
+        if ($warehouse !== '') {
+            $sql .= " AND s.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+
+        if ($type !== '') {
+            $sql .= " AND s.sale_type = :type";
+            $params['type'] = $type;
+        }
+
+        if (!empty($startDate)) {
+            $sql .= " AND DATE(s.sales_date) >= :start_date";
+            $params['start_date'] = $startDate;
+        }
+        if (!empty($endDate)) {
+            $sql .= " AND DATE(s.sales_date) <= :end_date";
+            $params['end_date'] = $endDate;
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

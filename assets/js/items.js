@@ -51,6 +51,8 @@ $(document).ready(function() {
         });
     }
 
+    loadFilteredItems();
+
     $("#search").on("keyup", loadFilteredItems);
     $("#filterCategory, #filterStatus").on("change", loadFilteredItems);
 

@@ -1,4 +1,6 @@
 <?php
+require_once './vendors/SimpleXLSXGen.php.php';
+
 class BaseController {
     
     protected function jsonSuccess($message = "Success", $data = []) {

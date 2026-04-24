@@ -43,28 +43,12 @@ class BuyerView {
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
-                            <?php if (empty($buyers)): ?>
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted italic">Belum ada data buyer.</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($buyers as $b): ?>
-                                    <tr>
-                                        <td class="ps-4 fw-medium text-primary"><?= htmlspecialchars($b['buyer_code']) ?></td>
-                                        <td class="fw-bold"><?= htmlspecialchars($b['buyer_name']) ?></td>                                        
-                                        <td class="text-center pe-4">
-                                            <div class="btn-group">
-                                                <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='<?= json_encode($b) ?>'>
-                                                    <i class="fa-solid fa-pen-to-square text-primary"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-light border btn-action delete-btn" data-id="<?= $b['id'] ?>" data-name="<?= htmlspecialchars($b['buyer_name']) ?>">
-                                                    <i class="fa-solid fa-trash text-danger"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                            <tr id="loadingRow">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
+                                    Memuat data ...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -102,7 +86,7 @@ class BuyerView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="assets/js/buyer.js"></script>';
+        $extra_js = '<script src="/m-account/assets/js/buyer.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

@@ -1,12 +1,12 @@
 <?php
-class ReportsHistoryView {
-    public static function render($transactions) {
+class Sales_view {
+    public static function render($sales) {
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="fw-bold mb-0">Riwayat Transaksi</h5>
-                <p class="text-muted small mb-0">Log aktivitas keluar masuk barang dan stok.</p>
+                <h5 class="fw-bold mb-0">Laporan Transaksi Keluar</h5>
+                <p class="text-muted small mb-0">Laporan Transaksi Keluar Barang.</p>
             </div>
             <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
@@ -18,12 +18,12 @@ class ReportsHistoryView {
         <div class="card border-0 shadow-sm mb-3 bg-white">
             <div class="card-body p-3">
                 <div class="row g-2">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
                             </span>
-                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari No Referensi atau Nama Barang...">                            
+                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari No Referensi atau Nama Pembeli...">                            
                             <button class="btn border border-start-0 bg-white text-muted" type="button" id="btnClearSearch">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -39,16 +39,23 @@ class ReportsHistoryView {
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="row g-1">
-                            <div class="col-8">
+                            <div class="col-5">
                                 <select class="form-select form-select-sm" id="filterWarehouse">
                                     <option value="">Semua Gudang</option>
                                     <option value="1">Gudang BS</option>
                                     <option value="2">Gudang Sampah</option>
                                 </select>
                             </div>
-                            <div class="col-4">
+                            <div class="col-5">
+                                <select class="form-select form-select-sm" id="filterType">
+                                    <option value="">Semua Tipe</option>
+                                    <option value="SLS">Normal</option>
+                                    <option value="EXP">Expense</option>
+                                </select>
+                            </div>
+                            <div class="col-2">
                                 <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
                                     <i class="fa-solid fa-rotate-right"></i>
                                 </button>
@@ -65,13 +72,13 @@ class ReportsHistoryView {
                     <table class="table table-hover align-middle mb-0" id='historyTable'>
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
                             <tr>
-                                <th class="ps-4 py-3">Waktu Transaksi</th>
-                                <th>No Referensi</th>
-                                <th>Items</th>
                                 <th class="text-center">Warehouse</th>
-                                <th class="text-center">Type</th>
-                                <th class="text-center">Qty</th>
-                                <th class="pe-4">Catatan</th>
+                                <th class="text-center">Tipe</th>
+                                <th>Invoice Number</th>                                
+                                <th>Buyer</th>
+                                <th>Tanggal Transaksi</th>
+                                <th>Total</th>
+                                <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
@@ -88,7 +95,7 @@ class ReportsHistoryView {
         </div>
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="/m-account/assets/js/reports.js"></script>';
+        $extra_js = '<script src="/m-account/assets/js/sales.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

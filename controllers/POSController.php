@@ -16,6 +16,23 @@ class POSController extends BaseController {
         POSView::render();
     }
 
+    public function history() {
+        $sales = $this->salesModel->getFiltered();
+        Sales_view::render($sales);
+    }
+
+    public function filter_api() {
+        $search   = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $type = $this->getPost('type', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+
+        $items = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
+        
+        return $this->jsonSuccess("Data Filtered", $items);
+    }
+
     public function get_products() {
         $keyword = $this->getPost('keyword', '');
         $warehouse = $this->getPost('warehouse', '');
@@ -53,6 +70,52 @@ class POSController extends BaseController {
         
         if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
         else return $this->jsonError("Gagal menyimpan transaksi ke database.");
+    }
+
+    public function export_xls() {
+        $search    = $_POST['search'] ?? '';
+        $warehouse = $_POST['warehouse'] ?? '';
+        $startDate = $_POST['start_date'] ?? '';
+        $endDate   = $_POST['end_date'] ?? '';
+        $type      = $_POST['type'] ?? '';
+
+        $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
+
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Gudang</b>', 
+            '<b>Tipe Transaksi</b>', 
+            '<b>No. Invoice</b>',  
+            '<b>Pelanggan</b>',
+            '<b>Tanggal Transaksi</b>', 
+            '<b>Total</b>'
+        ]];
+
+        foreach ($data as $index => $item) {
+            $namaGudang = $item['warehouse'];
+            if ($item['warehouse'] == '1') $namaGudang = 'Gudang BS';
+            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang Sampah';
+
+            $tipeTransaksi = ($item['sale_type'] === 'SLS') ? 'Normal Sales' : 'Expense Sales';
+
+            $tanggal = date('d M Y', strtotime($item['sales_date']));
+
+            $total = ($item['sale_type'] === 'EXP') ? 0 : (float)$item['total'];
+
+            $rows[] = [
+                $index + 1,
+                $namaGudang,
+                $tipeTransaksi,
+                $item['invoice_no'],
+                $item['buyer_name'],
+                $tanggal,
+                $total
+            ];
+        }
+
+        $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
     }
 }
 ?>

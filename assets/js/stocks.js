@@ -61,6 +61,8 @@ $(document).ready(function() {
         });
     }
 
+    loadFilteredHistory();
+
     $("#search").on("keyup", loadFilteredHistory);
     $("#filterWarehouse, #startDate, #endDate").on("change", loadFilteredHistory);
 

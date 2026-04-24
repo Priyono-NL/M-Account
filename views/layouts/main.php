@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/m-account/vendors/toastify-js-1.12.0/src/toastify.css">
     
     <!-- Custom CSS (Universal) -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="/m-account/assets/css/style.css">
 </head>
 <body>
 
@@ -49,7 +49,7 @@
 <script src="/m-account/vendors/toastify-js-1.12.0/src/toastify.js"></script>
 
 <!-- Universal JS -->
-<script src="assets/js/main.js"></script>
+<script src="/m-account/assets/js/main.js"></script>
 <!-- Custom JS Spesifik (Dipanggil dari masing-masing view) -->
 <?= $extra_js ?? '' ?>
 

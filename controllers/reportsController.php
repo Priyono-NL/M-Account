@@ -1,6 +1,5 @@
 <?php
 require_once 'BaseController.php';
-require_once './vendors/SimpleXLSXGen.php.php';
 
 class ReportsController extends BaseController {
     private $model;
