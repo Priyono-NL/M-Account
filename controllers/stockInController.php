@@ -10,6 +10,7 @@ class StockInController extends BaseController {
         $this->itemsModel = new ItemsModel();
         $this->personModel = new BuyerModel();
         $this->stockInModel = new StockInModel();
+        parent::__construct();
     }
 
     public function index() {

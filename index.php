@@ -30,17 +30,18 @@ $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
 $page = $segments[0];
-$action_get = $segments[1] ?? ($_GET['action'] ?? 'index');
+$action = $segments[1] ?? 'index';
 
 // Mapping Page ke Controller
 $controllers = [
-    'dashboard' => 'DashboardController',
-    'pos'     => 'POSController',
+    'auth' => 'authController',
+    'dashboard' => 'dashboardController',
+    'pos' => 'POSController',
     'receive' => 'stockInController',
-    'items'   => 'itemsController',
-    'buyers'  => 'buyerController',
+    'items' => 'itemsController',
+    'buyers' => 'buyerController',
     'history' => 'reportsController',
-    'stocks'  => 'stocksController',
+    'stocks' => 'stocksController',
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';
@@ -66,9 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     exit;
     
-} else {
-    $action = $action_get;
-    
+} else {    
     if (method_exists($app, $action)) {
         $app->$action();
     } else {

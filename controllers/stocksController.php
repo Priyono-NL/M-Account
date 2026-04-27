@@ -7,6 +7,7 @@ class StocksController extends BaseController {
     public function __construct() {
         // Memuatkan model laporan
         $this->model = new StocksModel();
+        parent::__construct();
     }
 
     public function index() {

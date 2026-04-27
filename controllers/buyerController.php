@@ -6,6 +6,7 @@ class BuyerController extends BaseController {
 
     public function __construct() {
         $this->model = new BuyerModel();
+        parent::__construct();
     }
 
     public function index() {

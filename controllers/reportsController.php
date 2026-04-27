@@ -7,6 +7,7 @@ class ReportsController extends BaseController {
     public function __construct() {
         // Memuatkan model laporan
         $this->model = new ReportModel();
+        parent::__construct();
     }
 
     public function index() {

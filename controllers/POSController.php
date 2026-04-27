@@ -10,6 +10,7 @@ class POSController extends BaseController {
         $this->stocksModel = new StocksModel();
         $this->buyerModel = new BuyerModel();
         $this->salesModel = new SalesModel();
+        parent::__construct();
     }
 
     public function index() {

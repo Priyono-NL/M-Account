@@ -6,6 +6,7 @@ class ItemsController extends BaseController {
 
     public function __construct() {
         $this->model = new ItemsModel();
+        parent::__construct();
     }
 
     public function index() {

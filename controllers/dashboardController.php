@@ -6,6 +6,7 @@ class DashboardController extends BaseController {
 
     public function __construct() {
         $this->model = new DashboardModel();
+        parent::__construct();
     }
 
     public function index() {
