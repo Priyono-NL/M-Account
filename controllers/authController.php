@@ -18,8 +18,8 @@ class AuthController extends BaseController {
             die("Token tidak ditemukan.");
         }
 
-        $app_id     = "m-account_def9b732";
-        $app_secret = "iZkTfM8L0llxTV3aowAX5Y51MqrA4ovBJ7QEAVLFn8c";
+        $app_id     = "m-account_test_c7e45587";
+        $app_secret = "S9EBweGbxsVEeEhcFm_M0E6_COUyIjJ2g7A5eXmR-90";
         $sso_verify_url = "http://localhost:5005/api/verify";
 
         $data = json_encode(['access_token' => $token]);
@@ -39,11 +39,9 @@ class AuthController extends BaseController {
 
         $result = json_decode($response, true);
 
-        if ($httpCode === 200 && isset($result['valid']) && $result['valid'] === true) {
+        if ($httpCode === 200 && isset($result['valid']) && $result['valid'] === true) {            
             $_SESSION['logged_in'] = true;
-            $_SESSION['user_id']   = $result['user']['id'];
-            $_SESSION['user_name'] = $result['user']['full_name'];
-            $_SESSION['role']      = $result['user']['role'];
+            $_SESSION['user']   = $result['user'];
 
             header("Location: /m-account/dashboard");
             exit;

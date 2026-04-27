@@ -7,13 +7,13 @@
         <div class="user-profile d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
             <div class="text-end d-none d-sm-block">
                 <div class="fw-bold text-dark" style="font-size: 13px;">
-                    <?= $_SESSION['user_name'] ?? 'Unknown User' ?>
+                    <?= $_SESSION['user']['username'] ?? 'Unknown User' ?>
                 </div>
                 <div class="text-muted" style="font-size: 11px;">
-                    <?= $_SESSION['role'] ?? 'Staff' ?>
+                    <?= $_SESSION['user']['role'] ?? 'Staff' ?>
                 </div>
             </div>
-            <img src="https://ui-avatars.com/api/?name=<?= urlencode($_SESSION['user_name'] ?? 'User') ?>&background=0d6efd&color=fff" 
+            <img src="https://ui-avatars.com/api/?name=<?= urlencode($_SESSION['user']['username'] ?? 'User') ?>&background=0d6efd&color=fff" 
                  class="rounded-circle" width="32" alt="Profile">
         </div>
 

@@ -10,6 +10,10 @@ class DashboardModel extends DatabaseHelper {
     public function getData($warehouse = '1') {
         $results = [];
 
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;        
+        if ($sso_warehouse !== null) $warehouse = $sso_warehouse;
+
         $q_items = "SELECT SUM(qty_close) AS total 
                     FROM stocks s
                     WHERE s.id IN (

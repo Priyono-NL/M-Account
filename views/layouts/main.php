@@ -51,6 +51,13 @@
 <!-- Universal JS -->
 <script src="/m-account/assets/js/main.js"></script>
 <!-- Custom JS Spesifik (Dipanggil dari masing-masing view) -->
+ 
+<script>
+    //cek isi session
+    const sessionData = <?= json_encode($_SESSION); ?>;
+    console.log("Session Saat Ini:", sessionData);
+</script>
+
 <?= $extra_js ?? '' ?>
 
 </body>

@@ -1,8 +1,11 @@
 <?php
 class DashboardView {
     public static function render($data) {
-        // Ambil warehouse dari URL untuk menandai pilihan di dropdown
-        $current_warehouse = $_GET['warehouse'] ?? '1';
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '1');
+        $is_locked = ($sso_warehouse !== null);
         
         ob_start();
         ?>
@@ -10,7 +13,13 @@ class DashboardView {
             <h4 class="fw-bold">Dashboard</h4>
             <div class="d-flex align-items-center">
                 <span class="me-2 fw-bold small">Warehouse:</span>
-                <select class="form-select form-select-sm" id="warehouseFilter" style="width: 170px;" onchange="filterByWarehouse(this.value)">
+                <select 
+                    class="form-select form-select-sm" 
+                    id="warehouseFilter" 
+                    style="width: 170px;" 
+                    onchange="filterByWarehouse(this.value)"
+                    <?= $is_locked ? 'disabled' : '' ?>>
+                >
                     <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
                     <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
                 </select>
