@@ -1,6 +1,10 @@
 <?php
 class POSView {
     public static function render($transactionData = null) {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '1');
+        $is_locked = ($sso_warehouse !== null);
         $isViewMode = ($transactionData !== null);
         
         ob_start();
@@ -68,10 +72,23 @@ class POSView {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG ASAL</label>
-                                <select class="form-select" id="warehouseSelect" style="width: 100%;" <?= $isViewMode ? 'disabled' : '' ?>>
-                                    <option value="1" <?= ($isViewMode && $transactionData['header']['warehouse'] == '1') ? 'selected' : '' ?>>Gudang BS</option>
-                                    <option value="2" <?= ($isViewMode && $transactionData['header']['warehouse'] == '2') ? 'selected' : '' ?>>Gudang Sampah</option>
+                                <select class="form-select" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
+
+                                    <?php $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : $current_warehouse; ?>
+
+                                    <?php if (!$sso_warehouse || $sso_warehouse == '1' || ($isViewMode && $selected_id == '1')): ?>
+                                        <option value="1" <?= ($selected_id == '1') ? 'selected' : '' ?>>Gudang BS</option>
+                                    <?php endif; ?>
+
+                                    <?php if (!$sso_warehouse || $sso_warehouse == '2' || ($isViewMode && $selected_id == '2')): ?>
+                                        <option value="2" <?= ($selected_id == '2') ? 'selected' : '' ?>>Gudang Sampah</option>
+                                    <?php endif; ?>
+
                                 </select>
+
+                                <?php if ($is_locked || $isViewMode): ?>
+                                    <input type="hidden" name="warehouse" value="<?= $selected_id ?>">
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,11 @@
 <?php
 class StocksView {
     public static function render($stocks) {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '1');
+        $is_locked = ($sso_warehouse !== null);
+
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -45,10 +50,10 @@ class StocksView {
                     <div class="col-md-3">
                         <div class="row g-1">
                             <div class="col-8">
-                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse">
+                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>>
                                     <option value="">Semua Gudang</option>
-                                    <option value="1">Gudang BS</option>
-                                    <option value="2">Gudang Sampah</option>
+                                    <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
+                                    <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
                                 </select>
                             </div>
                             <div class="col-4">
