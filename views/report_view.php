@@ -1,7 +1,6 @@
 <?php
 class ReportsHistoryView {
     public static function render($transactions) {
-        if (session_status() === PHP_SESSION_NONE) session_start();
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
         $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '1');
         $is_locked = ($sso_warehouse !== null);

@@ -4,6 +4,10 @@ $uri_page   = $current_uri[1] ?? 'dashboard';
 $uri_action = $current_uri[2] ?? '';
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
+
+$extra_config = $_SESSION['user']['extra_config'] ?? [];
+$can_sell = $extra_config['can_sell'] ?? false;
+$can_buy  = $extra_config['can_buy'] ?? false;
 ?>
 
 <nav id="sidebar">
@@ -23,6 +27,7 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
         
+        <?php if($can_sell) : ?>
         <li class="nav-item">
             <?php 
                 $activePOS = ($uri_page == 'pos' && $uri_action != 'history' && !$isView) ? 'active' : ''; 
@@ -32,13 +37,16 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
                 <span class="link-text">Kasir (POS)</span>
             </a>
         </li>
+        <?php endif; ?>
 
+        <?php if($can_buy) : ?>
         <li class="nav-item">
             <a href="/m-account/receive" class="nav-link <?= ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '' ?>">
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span class="link-text">Receivement</span>
             </a>
         </li>
+        <?php endif; ?>
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
@@ -70,7 +78,8 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
                 <span class="link-text">Item History</span>
             </a>
         </li>
-
+        
+        <?php if($can_sell) : ?>
         <li class="nav-item">
             <?php 
                 $activeSalesHistory = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
@@ -80,7 +89,9 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
                 <span class="link-text">Laporan Penjualan</span>
             </a>
         </li>
+        <?php endif; ?>
 
+        <?php if($can_buy) : ?>
         <li class="nav-item">
             <?php 
                 $activeReceiveHistory = ($uri_page == 'receive' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
@@ -90,6 +101,7 @@ $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
                 <span class="link-text">Laporan Penerimaan</span>
             </a>
         </li>
+        <?php endif; ?>
         
     </ul>
 </nav>
