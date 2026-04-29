@@ -2,7 +2,7 @@
 class StocksView {
     public static function render($stocks) {
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
-        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '1');
+        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
         $is_locked = ($sso_warehouse !== null);
 
         ob_start();

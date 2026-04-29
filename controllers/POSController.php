@@ -100,6 +100,8 @@ class POSController extends BaseController {
 
         $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
 
+        $grand_total = 0;
+
         $rows = [[
             '<b>No</b>', 
             '<b>Gudang</b>', 
@@ -119,7 +121,8 @@ class POSController extends BaseController {
 
             $tanggal = date('d M Y', strtotime($item['sales_date']));
 
-            $total = ($item['sale_type'] === 'EXP') ? 0 : (float)$item['total'];
+            $total = ($item['sale_type'] === 'EXP') ? 0 : (int)$item['total'];
+            $grand_total += $total;
 
             $rows[] = [
                 $index + 1,
@@ -128,9 +131,19 @@ class POSController extends BaseController {
                 $item['invoice_no'],
                 $item['buyer_name'],
                 $tanggal,
-                $total
+                '<style nf="#,##0">' . $total . '</style>'
             ];
         }
+
+        $rows[] = [
+            '<b></b>', 
+            '<b></b>', 
+            '<b></b>', 
+            '<b></b>',  
+            '<b></b>',
+            '<b>GRAND TOTAL</b>',
+            '<style nf="#,##0"><b>' . $grand_total . '</b></style>'
+        ];
 
         $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);

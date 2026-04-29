@@ -5,9 +5,12 @@ $uri_action = $current_uri[2] ?? '';
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
 
+$role         = $_SESSION['user']['role'] ?? '';
 $extra_config = $_SESSION['user']['extra_config'] ?? [];
-$can_sell = $extra_config['can_sell'] ?? false;
-$can_buy  = $extra_config['can_buy'] ?? false;
+$isAdmin = in_array($role, ['superadmin', 'admin']);
+
+$can_sell = $isAdmin || ($extra_config['can_sell'] ?? false);
+$can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
 ?>
 
 <nav id="sidebar">

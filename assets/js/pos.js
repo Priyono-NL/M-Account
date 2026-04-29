@@ -16,12 +16,14 @@ $(document).ready(function() {
 
     if (isViewOnly) {
         if (typeof VIEW_DATA_ITEMS !== 'undefined') {
+            const currentSalesType = document.getElementById('salesType').value;
+            
             cart = VIEW_DATA_ITEMS.map(function(item) {
                 return {
                     id: item.item_id || item.id,
                     kode: item.item_code,
                     nama: item.item_name,
-                    harga: parseFloat(item.unit_price || 0),
+                    harga: (currentSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
                     qty: parseFloat(item.item_qty || 1), 
                     stok: 0
                 };
@@ -167,11 +169,11 @@ $(document).ready(function() {
                             <div class="fw-bold text-dark">${item.nama}</div>
                             <small class="text-muted" style="font-size: 11px;">${item.kode}</small>
                         </td>
-                        <td class="text-center align-middle text-muted">Rp ${formatRupiah(item.harga)}</td>
+                        <td class="text-center align-middle text-muted">${formatRupiah(item.harga)}</td>
                         <td class="text-center align-middle">
                             ${qtyHTML}
                         </td>
-                        <td class="text-end align-middle fw-bold text-dark">Rp ${formatRupiah(totalHarga)}</td>
+                        <td class="text-end align-middle fw-bold text-dark">${formatRupiah(totalHarga)}</td>
                         ${actionHTML}
                     </tr>
                 `;
@@ -180,8 +182,8 @@ $(document).ready(function() {
         }
 
         let grandTotal = subtotal;
-        $('#summarySubtotal').text('Rp ' + formatRupiah(subtotal));
-        $('#summaryTotal').text('Rp ' + formatRupiah(grandTotal));
+        $('#summarySubtotal').text(formatRupiah(subtotal));
+        $('#summaryTotal').text(formatRupiah(grandTotal));
     }
 
     if (!isViewOnly) {

@@ -1,5 +1,5 @@
 <?php
-require_once './vendors/SimpleXLSXGen.php.php';
+require_once './vendors/SimpleXLSXGen.php';
 
 class BaseController {
 
