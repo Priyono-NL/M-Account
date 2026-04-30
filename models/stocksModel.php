@@ -18,7 +18,7 @@ class StocksModel extends DatabaseHelper {
                     s.qty_open,
                     s.qty_in,
                     s.qty_out,
-                    s.qty_close,
+                    s.qty_total,
                     s.date
                 FROM stocks s
                 INNER JOIN (

@@ -11,7 +11,22 @@ class SalesModel extends DatabaseHelper {
         try {
             $this->db->beginTransaction();
 
-            $invoice_no = 'INV/' . date('Ymd') . '/' . rand(100, 999); 
+            $prefix = 'SLS - ';
+            $lastRecord = $this->query_one(
+                    "SELECT invoice_no FROM sales 
+                    WHERE invoice_no LIKE :prefix 
+                    ORDER BY id DESC LIMIT 1", 
+                    ['prefix' => $prefix . '%']
+                );
+
+            if ($lastRecord) {
+                $lastNum = (int) substr($lastRecord['invoice_no'], 6);
+                $nextNum = $lastNum + 1; 
+            } else {
+                $nextNum = 1;
+            }
+
+            $invoice_no = $prefix . $nextNum;
 
             $saleData = [
                 'sale_type'  => $sales_type,
@@ -28,15 +43,15 @@ class SalesModel extends DatabaseHelper {
             }
 
             foreach ($cart as $item) {
-                $sqlLastStock = "SELECT qty_close FROM stocks 
+                $sqlLastStock = "SELECT qty_total FROM stocks 
                                 WHERE item_id = :item_id AND warehouse = :warehouse 
                                 ORDER BY id DESC LIMIT 1";
                 $stmt = $this->db->prepare($sqlLastStock);
                 $stmt->execute([':item_id' => $item['id'], ':warehouse' => $warehouse]);
                 $lastStockRow = $stmt->fetch(PDO::FETCH_ASSOC);
-                $qty_open = $lastStockRow ? $lastStockRow['qty_close'] : 0;
+                $qty_open = $lastStockRow ? $lastStockRow['qty_total'] : 0;
                 $qty_out  = $item['qty'];
-                $qty_close = $qty_open - $qty_out;
+                $qty_total = $qty_open - $qty_out;
 
                 $this->insert('sales_detail', [
                     'sale_id'  => $sale_id,
@@ -61,7 +76,7 @@ class SalesModel extends DatabaseHelper {
                     'qty_open'         => $qty_open,
                     'qty_in'           => 0,
                     'qty_out'          => $qty_out,
-                    'qty_close'        => $qty_close,
+                    'qty_total'        => $qty_total,
                 ]);
             }
 

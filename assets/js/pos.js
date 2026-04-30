@@ -75,11 +75,11 @@ $(document).ready(function() {
                         results: $.map(data, function (item) {
                             return {
                                 id: item.id,
-                                text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_close),
+                                text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_total),
                                 nama: item.item_name,
                                 kode: item.item_code,
                                 harga: item.unit_price,
-                                stok: parseFloat(item.qty_close)
+                                stok: parseFloat(item.qty_total)
                             }
                         })
                     };

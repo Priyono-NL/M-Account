@@ -57,6 +57,18 @@ class DatabaseHelper {
         return $where;
     }
 
+    public function query_one($sql, $params = []) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch();
+    }
+
+    public function query_all($sql, $params = []) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public function getAll($table, $where = null, $orderBy = null) {
         $where = $this->applySsoFilter($table, $where);
         $sql = "SELECT * FROM {$table}";        

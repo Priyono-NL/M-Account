@@ -25,15 +25,15 @@ class StockInModel extends DatabaseHelper {
             }
 
             foreach ($cart as $item) {
-                $sqlLastStock = "SELECT qty_close FROM stocks 
+                $sqlLastStock = "SELECT qty_total FROM stocks 
                                 WHERE item_id = :item_id AND warehouse = :warehouse 
                                 ORDER BY id DESC LIMIT 1";
                 $stmt = $this->db->prepare($sqlLastStock);
                 $stmt->execute([':item_id' => $item['id'], ':warehouse' => $warehouse]);
                 $lastStockRow = $stmt->fetch(PDO::FETCH_ASSOC);
-                $qty_open = $lastStockRow ? $lastStockRow['qty_close'] : 0;
+                $qty_open = $lastStockRow ? $lastStockRow['qty_total'] : 0;
                 $qty_in = $item['qty'];
-                $qty_close = $qty_open + $qty_in;
+                $qty_total = $qty_open + $qty_in;
 
                 $this->insert('receivement_detail', [
                     'receive_id'  => $receive_id,
@@ -58,7 +58,7 @@ class StockInModel extends DatabaseHelper {
                     'qty_open'         => $qty_open,
                     'qty_in'           => $qty_in,
                     'qty_out'          => 0,
-                    'qty_close'        => $qty_close,
+                    'qty_total'        => $qty_total,
                 ]);
             }
 

@@ -56,7 +56,7 @@ class StocksController extends BaseController {
                 (float)$item['qty_open'],
                 (float)$item['qty_in'],
                 (float)$item['qty_out'],
-                (float)$item['qty_close']
+                (float)$item['qty_total']
             ];
         }
 

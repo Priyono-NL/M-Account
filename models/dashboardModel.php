@@ -14,7 +14,7 @@ class DashboardModel extends DatabaseHelper {
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;        
         if ($sso_warehouse !== null) $warehouse = $sso_warehouse;
 
-        $q_items = "SELECT SUM(qty_close) AS total 
+        $q_items = "SELECT SUM(qty_total) AS total 
                     FROM stocks s
                     WHERE s.id IN (
                         SELECT MAX(id) 
