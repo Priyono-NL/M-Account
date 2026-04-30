@@ -76,9 +76,9 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
         </li>
 
         <li class="nav-item">
-            <a href="/m-account/history" class="nav-link <?= ($uri_page == 'history') ? 'active' : '' ?>">
+            <a href="/m-account/stocks" class="nav-link <?= ($uri_page == 'stocks') ? 'active' : '' ?>">
                 <i class="fa-solid fa-clock-rotate-left"></i>
-                <span class="link-text">Item History</span>
+                <span class="link-text">Stock Movement</span>
             </a>
         </li>
         

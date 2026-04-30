@@ -94,7 +94,14 @@ $(document).ready(function() {
             return;
         }
 
-        let konfirmasi = confirm(`Apakah Anda yakin ingin melakukan Closing Stok untuk bulan ${monthPeriod}?\n\nData stok terakhir di bulan ini akan dikunci sebagai saldo. Data yang sudah diclose sebelumnya di bulan ini akan ditimpa dengan data terbaru.`);
+        let parts = monthPeriod.split("-");
+        let dateObj = new Date(parts[0], parts[1] - 1);
+        let namaBulanIndo = dateObj.toLocaleDateString('id-ID', { 
+            month: 'long', 
+            year: 'numeric' 
+        });
+
+        let konfirmasi = confirm(`Apakah Anda yakin ingin melakukan Closing Stok untuk bulan ${namaBulanIndo.toUpperCase()}?\n\nData stok terakhir di bulan ini akan dikunci sebagai saldo. Data yang sudah diclose sebelumnya di bulan ini akan ditimpa dengan data terbaru.`);
         
         if (!konfirmasi) {
             return;
