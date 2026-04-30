@@ -69,7 +69,7 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">
-            <a href="/m-account/stocks" class="nav-link <?= ($uri_page == 'stocks') ? 'active' : '' ?>">
+            <a href="/m-account/stockClose" class="nav-link <?= ($uri_page == 'stockClose') ? 'active' : '' ?>">
                 <i class="fa-solid fa-boxes-stacked"></i>
                 <span class="link-text">Stock Item</span>
             </a>

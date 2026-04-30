@@ -33,13 +33,11 @@ $(document).ready(function() {
                         
                         let dateObj = new Date(t.transaction_date);
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                        let formattedTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
                         let tr = `
                             <tr>
                                 <td class="ps-4 text-muted">
-                                    ${formattedDate}<br>
-                                    <small style="font-size: 10px;">${formattedTime}</small>
+                                    ${formattedDate}
                                 </td>
                                 <td class="fw-medium text-dark">${t.reference_no}</td>
                                 <td>

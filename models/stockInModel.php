@@ -44,7 +44,7 @@ class StockInModel extends DatabaseHelper {
                 $this->insert('item_transactions', [
                     'item_id'          => $item['id'],
                     'warehouse'        => $warehouse,
-                    'transaction_date' => date('Y-m-d H:i:s'),
+                    'transaction_date' => $date_receive,
                     'type'             => 'IN',
                     'qty'              => $item['qty'],
                     'reference_no'     => $doc_number,

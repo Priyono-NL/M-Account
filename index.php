@@ -23,6 +23,7 @@ require_once 'views/items_view.php';
 require_once 'views/buyer_view.php';
 require_once 'views/report_view.php';
 require_once 'views/stocks_view.php';
+require_once 'views/stock_close_view.php';
 require_once 'views/stockIn_view.php';
 require_once 'views/receive_view.php';
 
@@ -42,6 +43,7 @@ $controllers = [
     'buyers' => 'buyerController',
     'history' => 'reportsController',
     'stocks' => 'stocksController',
+    'stockClose' => 'stockCloseController'
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

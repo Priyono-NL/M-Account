@@ -87,7 +87,7 @@ class ItemsView {
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">KATEGORI</label>
                                     <select class="form-select form-select-sm" name="category" id="itemCategory">
-                                        <option value="1">ByProd</option>
+                                        <option value="1">ByProduct</option>
                                         <option value="2">Sampah</option>
                                     </select>
                                 </div>
