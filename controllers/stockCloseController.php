@@ -52,7 +52,7 @@ class StockCloseController extends BaseController {
                 (float)$item['qty_open'],
                 (float)$item['qty_in'],
                 (float)$item['qty_out'],
-                (float)$item['qty_total'],
+                (float)$item['qty_close'],
                 (float)$item['qty_onhand'],
                 (float)$item['selisih']
             ];
@@ -86,9 +86,7 @@ class StockCloseController extends BaseController {
                 'message' => 'Gagal melakukan closing: ' . $e->getMessage()
             ]);
         }
-        
-        // Penting: Selalu gunakan exit/die setelah mengirim JSON di Controller 
-        // agar framework tidak mencetak HTML desain template ke bawahnya.
+
         exit;
     }
 
