@@ -17,6 +17,7 @@
     
     <!-- Custom CSS (Universal) -->
     <link rel="stylesheet" href="/m-account/assets/css/style.css">
+    <?= $extra_css ?? '' ?>
 </head>
 <body>
 

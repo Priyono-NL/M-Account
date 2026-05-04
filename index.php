@@ -27,6 +27,8 @@ require_once 'views/stock_close_view.php';
 require_once 'views/stockIn_view.php';
 require_once 'views/receive_view.php';
 
+require_once 'views/test_view.php';
+
 $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
@@ -43,7 +45,8 @@ $controllers = [
     'buyers' => 'buyerController',
     'history' => 'reportsController',
     'stocks' => 'stocksController',
-    'stockClose' => 'stockCloseController'
+    'stockClose' => 'stockCloseController',
+    'test' => 'testController'
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';
