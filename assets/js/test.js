@@ -94,4 +94,23 @@ $(document).ready(function() {
         loadFilteredHistory();
     });
 
+    // Download Excel for pivot table
+    $("#btnExportExcel").on("click", function() {
+    let pivotTable = document.querySelector(".pvtTable");
+
+    if (!pivotTable) {
+        showNotification("Tabel pivot kosong! Silakan atur pivot terlebih dahulu.", "warning");
+        return;
+    }
+
+    let tableHTML = pivotTable.outerHTML;
+
+    let requestData = {
+        action: 'export_xls',
+        tabel_html: tableHTML
+    };
+
+    downloadExcelAjax(this, '/m-account/test', requestData, 'hasil_pivot');
+});
+
 });
