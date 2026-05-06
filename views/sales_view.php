@@ -22,6 +22,7 @@ class Sales_view {
         <div class="card border-0 shadow-sm mb-3 bg-white">
             <div class="card-body p-3">
                 <div class="row g-2">
+                    
                     <div class="col-md-3">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0">
@@ -66,6 +67,7 @@ class Sales_view {
                             </div>
                         </div>
                     </div>
+                    
                 </div>
             </div>
         </div>

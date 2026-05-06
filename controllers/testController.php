@@ -5,21 +5,23 @@ class testController extends BaseController {
     private $model;
 
     public function __construct() {
-        $this->model = new StocksModel();
+        $this->model = new SalesModel();
         parent::__construct();
     }
 
     public function index() {
-        $stocks = $this->model->getMonthlyReport();
-        TestView::render($stocks);
+        $data = $this->model->getFiltered();
+        TestView::render($data);
     }
 
     public function filter_api() {
         $search   = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
-        $closeMonth = $this->getPost('closeMonth', '');
+        $type = $this->getPost('type', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
 
-        $items = $this->model->getMonthlyReport($search, $warehouse, $closeMonth);
+        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate, $type);
         
         return $this->jsonSuccess("Data Filtered", $items);
     }
@@ -35,7 +37,14 @@ class testController extends BaseController {
         }
 
         $dom = new \DOMDocument();
-        @$dom->loadHTML('<?xml encoding="UTF-8">' . $html); 
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $html);     
+
+        $xpath = new \DOMXPath($dom);
+        $nodesToDelete = $xpath->query("//*[contains(@class, 'pvtTotal')] | //*[contains(@class, 'pvtGrandTotal')] | //*[contains(@class, 'pvtTotalLabel')]");
+
+        foreach ($nodesToDelete as $node) {
+            $node->parentNode->removeChild($node);
+        }
 
         $matrix = []; 
         $merges = []; 

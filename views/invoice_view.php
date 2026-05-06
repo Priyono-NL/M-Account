@@ -1,6 +1,7 @@
 <?php
 class InvoiceView {
     public static function render($header, $items) {
+        $isExp = (isset($header['sale_type']) && $header['sale_type'] === 'EXP');
         ?>
         <!DOCTYPE html>
         <html>
@@ -94,8 +95,12 @@ class InvoiceView {
                     <tr>
                         <td><?= $item['item_name'] ?></td>
                         <td class="text-right"><?= $item['item_qty'] ?></td>
-                        <td class="text-right"><?= number_format($item['unit_price'], 0, ',', '.') ?></td>
-                        <td class="text-right"><?= number_format($subtotal, 0, ',', '.') ?></td>
+                        <td class="text-right">
+                            <?= $isExp ? '-' : number_format($item['unit_price'], 0, ',', '.') ?>
+                        </td>
+                        <td class="text-right">
+                            <?= $isExp ? '-' : number_format($subtotal, 0, ',', '.') ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -111,7 +116,9 @@ class InvoiceView {
                         <table>
                             <tr class="text-bold">
                                 <td>TOTAL:</td>
-                                <td class="text-right"><?= number_format($header['total'], 0, ',', '.') ?></td>
+                                <td class="text-right">
+                                    <?= $isExp ? '-' : number_format($header['total'], 0, ',', '.') ?>
+                                </td>
                             </tr>
                         </table>
                     </td>

@@ -19,10 +19,12 @@ $(document).ready(function() {
             const currentSalesType = document.getElementById('salesType').value;
             
             cart = VIEW_DATA_ITEMS.map(function(item) {
+                let hargaDb = parseFloat(item.unit_price || 0);
                 return {
                     id: item.item_id || item.id,
                     kode: item.item_code,
                     nama: item.item_name,
+                    harga_asli: hargaDb,
                     harga: (currentSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
                     qty: parseFloat(item.item_qty || 1), 
                     stok: 0
@@ -71,6 +73,7 @@ $(document).ready(function() {
                     };
                 },
                 processResults: function (data) {
+                    let liveSalesType = $('#salesType').val();
                     return {
                         results: $.map(data, function (item) {
                             return {
@@ -78,7 +81,8 @@ $(document).ready(function() {
                                 text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_total),
                                 nama: item.item_name,
                                 kode: item.item_code,
-                                harga: item.unit_price,
+                                harga_asli: parseFloat(item.unit_price || 0),
+                                harga: (liveSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
                                 stok: parseFloat(item.qty_total)
                             }
                         })
@@ -90,6 +94,7 @@ $(document).ready(function() {
 
         $('#productSearch').on('select2:select', function (e) {
             let data = e.params.data;
+            let liveSalesType = $('#salesType').val();
             let id = data.id;
             if (!id) return; 
 
@@ -114,7 +119,15 @@ $(document).ready(function() {
                     showNotification(`Qty ${nama} ditambahkan`, 'success');
                 }
             } else {
-                cart.push({ id: id, kode: kode, nama: nama, harga: harga, qty: 1, stok: stok });
+                cart.push({ 
+                    id: data.id, 
+                    kode: data.kode, 
+                    nama: data.nama, 
+                    harga_asli: data.harga_asli,
+                    harga: (liveSalesType === 'EXP') ? 0 : data.harga_asli, 
+                    qty: 1, 
+                    stok: data.stok 
+                });
                 showNotification(`Ditambahkan: ${nama}`, 'success');
             }
 
@@ -185,6 +198,18 @@ $(document).ready(function() {
         $('#summarySubtotal').text(formatRupiah(subtotal));
         $('#summaryTotal').text(formatRupiah(grandTotal));
     }
+
+    $('#salesType').on('change', function() {
+    let newType = $(this).val();
+
+    cart.forEach(item => {
+        if (newType === 'EXP') item.harga = 0;
+        else item.harga = item.harga_asli;
+    });
+
+    renderCart();    
+    if (newType === 'EXP') showNotification('Tipe EXP dipilih: Semua harga diatur ke 0', 'info');
+});
 
     if (!isViewOnly) {
         $(document).on('click', '.btn-plus', function() {

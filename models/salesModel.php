@@ -12,6 +12,8 @@ class SalesModel extends DatabaseHelper {
             $this->db->beginTransaction();
 
             $prefix = 'SLS - ';
+            if ($sales_type == 'EXP')  $prefix = 'EXP - ';
+            
             $lastRecord = $this->query_one(
                     "SELECT invoice_no FROM sales 
                     WHERE invoice_no LIKE :prefix 
