@@ -57,9 +57,7 @@ $(document).ready(function() {
                         aggregatorName: "Sum Total",
                         
                         renderers: $.extend(
-                            $.pivotUtilities.renderers,
-                            $.pivotUtilities.plotly_renderers,
-                            $.pivotUtilities.export_renderers
+                            $.pivotUtilities.renderers
                         ),
                         
                         rendererName: "Table", 

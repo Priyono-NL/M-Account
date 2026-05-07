@@ -130,4 +130,13 @@ $(document).ready(function() {
             });
         }
     });
+
+    $("#btnTemplate").click(function() {
+        let payload = { action: 'download_template' };
+        downloadExcelAjax(this, '/m-account/buyers', payload, 'Format Buyer');
+    });
+
+    $("#btnUpload").click(function() {
+        console.log("MENUJU KE UPLOAD FILE");
+    });
 });

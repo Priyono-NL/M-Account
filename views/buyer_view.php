@@ -8,9 +8,17 @@ class BuyerView {
                 <h5 class="fw-bold mb-0">Master Data Buyer</h5>
                 <p class="text-muted small mb-0">Kelola daftar buyer.</p>
             </div>
-            <button class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm" id="btnAddBuyer">
-                <i class="fa-solid fa-user-plus me-1"></i> Tambah Buyer
-            </button>
+            <div>
+                <button class="btn btn-sm px-3 rounded-3 shadow-sm" id="btnTemplate">
+                    <i class="fa-solid fa-download me-1"></i> Template
+                </button>
+                <button class="btn btn-success btn-sm px-3 rounded-3 shadow-sm" id="btnUpload">
+                    <i class="fa-solid fa-upload me-1"></i> Upload
+                </button>
+                <button class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm" id="btnAddBuyer">
+                    <i class="fa-solid fa-user-plus me-1"></i> Tambah Buyer
+                </button>
+            </div>            
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">

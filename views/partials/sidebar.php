@@ -118,7 +118,7 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
         <li class="nav-item">
             <a href="/m-account/test" class="nav-link <?= ($uri_page == 'test') ? 'active' : '' ?>">
                 <i class="fa-solid fa-keyboard"></i>
-                <span class="link-text">Stock Movement</span>
+                <span class="link-text">Test Pivot Report</span>
             </a>
         </li>
         

@@ -154,7 +154,7 @@ class POSView {
                         <div class="mt-auto">
                             <?php if (!$isViewMode): ?>
                             <button class="btn btn-primary w-100 fw-bold rounded-3 mb-2 shadow-sm" id="btnCheckout">
-                                <i class="fa-solid fa-check-double me-2"></i> SAVE
+                                <i class="fa-solid fa-check-double me-2"></i> Save
                             </button>
                             <button class="btn btn-light border w-100 text-danger fw-medium" id="btnClearCart">
                                 <i class="fa-solid fa-rotate-left me-1"></i> Clear Form

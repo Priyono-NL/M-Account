@@ -14,7 +14,6 @@
     padding: 4px;
     margin-top: 5px;
     display: inline-block;
-    width: 100%; /* Agar memenuhi lebar kotak */
 }
 
 .pvtAxisContainer, .pvtVals, .pvtRows, .pvtCols { 
@@ -23,7 +22,15 @@
     border-radius: 8px;
     padding: 10px !important;
     vertical-align: top !important;
-    min-width: 150px;
+    min-width: 80px;
+}
+
+.pvtUnused {
+    width: 100% !important;
+}
+
+.pvtRenderer {
+    display: none !important;
 }
 
 .pvtAttr {
@@ -31,22 +38,14 @@
     color: white !important;
     border: none !important;
     border-radius: 5px !important;
-    padding: 4px 12px !important;
+    padding: 4px 10px !important;
     margin: 3px !important;
     font-weight: 500;
     cursor: grab;
     vertical-align: middle;
+    font-size: 9pt;
 }
 
-/* Label custom hasil suntikan JS */
-.pvt-custom-label {
-    display: block;
-    width: 100%;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-    margin-bottom: 10px !important;
-    pointer-events: none;
-}
 .pvtRendererArea {
     padding-left: 20px !important;
     overflow-x: auto !important;

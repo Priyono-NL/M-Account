@@ -6,10 +6,10 @@ class SuratView {
         <html>
         <head>
             <style>
-                @page { margin: 0; } /* Dompdf butuh ini untuk ukuran kustom */
+                @page { margin: 0; }
                 
                 body { 
-                    font-family: 'Courier', monospace; /* Dompdf lebih stabil dengan 'Courier' saja */
+                    font-family: 'Courier', monospace;
                     font-size: 8pt;
                     line-height: 1.1; 
                     margin: 0.3cm; 
@@ -27,8 +27,7 @@ class SuratView {
                 table td { vertical-align: top; padding: 1px 0; }
 
                 .table-header { border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
-                
-                /* Sembunyikan elemen yang tidak perlu di PDF */
+
                 .no-print { display: none; }
             </style>
         </head>

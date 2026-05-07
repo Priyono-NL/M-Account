@@ -10,7 +10,7 @@ class TestView {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h5 class="fw-bold mb-0">
-                    <i class="fa-solid fa-chart-pie text-primary me-2"></i>Pivot & Chart Analysis
+                    <i class="fa-solid fa-chart-pie text-primary me-2"></i>Pivot & Chart Analysis | TEST
                 </h5>
                 <p class="text-muted small mb-0">Eksplorasi data dengan tabel dan grafik interaktif.</p>
             </div>
@@ -97,8 +97,6 @@ class TestView {
         <script src='/m-account/vendors/jquery-ui/jquery-ui.min.js'></script>
         <script src='/m-account/vendors/plotly/plotly-basic.min.js'></script>
         <script src='/m-account/vendors/pivottable/pivot.min.js'></script>
-        <script src='/m-account/vendors/pivottable/plotly_renderers.min.js'></script>
-        <script src='/m-account/vendors/pivottable/export_renderers.min.js'></script>
         <script src='/m-account/assets/js/test.js'></script>";
 
         include __DIR__ . '/layouts/main.php';

@@ -41,4 +41,17 @@ class BuyerController extends BaseController {
         $res = $this->model->update('buyer', $data, "id = $id");
         return $res ? $this->jsonSuccess("Data pelanggan diperbarui") : $this->jsonError("Gagal memperbarui data");
     }
+
+    public function download_template() {
+        $rows = [[ '<b>Buyer_name</b>',  '<b>Buyer_code</b>' ]];
+        $rows[] = [ 'Test', '123456' ];
+
+        $fileName = "Format Buyer.xlsx";
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
+    }
+
+    public function upload() {
+        
+    }
 }
