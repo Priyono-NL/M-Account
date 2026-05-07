@@ -91,12 +91,18 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
         
         <?php if($can_sell) : ?>
         <li class="nav-item">
+            <a href="/m-account/sales" class="nav-link <?= ($uri_page == 'sales') ? 'active' : '' ?>">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <span class="link-text">Laporan Penjualan</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <?php 
                 $activeSalesHistory = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
             ?> 
             <a href="/m-account/pos/history" class="nav-link <?= $activeSalesHistory ?>">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-                <span class="link-text">Laporan Penjualan</span>
+                <i class="fa-solid fa-file-invoice"></i>
+                <span class="link-text">Laporan Penjualan Detail</span>
             </a>
         </li>
         <?php endif; ?>
@@ -114,13 +120,6 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
         <?php endif; ?>
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
-
-        <li class="nav-item">
-            <a href="/m-account/test" class="nav-link <?= ($uri_page == 'test') ? 'active' : '' ?>">
-                <i class="fa-solid fa-keyboard"></i>
-                <span class="link-text">Test Pivot Report</span>
-            </a>
-        </li>
         
     </ul>
 </nav>

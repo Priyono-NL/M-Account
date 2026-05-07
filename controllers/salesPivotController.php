@@ -1,7 +1,7 @@
 <?php
 require_once 'BaseController.php';
 
-class testController extends BaseController {
+class salesPivotController extends BaseController {
     private $model;
 
     public function __construct() {
@@ -11,7 +11,7 @@ class testController extends BaseController {
 
     public function index() {
         $data = $this->model->getFiltered();
-        TestView::render($data);
+        SalesPivotView::render($data);
     }
 
     public function filter_api() {

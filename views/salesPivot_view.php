@@ -1,5 +1,5 @@
 <?php
-class TestView {
+class SalesPivotView {
     public static function render($data) {
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
         $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
@@ -10,9 +10,9 @@ class TestView {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h5 class="fw-bold mb-0">
-                    <i class="fa-solid fa-chart-pie text-primary me-2"></i>Pivot & Chart Analysis | TEST
+                    Laporan Penjualan
                 </h5>
-                <p class="text-muted small mb-0">Eksplorasi data dengan tabel dan grafik interaktif.</p>
+                <p class="text-muted small mb-0">Laporan Penjualan Barang Interaktif.</p>
             </div>
             <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
@@ -91,13 +91,13 @@ class TestView {
         $extra_css = "
         <link rel='stylesheet' type='text/css' href='/m-account/vendors/jquery-ui/jquery-ui.min.css'>
         <link rel='stylesheet' type='text/css' href='/m-account/vendors/pivottable/pivot.min.css'>
-        <link rel='stylesheet' type='text/css' href='/m-account/assets/css/test.css'>";
+        <link rel='stylesheet' type='text/css' href='/m-account/assets/css/salesPivot.css'>";
 
         $extra_js = "
         <script src='/m-account/vendors/jquery-ui/jquery-ui.min.js'></script>
         <script src='/m-account/vendors/plotly/plotly-basic.min.js'></script>
         <script src='/m-account/vendors/pivottable/pivot.min.js'></script>
-        <script src='/m-account/assets/js/test.js'></script>";
+        <script src='/m-account/assets/js/salesPivot.js'></script>";
 
         include __DIR__ . '/layouts/main.php';
     }
