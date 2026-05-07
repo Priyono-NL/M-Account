@@ -39,13 +39,6 @@ class testController extends BaseController {
         $dom = new \DOMDocument();
         @$dom->loadHTML('<?xml encoding="UTF-8">' . $html);     
 
-        $xpath = new \DOMXPath($dom);
-        $nodesToDelete = $xpath->query("//*[contains(@class, 'pvtTotal')] | //*[contains(@class, 'pvtGrandTotal')] | //*[contains(@class, 'pvtTotalLabel')]");
-
-        foreach ($nodesToDelete as $node) {
-            $node->parentNode->removeChild($node);
-        }
-
         $matrix = []; 
         $merges = []; 
 

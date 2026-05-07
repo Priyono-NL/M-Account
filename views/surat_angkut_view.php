@@ -1,5 +1,5 @@
 <?php
-class InvoiceView {
+class SuratView {
     public static function render($header, $items) {
         $isExp = (isset($header['sale_type']) && $header['sale_type'] === 'EXP');
         ?>
@@ -34,10 +34,10 @@ class InvoiceView {
         </head>
         <body>
             <div class="text-center">
-                <strong style="font-size: 10pt;">** PASS KELUAR **</strong>
+                <strong style="font-size: 10pt;">** SURAT ANGKUT **</strong>
             </div>
 
-            <table style="margin-top: 10px;">
+            <table style="margin-top: 5px;">
                 <tr>
                     <td>Date : <?= $header['sales_date'] ?></td>
                     <td class="text-right">Print#</td>
@@ -50,7 +50,7 @@ class InvoiceView {
                 </tr>
             </table>
 
-            <table style="margin-top: 10px;">
+            <table style="margin-top: 5px;">
                 <thead>
                     <tr class="table-header">
                         <th class="text-left" style="width: 45%;">Barang</th>

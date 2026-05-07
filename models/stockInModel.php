@@ -48,7 +48,7 @@ class StockInModel extends DatabaseHelper {
                     'type'             => 'IN',
                     'qty'              => $item['qty'],
                     'reference_no'     => $doc_number,
-                    'notes'            => 'Penerimaan Barang Baru'
+                    'notes'            => "Penerimaan Baru - $doc_number"
                 ]);
 
                 $this->insert('stocks', [

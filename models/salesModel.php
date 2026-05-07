@@ -68,7 +68,7 @@ class SalesModel extends DatabaseHelper {
                     'type'             => 'OUT',
                     'qty'              => $item['qty'],
                     'reference_no'     => $invoice_no,
-                    'notes'            => 'Penjualan POS'
+                    'notes'            => "Penjualan BS - $invoice_no"
                 ]);
 
                 $this->insert('stocks', [

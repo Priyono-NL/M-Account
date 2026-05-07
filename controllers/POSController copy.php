@@ -157,35 +157,8 @@ class POSController extends BaseController {
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items = $this->salesModel->getTransactionItems($sales_id);
 
-        require_once 'vendors/dompdf/autoload.inc.php'; 
-    
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-
-        $dompdf = new \Dompdf\Dompdf($options);
-
-        ob_start();
-        // Konversi CM ke Points: 1cm = 28.3465pt
-        if ($header['warehouse'] == 1) {
-            $width = 8.5 * 28.3465;
-            $height = 9.7 * 28.3465;
-            InvoiceView::render($header, $items);
-        } else {
-            $width = 21 * 28.3465;
-            $height = 13.9 * 28.3465;
-            SuratView::render($header, $items);
-        }
-        $html = ob_get_clean();
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper([0, 0, $width, $height], 'portrait');
-        
-        $dompdf->render();
-        $dompdf->stream("Invoice-" . $header['invoice_no'] . ".pdf", [
-            "Attachment" => false
-        ]);
-        exit;     
+        if ($header['warehouse'] == 1) InvoiceView::render($header, $items);
+        else SuratView::render($header, $items);        
     }
 }
 ?>

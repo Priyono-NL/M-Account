@@ -28,10 +28,6 @@ class POSView {
                                 <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='/m-account/pos/history'">
                                     <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                                 </button>
-                                <button type="button" class="btn btn-sm btn-primary shadow-sm" 
-                                        onclick="printReceipt('<?= $transactionData['header']['id'] ?>')">
-                                    <i class="fa-solid fa-print me-1"></i> Reprint
-                                </button>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -155,16 +151,24 @@ class POSView {
                             <span id="summaryTotal" class="fw-bold fs-3 text-primary">Rp 0</span>
                         </div>
 
-                        <?php if (!$isViewMode): ?>
                         <div class="mt-auto">
+                            <?php if (!$isViewMode): ?>
                             <button class="btn btn-primary w-100 fw-bold rounded-3 mb-2 shadow-sm" id="btnCheckout">
-                                <i class="fa-solid fa-check-double me-2"></i> SIMPAN TRANSAKSI
+                                <i class="fa-solid fa-check-double me-2"></i> SAVE
                             </button>
                             <button class="btn btn-light border w-100 text-danger fw-medium" id="btnClearCart">
-                                <i class="fa-solid fa-rotate-left me-1"></i> Bersihkan Form
+                                <i class="fa-solid fa-rotate-left me-1"></i> Clear Form
                             </button>
+                            <?php endif; ?>
+                            
+                            <?php if ($isViewMode): ?>               
+                                <button type="button" class="btn btn-success w-100 fw-bold rounded-3 mb-2 shadow-sm" 
+                                        onclick="printReceipt('<?= $transactionData['header']['id'] ?>')">
+                                    <i class="fa-solid fa-print me-1"></i> Re-print
+                                </button>
+                            <?php endif; ?>
                         </div>
-                        <?php endif; ?>
+                        
                     </div>
                 </div>
             </div>
