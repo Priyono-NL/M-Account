@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+//load env
+require_once 'env_loader.php';
+
 // Load Konfigurasi Database & Helper
 require_once 'config/database.php';
 require_once 'models/_dbHelper.php';

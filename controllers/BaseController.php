@@ -6,7 +6,7 @@ class BaseController {
 
     public function __construct() {
         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-            $sso_login_url = "http://localhost:5005/sso/login?app_id=m-account_test_c7e45587";
+            $sso_login_url = getenv('SSO_LOGIN_URL');
             header("Location: " . $sso_login_url);
             exit;
         }
