@@ -110,7 +110,7 @@ class POSView {
                                     <tr>
                                         <th class="ps-3">Produk</th>
                                         <th class="text-center" width="15%">Harga</th>
-                                        <th class="text-center" width="15%">Qty</th>
+                                        <th class="text-center" width="25%">Qty</th>
                                         <th class="text-end" width="20%">Subtotal</th>
                                         <?php if (!$isViewMode): ?>
                                             <th class="text-center pe-3" width="10%">Aksi</th>

@@ -11,10 +11,14 @@ const formatRupiah = (number) => {
 };
 
 const showNotification = (message, type) => {
-    let bgColor = "#0d6efd"; // Info default
+    let bgColor = "#0d6efd";
+    let textColor = "#ffffff";
     if (type === 'success') bgColor = "#198754";
     if (type === 'danger') bgColor = "#dc3545";
-    if (type === 'warning') bgColor = "#ffc107";
+    if (type === 'warning') {
+        bgColor = "#ffc107";
+        textColor = "#000000";
+    }
 
     Toastify({
         text: message,
@@ -24,6 +28,7 @@ const showNotification = (message, type) => {
         stopOnFocus: true,
         style: {
             background: bgColor,
+            color: textColor,
             borderRadius: "8px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             fontFamily: "'Inter', sans-serif",

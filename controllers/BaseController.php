@@ -41,4 +41,19 @@ class BaseController {
             return htmlspecialchars(trim($value));
         }, $data);
     }
+
+    public function checkSession() {
+    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        header(getenv('SSO_LOGIN_URL'));
+        exit;
+    }
+    if (isset($_SESSION['expires_at'])) {
+        if (time() > $_SESSION['expires_at']) {
+            session_unset();
+            session_destroy();
+            header(getenv('SSO_LOGIN_URL'));
+            exit;
+        }
+    }
+}
 }

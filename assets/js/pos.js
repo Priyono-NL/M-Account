@@ -74,8 +74,11 @@ $(document).ready(function() {
                 },
                 processResults: function (data) {
                     let liveSalesType = $('#salesType').val();
+                    let filteredData = data.filter(function(item) {
+                        return parseFloat(item.qty_total) > 0;
+                    });
                     return {
-                        results: $.map(data, function (item) {
+                        results: $.map(filteredData, function (item) {
                             return {
                                 id: item.id,
                                 text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_total),
@@ -161,7 +164,7 @@ $(document).ready(function() {
                     : `
                         <div class="d-flex justify-content-center align-items-center gap-1">
                             <button class="btn btn-sm btn-light border btn-action btn-minus" data-index="${index}"><i class="fa-solid fa-minus" style="font-size: 10px;"></i></button>
-                            <input type="number" class="form-control form-control-sm text-center qty-input fw-bold" style="width: 50px;" value="${item.qty}" min="1" data-index="${index}">
+                            <input type="number" class="form-control form-control-sm text-center qty-input fw-bold" style="width: 75px;" value="${item.qty}" min="1" data-index="${index}">
                             <button class="btn btn-sm btn-light border btn-action btn-plus" data-index="${index}"><i class="fa-solid fa-plus" style="font-size: 10px;"></i></button>
                         </div>
                     `;
@@ -224,10 +227,12 @@ $(document).ready(function() {
 
         $(document).on('click', '.btn-minus', function() {
             let index = $(this).data('index');
+            let removedName = cart[index].nama; 
             if (cart[index].qty > 1) {
                 cart[index].qty -= 1;
             } else {
                 cart.splice(index, 1);
+                showNotification(`Dihapus: ${removedName}`, 'danger');
             }
             renderCart();
         });
@@ -235,15 +240,15 @@ $(document).ready(function() {
         $(document).on('change', '.qty-input', function() {
             let index = $(this).data('index');
             let val = parseInt($(this).val());
+            let removedName = cart[index].nama;
             
-            if (isNaN(val) || val < 1) val = 1;
-
-            if (val > cart[index].stok) {
+            if (isNaN(val) || val <= 0) {
+                cart.splice(index, 1);
+                showNotification(`Dihapus: ${removedName}`, 'danger');
+            } else if (val > cart[index].stok) {
                 showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
-                val = cart[index].stok;
-            }
-
-            cart[index].qty = val;
+                cart[index].qty = cart[index].stok;
+            } else cart[index].qty = val;
             renderCart();
         });
 
