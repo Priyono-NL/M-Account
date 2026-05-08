@@ -25,6 +25,8 @@ class BuyerController extends BaseController {
         $data = $this->sanitize([
             'buyer_code' => $this->getPost('buyer_code'),
             'buyer_name' => $this->getPost('buyer_name'),
+            'buyer_status' => $this->getPost('buyer_status'),
+            'buyer_address' => $this->getPost('buyer_address')
         ]);
 
         $res = $this->model->insert('buyer', $data);
@@ -35,7 +37,8 @@ class BuyerController extends BaseController {
         $id = $this->getPost('id');
         $data = $this->sanitize([
             'buyer_name' => $this->getPost('buyer_name'),
-            'is_active'  => $this->getPost('is_active')
+            'buyer_status' => $this->getPost('buyer_status'),
+            'buyer_address' => $this->getPost('buyer_address')
         ]);
 
         $res = $this->model->update('buyer', $data, "id = $id");
@@ -43,8 +46,11 @@ class BuyerController extends BaseController {
     }
 
     public function download_template() {
-        $rows = [[ '<b>Name</b>',  '<b>Code/NRP</b>' ]];
-        $rows[] = [ 'Test', '123456' ];
+        $rows = [[ 
+            '<b>Buyer Code(NRP)</b>',  '<b>Name</b>',
+            '<b>Status</b>',  '<b>Address/Department</b>',
+            ]];
+        $rows[] = [ '100xx', 'Contoh', 'REG/EXP', 'Alamat/Departemen' ];
 
         $fileName = "Format Buyer.xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
@@ -70,11 +76,15 @@ class BuyerController extends BaseController {
                 foreach ($rows as $index => $row) {
                     $code = trim($row[0] ?? '');
                     $name = trim($row[1] ?? '');
+                    $status = trim($row[2] ?? '');
+                    $address = trim($row[3] ?? '');
                     if (empty($code) || empty($name)) continue;
 
                     $data = $this->sanitize([
                         'buyer_code' => $code,
                         'buyer_name' => $name,
+                        'buyer_status' => $status,
+                        'buyer_address' => $address
                     ]);
                     $res = $this->model->insert('buyer', $data);                    
                     if ($res) $successCount++;

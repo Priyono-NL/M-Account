@@ -29,7 +29,7 @@ class BuyerView {
                     <div class="col-md-5">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari nama atau kode barang...">
+                            <input type="text" class="form-control border-start-0 border-end-0 shadow-none" id="search" placeholder="Cari nama atau kode buyer...">
                             <button class="btn border border-start-0 bg-white text-muted" type="button" id="btnClearSearch" title="Bersihkan Pencarian">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
@@ -46,8 +46,10 @@ class BuyerView {
                     <table class="table table-hover align-middle mb-0" id="buyerTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
                             <tr>
-                                <th class="ps-4 py-3">Kode</th>
-                                <th>Nama Buyer</th>
+                                <th class="ps-4 py-3">Buyer Code</th>
+                                <th>Buyer Name</th>
+                                <th>Buyer Status</th>
+                                <th>Buyer Address</th>
                                 <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
@@ -74,15 +76,36 @@ class BuyerView {
                     </div>
                     <form id="formBuyer">
                         <div class="modal-body py-4">
+
                             <input type="hidden" name="id" id="buyerId">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">KODE BUYER (NRP)</label>
-                                <input type="text" class="form-control form-control-sm" name="buyer_code" id="buyerCode" required>
+
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label text-muted small fw-bold">KODE BUYER(NRP)</label>
+                                    <input type="text" class="form-control form-control-sm" name="buyer_code" id="buyerCode" required>
+                                </div>
+
+                                <div class="col-8">
+                                    <label class="form-label text-muted small fw-bold">NAMA PELANGGAN</label>
+                                    <input type="text" class="form-control form-control-sm" name="buyer_name" id="buyerName" required>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">NAMA PELANGGAN</label>
-                                <input type="text" class="form-control form-control-sm" name="buyer_name" id="buyerName" required>
+
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label text-muted small fw-bold">STATUS</label>
+                                    <select class="form-select form-select-sm" name="buyer_status" id="buyerStatus">                                            
+                                            <option value="REG">Reguler</option>
+                                            <option value="EXP">Expense</option>
+                                        </select>
+                                </div>
+
+                                <div class="col-8">
+                                    <label class="form-label text-muted small fw-bold">ALAMAT/DEPARTMENT</label>
+                                    <input type="text" class="form-control form-control-sm" name="buyer_address" id="buyerAddress">
+                                </div>
                             </div>
+                            
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Batal</button>

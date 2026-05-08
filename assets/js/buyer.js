@@ -27,6 +27,8 @@ $(document).ready(function() {
                             <tr>
                                 <td class="ps-4 fw-medium text-primary">${b.buyer_code}</td>
                                 <td class="fw-bold">${b.buyer_name}</td>
+                                <td class="fw-bold">${b.buyer_status}</td>
+                                <td class="fw-bold">${b.buyer_address}</td>
                                 <td class="text-center pe-4">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${buyerJson}'>
@@ -58,8 +60,8 @@ $(document).ready(function() {
     $("#btnAddBuyer").click(function() {
         $("#formBuyer")[0].reset();
         $("#buyerId").val("");
-        $("#buyerCode").prop("readonly", false);
-        $("#modalTitle").text("Tambah Pelanggan Baru");
+        $("#buyerCode").val("").prop("readonly", false);
+        $("#modalTitle").text("Tambah Buyer Baru");
         $("#modalBuyer").modal("show");
     });
 
@@ -69,8 +71,10 @@ $(document).ready(function() {
         $("#buyerId").val(data.id);
         $("#buyerCode").val(data.buyer_code).prop("readonly", true);
         $("#buyerName").val(data.buyer_name);
+        $("#buyerStatus").val(data.buyer_status);
+        $("#buyerAddress").val(data.buyer_address);
         
-        $("#modalTitle").text("Edit Data Pelanggan");
+        $("#modalTitle").text("Edit Data Buyer");
         $("#modalBuyer").modal("show");
     });
 
