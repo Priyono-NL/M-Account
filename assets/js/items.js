@@ -75,8 +75,8 @@ $(document).ready(function() {
         $("#itemName").val(data.item_name);
         $("#itemCategory").val(data.category);
         $("#itemUom").val(data.item_uom);
-        $("#itemPrice").val(data.unit_price);
-        $("#itemCost").val(data.unit_cost);
+        $("#itemPrice").val(formatAngka(data.unit_price));
+        $("#itemCost").val(formatAngka(data.unit_cost));
         $("#modalTitle").text("Edit Barang");
         $("#modalItem").modal("show");
     });
@@ -86,6 +86,12 @@ $(document).ready(function() {
         const action = $("#itemId").val() ? "update" : "add";
         const btn = $("#btnSave");
         const originalText = btn.text();
+        const inputHarga = $(".input-harga");
+        let originalValues = [];
+        inputHarga.each(function() {
+            originalValues.push({ el: $(this), val: $(this).val() });
+            $(this).val($(this).val().replace(/\./g, ""));
+        });
         btn.prop('disabled', true).text('Menyimpan...');
 
         $.ajax({
@@ -100,9 +106,13 @@ $(document).ready(function() {
                     showNotification("Data berhasil disimpan!", "success");
                 } else {
                     showNotification(res.message || "Gagal menyimpan data", "danger");
+                    originalValues.forEach(item => item.el.val(item.val));  
                 }
             },
-            complete: function() { btn.prop('disabled', false).text(originalText); }
+            complete: function() { 
+                btn.prop('disabled', false).text(originalText); 
+                if ($("#modalItem").is(":visible")) originalValues.forEach(item => item.el.val(item.val));
+            }
         });
     });
 
@@ -139,4 +149,13 @@ $(document).ready(function() {
     $("#fileCari").change(function() {
         addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, loadFilteredItems);
     });
+
+    document.querySelectorAll('.input-harga').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = this.value.replace(/\D/g, "");
+            this.value = new Intl.NumberFormat('id-ID').format(value);
+            if (this.value === '0' && value === '') this.value = '';
+        });
+    });
+    
 });

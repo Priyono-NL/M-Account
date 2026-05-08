@@ -109,11 +109,17 @@ class ItemsView {
                             <div class="row">
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">HARGA JUAL</label>
-                                    <input type="number" class="form-control form-control-sm" name="unit_price" id="itemPrice" required>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" class="form-control input-harga" name="unit_price" id="itemPrice" required>
+                                    </div>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">HARGA COST</label>
-                                    <input type="number" class="form-control form-control-sm" name="unit_price" id="itemCost" required>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" class="form-control input-harga" name="unit_cost" id="itemCost" required>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -10,6 +10,12 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
+const formatAngka = (number) => {
+    if (!number && number !== 0) return "";
+    let cleanNumber = String(number).replace(/\D/g, "");
+    return new Intl.NumberFormat('id-ID').format(cleanNumber);
+}
+
 const showNotification = (message, type) => {
     let bgColor = "#0d6efd";
     let textColor = "#ffffff";
