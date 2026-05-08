@@ -71,7 +71,7 @@ $(document).ready(function() {
     $(document).on("click", ".edit-btn", function() {
         const data = $(this).data("item");
         $("#itemId").val(data.id);
-        $("#itemCode").val(data.item_code);
+        $("#itemCode").val(data.item_code).prop("readonly", true);
         $("#itemName").val(data.item_name);
         $("#itemCategory").val(data.category);
         $("#itemUom").val(data.item_uom);
@@ -125,5 +125,18 @@ $(document).ready(function() {
                 }
             });
         }
+    });
+
+    $("#btnTemplate").click(function() {
+        let payload = { action: 'download_template' };
+        downloadExcelAjax(this, '/m-account/items', payload, 'Format Items');
+    });
+
+    $("#btnUpload").click(function() {
+        $("#fileCari").click();
+    });
+
+    $("#fileCari").change(function() {
+        addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, loadFilteredItems);
     });
 });

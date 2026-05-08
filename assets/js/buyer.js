@@ -68,7 +68,7 @@ $(document).ready(function() {
         
         $("#buyerId").val(data.id);
         $("#buyerCode").val(data.buyer_code).prop("readonly", true);
-        $("#buyerName").val(data.buyer_name);; 
+        $("#buyerName").val(data.buyer_name);
         
         $("#modalTitle").text("Edit Data Pelanggan");
         $("#modalBuyer").modal("show");
@@ -137,6 +137,10 @@ $(document).ready(function() {
     });
 
     $("#btnUpload").click(function() {
-        console.log("MENUJU KE UPLOAD FILE");
+        $("#fileCari").click();
+    });
+
+    $("#fileCari").change(function() {
+        addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, loadFilteredBuyers);
     });
 });

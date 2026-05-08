@@ -83,6 +83,52 @@ const downloadExcelAjax = (btnElement, url, requestData, filePrefix = 'Export_Da
     });
 };
 
+const addBulk = (btnElement, url, fileInputId, additionalData = {}, onSuccess = null) => {
+    let btn = $(btnElement);
+    let originalText = btn.html();
+    let fileInput = document.getElementById(fileInputId);
+    let file = fileInput.files[0];
+
+    if (!file) {
+        showNotification("Harap pilih file terlebih dahulu!", "warning");
+        return;
+    }
+
+    btn.html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Mengunggah...');
+    btn.prop('disabled', true);
+
+    let formData = new FormData();
+    formData.append('file_excel', file);
+    
+    Object.keys(additionalData).forEach(key => {
+        formData.append(key, additionalData[key]);
+    });
+
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Gagal koneksi ke server");
+        return response.json();
+    })
+    .then(res => {
+        if (res.status === 'success') {
+            showNotification(res.message || "Data berhasil diperbarui!", "success");
+            $(fileInput).val('');
+            if (typeof onSuccess === "function") onSuccess(res); 
+        } else throw new Error(res.message || "Terjadi kesalahan saat memproses file");
+    })
+    .catch(error => {
+        showNotification(error.message || "Terjadi kesalahan sistem.", "danger");
+        console.error(error);
+    })
+    .finally(() => {
+        btn.html(originalText);
+        btn.prop('disabled', false);
+    });
+};
+
 $(document).ready(function() {
     
     $('#sidebarToggle').click(function() {

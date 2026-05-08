@@ -8,9 +8,19 @@ class ItemsView {
                 <h5 class="fw-bold mb-0">Master Data Barang</h5>
                 <p class="text-muted small mb-0">Kelola daftar inventaris, harga jual, dan status barang.</p>
             </div>
-            <button class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm" id="btnAddItem">
-                <i class="fa-solid fa-plus me-1"></i> Tambah Barang
-            </button>
+            <div>
+                <button class="btn btn-sm px-3 rounded-3 shadow-sm" id="btnTemplate">
+                    <i class="fa-solid fa-download me-1"></i> Template
+                </button>   
+                <input type="file" id="fileCari" class="d-none" accept=".xlsx, .xls, .csv">
+                <button class="btn btn-success btn-sm px-3 rounded-3 shadow-sm" id="btnUpload">
+                    <i class="fa-solid fa-upload me-1"></i> Upload
+                </button>
+
+                <button class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm" id="btnAddItem">
+                    <i class="fa-solid fa-plus me-1"></i> Tambah Barang
+                </button>
+            </div>            
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">

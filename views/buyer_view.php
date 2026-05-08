@@ -12,6 +12,7 @@ class BuyerView {
                 <button class="btn btn-sm px-3 rounded-3 shadow-sm" id="btnTemplate">
                     <i class="fa-solid fa-download me-1"></i> Template
                 </button>
+                <input type="file" id="fileCari" class="d-none" accept=".xlsx, .xls, .csv">
                 <button class="btn btn-success btn-sm px-3 rounded-3 shadow-sm" id="btnUpload">
                     <i class="fa-solid fa-upload me-1"></i> Upload
                 </button>
