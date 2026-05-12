@@ -140,7 +140,7 @@ $(document).ready(function() {
                 cart[index].qty -= 1;
             } else {
                 cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'danger');
+                showNotification(`Dihapus: ${removedName}`, 'warning');
             }
             renderCart();
         });
@@ -152,7 +152,7 @@ $(document).ready(function() {
 
             if (isNaN(val) || val <= 0) {
                 cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'danger');
+                showNotification(`Dihapus: ${removedName}`, 'warning');
             } else cart[index].qty = val;
             renderCart();
         });
@@ -162,7 +162,7 @@ $(document).ready(function() {
             let removedName = cart[index].nama;
             cart.splice(index, 1);
             renderCart();
-            showNotification(`Dihapus: ${removedName}`, 'danger');
+            showNotification(`Dihapus: ${removedName}`, 'warning');
         });
 
         $('#btnClearCart').click(function() {

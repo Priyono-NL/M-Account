@@ -49,12 +49,35 @@ $(document).ready(function() {
                 processResults: function (data) {
                     return {
                         results: $.map(data, function (item) {
-                            return { id: item.id, text: item.buyer_code + ' - ' + item.buyer_name };
+                            return { 
+                                id: item.id, 
+                                text: item.buyer_code + ' - ' + item.buyer_name,
+                                is_exp: item.buyer_status
+                                };
                         })
                     };
                 },
                 cache: true
             }
+        });
+
+        $('#buyerSelect').on('select2:select', function (e) {
+            let data = e.params.data;
+            let canExp = (data.is_exp == 'EXP'); 
+
+            if (canExp) $('#salesType option[value="EXP"]').prop('disabled', false);
+            else {
+                if ($('#salesType').val() === 'EXP') {
+                    $('#salesType').val('SLS').trigger('change');
+                    showNotification('Expense tidak tersedia untuk Pelanggan ini. Kembali ke Normal Sales.', 'warning');
+                }
+                $('#salesType option[value="EXP"]').prop('disabled', true);
+            }
+        });
+
+        $('#buyerSelect').on('select2:clear', function () {
+            $('#salesType option[value="EXP"]').prop('disabled', true);
+            if ($('#salesType').val() === 'EXP') $('#salesType').val('SLS').trigger('change');
         });
 
         $('#productSearch').select2({
@@ -232,7 +255,7 @@ $(document).ready(function() {
                 cart[index].qty -= 1;
             } else {
                 cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'danger');
+                showNotification(`Dihapus: ${removedName}`, 'warning');
             }
             renderCart();
         });
@@ -244,7 +267,7 @@ $(document).ready(function() {
             
             if (isNaN(val) || val <= 0) {
                 cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'danger');
+                showNotification(`Dihapus: ${removedName}`, 'warning');
             } else if (val > cart[index].stok) {
                 showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
                 cart[index].qty = cart[index].stok;
@@ -257,7 +280,7 @@ $(document).ready(function() {
             let removedName = cart[index].nama;
             cart.splice(index, 1);
             renderCart();
-            showNotification(`Dihapus: ${removedName}`, 'danger');
+            showNotification(`Dihapus: ${removedName}`, 'warning');
         });
 
         $('#btnClearCart').click(function() {
@@ -271,7 +294,7 @@ $(document).ready(function() {
             $('#productSearch').val(null).trigger('change');
             $('#salesType').val('SLS');
             $('#warehouseSelect').val('1');
-            $('#salesDate').val(new Date().toISOString().split('T')[0]); // Set ke hari ini
+            $('#salesDate').val(new Date().toISOString().split('T')[0]);
             renderCart();
         });
 
@@ -287,7 +310,7 @@ $(document).ready(function() {
             let salesType = $('#salesType').val();
 
             if (!buyerId) {
-                showNotification('Harap pilih Pembeli (Buyer)!', 'warning');
+                showNotification('Harap pilih Pembeli (Buyer)!', 'danger');
                 return;
             }
 

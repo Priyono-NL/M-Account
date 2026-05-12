@@ -49,7 +49,7 @@ class POSView {
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TIPE SALES</label>
                                 <select class="form-select form-select-sm" id="salesType" <?= $isViewMode ? 'disabled' : '' ?>>
                                     <option value="SLS" <?= ($isViewMode && $transactionData['header']['sale_type'] == 'SLS') ? 'selected' : '' ?>>Normal Sales (SLS)</option>
-                                    <option value="EXP" <?= ($isViewMode && $transactionData['header']['sale_type'] == 'EXP') ? 'selected' : '' ?>>Expense Sales (EXP)</option>
+                                    <option value="EXP" <?= ($isViewMode && $transactionData['header']['sale_type'] == 'EXP') ? 'selected' : (!$isViewMode ? 'disabled' : '') ?>>Expense Sales (EXP)</option>
                                 </select>
                             </div>
                         </div>
