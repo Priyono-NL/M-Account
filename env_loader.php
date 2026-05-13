@@ -15,11 +15,19 @@ function loadEnv($filename) {
             list($name, $value) = explode('=', $line, 2);
             
             $name = trim($name);
+            $value = trim($name);
+            
+            $value = trim($line);
+            $value = substr($value, strpos($value, '=') + 1);
             $value = trim($value);
+
+            if (preg_match('/^"(.+)"$/', $value, $matches) || preg_match("/^'(.+)'$/", $value, $matches)) $value = $matches[1];
 
             putenv("{$name}={$value}");
             $_ENV[$name] = $value;
             $_SERVER[$name] = $value;
+            
+            if (!defined($name)) define($name, $value);
         }
     }
     return true;

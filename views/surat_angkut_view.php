@@ -33,19 +33,19 @@ class SuratView {
         </head>
         <body>
             <div class="text-center">
-                <strong style="font-size: 10pt;">** SURAT ANGKUT **</strong>
+                <strong style="font-size: 10pt;">** FAKTUR PENJUALAN **</strong>
             </div>
 
             <table style="margin-top: 5px;">
                 <tr>
-                    <td>Date : <?= $header['sales_date'] ?></td>
+                    <td style="width: 55%">Tanggal : <?= $header['sales_date'] ?></tdstyle>
+                    <td stlye="width: 35%">Nomor Faktur : <?= $header['invoice_no'] ?></td>
                     <td class="text-right">Print#</td>
                 </tr>
                 <tr>
-                    <td colspan="2">Doc. No : <?= $header['invoice_no'] ?></td>
-                </tr>
-                <tr>
-                    <td colspan="2">Buyer: <?= $header['buyer_code'] ?> - <?= $header['buyer_name'] ?></td>
+                    <td>Kepada : <?= $header['buyer_code'] ?> <?= $header['buyer_name'] ?></td>
+                    <td>Kode Gudang : <?= $header['warehouse'] ?></tdclass>
+                    <td></td>
                 </tr>
             </table>
 
@@ -53,7 +53,7 @@ class SuratView {
                 <thead>
                     <tr class="table-header">
                         <th class="text-left" style="width: 45%;">Barang</th>
-                        <th class="text-right" style="width: 10%;">Qty</th>
+                        <th class="text-right" style="width: 10%;">Jumlah</th>
                         <th class="text-right" style="width: 20%;">Harga</th>
                         <th class="text-right" style="width: 25%;">Total</th>
                     </tr>
@@ -64,7 +64,7 @@ class SuratView {
                     ?>
                     <tr>
                         <td><?= $item['item_name'] ?></td>
-                        <td class="text-right"><?= $item['item_qty'] ?></td>
+                        <td class="text-right"><?= $item['item_qty'] ?> <?= $item['item_uom'] ?></td>
                         <td class="text-right"><?= $isExp ? '-' : number_format($item['unit_price'], 0, ',', '.') ?></td>
                         <td class="text-right"><?= $isExp ? '-' : number_format($subtotal, 0, ',', '.') ?></td>
                     </tr>
@@ -72,17 +72,32 @@ class SuratView {
                 </tbody>
             </table>
 
-            <div style="height:2cm;"></div>
             <div style="margin-top: 10px;" class="line"></div>
 
             <table>
                 <tr class="text-bold">
-                    <td style="width: 60%;">TOTAL:</td>
+                    <td style="width: 60%;">GRAND TOTAL:</td>
                     <td class="text-right" style="width: 40%;">
                         <?= $isExp ? '-' : number_format($header['total'], 0, ',', '.') ?>
                     </td>
                 </tr>
             </table>
+
+            <table style="margin-top: 20px;">
+                <tr>
+                    <td class="text-center" style="width: 50%;">Yang Menyerahkan</td>
+                    <td class="text-center" style="width: 50%;">Penerima</td>
+                </tr>
+                <tr>
+                    <td style="height: 50px;"></td>
+                    <td style="height: 50px;"></td>
+                </tr>
+                <tr>
+                    <td class="text-center">_________________</td>
+                    <td class="text-center">_________________</td>
+                </tr>
+            </table>
+
         </body>
         </html>
         <?php
