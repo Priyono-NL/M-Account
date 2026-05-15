@@ -1,5 +1,33 @@
 $(document).ready(function() {
 
+    function renderStatusBanner(status) {
+        let bannerHtml = '';
+        if (status === 'ONGOING') {
+            bannerHtml = `
+                <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-3">
+                    <i class="fa-solid fa-triangle-exclamation fs-3 text-warning me-3"></i>
+                    <div>
+                        <strong>Status: SEDANG BERJALAN (DRAFT)</strong><br>
+                        <span class="small">Bulan ini belum di-closing. Angka di bawah adalah mutasi stok berjalan.</span>
+                    </div>
+                </div>
+            `;
+            $('#btnClosing').prop('disabled', false);
+        } else {
+            bannerHtml = `
+                <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-3">
+                    <i class="fa-solid fa-lock fs-3 text-success me-3"></i>
+                    <div>
+                        <strong>Status: DIKUNCI (CLOSED)</strong><br>
+                        <span class="small">Bulan ini sudah ditutup secara permanen.</span>
+                    </div>
+                </div>
+            `;
+            $('#btnClosing').prop('disabled', true);
+        }
+        $('#statusBannerContainer').html(bannerHtml);
+    }
+
     function loadFilteredHistory() {
         $.ajax({
             url: "index.php?page=stockClose",
@@ -10,28 +38,35 @@ $(document).ready(function() {
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 closeMonth: $("#closeMonth").val(),
-                end_date: $("#endDate").val()
             },
             success: function(res) {
                 if (res.status === "success") {
                     let tbody = $("#stockTable tbody");
                     tbody.empty();
 
-                    if (res.data.length === 0) {
+                    let currentStatus = res.data.status;
+                    renderStatusBanner(currentStatus);
+
+                    let itemsArray = res.data.stocks || [];
+
+                    if (itemsArray.length === 0) {
                         tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
                         return;
                     }
 
-                    res.data.forEach(function(t) {
-                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
+                    itemsArray.forEach(function(t) {
+                        let qtyOpen = t.qty_open || 0;
+                        let qtyIn = t.qty_in || 0;
+                        let qtyOut = t.qty_out || 0;
+                        let qtyClose = t.qty_close || 0;
+                        let qtyOnhand = t.qty_onhand || 0;
+                        let selisih = t.selisih || 0;
+
+                        let qtyInStr = qtyIn > 0 ? `<span class="text-success">+${qtyIn}</span>` : '0';
+                        let qtyOutStr = qtyOut > 0 ? `<span class="text-danger">-${qtyOut}</span>` : '0';
                         
-                        let dateObj = new Date(t.date || t.transaction_date);
-                        let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-
-                        let qtyInStr = t.qty_in > 0 ? `<span class="text-success">+${t.qty_in}</span>` : '0';
-                        let qtyOutStr = t.qty_out > 0 ? `<span class="text-danger">-${t.qty_out}</span>` : '0';
-
-                        let selisihStr = t.selisih != 0 ? `<span class="text-danger fw-bold">${t.selisih}</span>` : t.selisih;
+                        let onhandDisplay = currentStatus === 'ONGOING' ? '-' : qtyOnhand;
+                        let selisihDisplay = currentStatus === 'ONGOING' ? '-' : (selisih != 0 ? `<span class="text-danger fw-bold">${selisih}</span>` : selisih);
 
                         let tr = `
                             <tr>
@@ -39,12 +74,12 @@ $(document).ready(function() {
                                     <div class="fw-bold text-dark">${t.item_name}</div>
                                     <small class="text-muted" style="font-size: 11px;">${t.item_code}</small>
                                 </td>
-                                <td class="text-center fw-medium text-muted">${t.qty_open}</td>
+                                <td class="text-center fw-medium text-muted">${qtyOpen}</td>
                                 <td class="text-center fw-bold">${qtyInStr}</td>
                                 <td class="text-center fw-bold">${qtyOutStr}</td>
-                                <td class="text-center fw-bold">${t.qty_close}</td>
-                                <td class="text-center fw-bold">${t.qty_onhand}</td>
-                                <td class="text-center fw-bold">${selisihStr}</td>
+                                <td class="text-center fw-bold text-primary">${qtyClose}</td>
+                                <td class="text-center fw-bold text-success">${onhandDisplay}</td>
+                                <td class="text-center fw-bold">${selisihDisplay}</td>
                             </tr>
                         `;
                         tbody.append(tr);

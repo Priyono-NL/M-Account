@@ -18,7 +18,7 @@ class StocksModel extends DatabaseHelper {
                     s.qty_open,
                     s.qty_in,
                     s.qty_out,
-                    s.qty_total,
+                    s.qty_total AS qty_close,
                     s.date
                 FROM stocks s
                 INNER JOIN (
@@ -54,14 +54,11 @@ class StocksModel extends DatabaseHelper {
 
         $sql .= " ORDER BY i.item_name ASC, s.warehouse ASC";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->query_all($sql, $params);
     }
 
     public function getMonthlyReport($search = '', $warehouse = '', $monthPeriod = '') {
-        $sql = "SELECT * FROM vw_stock_report WHERE 1=1";
-        
+        $sql = "SELECT * FROM vw_stock_report WHERE 1=1";        
         $params = [];
 
         if (!empty($monthPeriod)) {
@@ -81,9 +78,27 @@ class StocksModel extends DatabaseHelper {
 
         $sql .= " ORDER BY item_name ASC, warehouse ASC";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->query_all($sql, $params);
+    }
+
+    public function getClosingData($search = '', $warehouse = '', $monthPeriod = '') {
+        $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod LIMIT 1";
+        $lock = $this->query_one($sqlCheck, ['monthPeriod' => $monthPeriod]);
+        $isClosed = ($lock && $lock['is_closed'] == 1);
+        
+        if ($isClosed) {
+            return [
+                'status' => 'CLOSED',
+                'data' => $this->getMonthlyReport($search, $warehouse, $monthPeriod)
+            ];
+        } else {
+            $startDate = date('Y-m-01', strtotime($monthPeriod . '-01'));
+            $endDate = date('Y-m-t', strtotime($monthPeriod .'-01'));
+            return [
+                'status' => 'ONGOING',
+                'data' => $this->getFiltered($search, $warehouse, $startDate, $endDate)
+            ];
+        }
     }
 
     public function doClosing($monthPeriod = '') {
@@ -121,7 +136,7 @@ class StocksModel extends DatabaseHelper {
                         'warehouse' => $stock['warehouse'],
                         'date'      => $endDate,
                         'qty_open'  => $qtyOpen,
-                        'qty_close' => $stock['qty_total'],
+                        'qty_close' => $stock['qty_close'],
                         'is_closed' => 1
                     ];
 

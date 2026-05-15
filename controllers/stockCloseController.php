@@ -10,25 +10,30 @@ class StockCloseController extends BaseController {
     }
 
     public function index() {
-        $stocks = $this->model->getMonthlyReport();
-        StockCloseView::render($stocks);
+        $closeMonth = date('Y-m');
+        $result = $this->model->getClosingData('','',$closeMonth);
+        StockCloseView::render($result);
     }
 
     public function filter_api() {
         $search   = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
-        $closeMonth = $this->getPost('closeMonth', '');
+        $closeMonth = $this->getPost('closeMonth', date('Y-m'));
 
-        $items = $this->model->getMonthlyReport($search, $warehouse, $closeMonth);
+        $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
         
-        return $this->jsonSuccess("Data Filtered", $items);
+        return $this->jsonSuccess("Data Filtered", [
+            'status' => $result['status'],
+            'stocks' => $result['data']
+        ]);
     }
 
     public function export_xls() {
         $search    = $_POST['search'] ?? '';
         $warehouse = $_POST['warehouse'] ?? '';
-        $closeMonth = $_POST['closeMonth'] ?? '';
-        $data = $this->model->getMonthlyReport($search, $warehouse, $closeMonth);
+        $closeMonth = $_POST['closeMonth'] ?? date('Y-m');
+        $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
+        $data = $result['data'];
 
         $rows = [[
             '<b>No</b>', '<b>Gudang</b>', '<b>Kode Barang</b>', '<b>Nama Barang</b>',
@@ -53,8 +58,8 @@ class StockCloseController extends BaseController {
                 (float)$item['qty_in'],
                 (float)$item['qty_out'],
                 (float)$item['qty_close'],
-                (float)$item['qty_onhand'],
-                (float)$item['selisih']
+                (float)($item['qty_onhand'] ?? 0),
+                (float)($item['selisih'] ?? 0)
             ];
         }
 

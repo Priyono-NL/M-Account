@@ -9,7 +9,7 @@ class Sales_view {
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="fw-bold mb-0">Laporan Transaksi Keluar</h5>
+                <h5 class="fw-bold mb-0">Transaksi Keluar Detail</h5>
                 <p class="text-muted small mb-0">Laporan Penjualan Barang Details.</p>
             </div>
             <div>

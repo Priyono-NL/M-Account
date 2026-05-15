@@ -98,18 +98,18 @@ $(document).ready(function() {
                 processResults: function (data) {
                     let liveSalesType = $('#salesType').val();
                     let filteredData = data.filter(function(item) {
-                        return parseFloat(item.qty_total) > 0;
+                        return parseFloat(item.qty_close) > 0;
                     });
                     return {
                         results: $.map(filteredData, function (item) {
                             return {
                                 id: item.id,
-                                text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_total),
+                                text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_close),
                                 nama: item.item_name,
                                 kode: item.item_code,
                                 harga_asli: parseFloat(item.unit_price || 0),
                                 harga: (liveSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
-                                stok: parseFloat(item.qty_total)
+                                stok: parseFloat(item.qty_close)
                             }
                         })
                     };

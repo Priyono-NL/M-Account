@@ -1,9 +1,10 @@
 <?php
 class StockCloseView {
-    public static function render($stocks) {
+    public static function render($result) {
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
         $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
         $is_locked = ($sso_warehouse !== null);
+        $summaryStatus = $result['status'];
 
         ob_start();
         ?>
@@ -24,6 +25,8 @@ class StockCloseView {
                 </button>
             </div>
         </div>
+
+        <div id="statusBannerContainer"></div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">
             <div class="card-body p-3">

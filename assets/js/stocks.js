@@ -48,7 +48,7 @@ $(document).ready(function() {
                                 <td class="text-center fw-medium text-muted">${t.qty_open}</td>
                                 <td class="text-center fw-bold">${qtyInStr}</td>
                                 <td class="text-center fw-bold">${qtyOutStr}</td>
-                                <td class="text-center fw-bold fs-6 text-primary pe-4">${t.qty_total}</td>
+                                <td class="text-center fw-bold fs-6 text-primary pe-4">${t.qty_close}</td>
                             </tr>
                         `;
                         tbody.append(tr);
