@@ -87,8 +87,12 @@ class POSController extends BaseController {
 
         $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type);
         
-        if ($result) return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
-        else return $this->jsonError("Gagal menyimpan transaksi ke database.");
+        if ($result && isset($result['status']) && $result['status'] === 'success') {
+            return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
+        } else {
+            $errorMessage = isset($result['message']) ? $result['message'] : "Gagal menyimpan transaksi ke database.";
+            return $this->jsonError($errorMessage);
+        }
     }
 
     public function export_xls() {

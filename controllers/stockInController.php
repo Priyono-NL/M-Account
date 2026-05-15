@@ -85,8 +85,12 @@ class StockInController extends BaseController {
 
         $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive);
         
-        if ($result) return $this->jsonSuccess("Transaksi berhasil disimpan.");
-        else return $this->jsonError("Gagal menyimpan transaksi ke database.");
+        if ($result && isset($result['status']) && $result['status'] === 'success') {
+            return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
+        } else {
+            $errorMessage = isset($result['message']) ? $result['message'] : "Gagal menyimpan transaksi ke database.";
+            return $this->jsonError($errorMessage);
+        }
     }
 
     public function export_xls() {

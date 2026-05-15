@@ -9,25 +9,20 @@ class SalesModel extends DatabaseHelper {
 
     public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type) {
         try {
-            $this->db->beginTransaction();
+            $this->satpamGembok($sales_date, $warehouse);
 
-            $prefix = 'SLS - ';
-            if ($sales_type == 'EXP')  $prefix = 'EXP - ';
-            
+            $this->beginTransaction();
+
+            $prefix = ($sales_type == 'EXP') ? 'EXP - ' : 'SLS - ';            
             $lastRecord = $this->query_one(
-                    "SELECT invoice_no FROM sales 
-                    WHERE invoice_no LIKE :prefix 
-                    ORDER BY id DESC LIMIT 1", 
-                    ['prefix' => $prefix . '%']
-                );
-
+                "SELECT invoice_no FROM sales WHERE invoice_no LIKE :prefix ORDER BY id DESC LIMIT 1", 
+                ['prefix' => $prefix . '%']
+            );
+            $nextNum = 1;
             if ($lastRecord) {
                 $lastNum = (int) substr($lastRecord['invoice_no'], 6);
                 $nextNum = $lastNum + 1; 
-            } else {
-                $nextNum = 1;
             }
-
             $invoice_no = $prefix . $nextNum;
 
             $saleData = [
@@ -40,19 +35,18 @@ class SalesModel extends DatabaseHelper {
             
             $sale_id = $this->insert('sales', $saleData);
             
-            if (!$sale_id) {
-                throw new Exception("Gagal menyimpan data Master Sales.");
-            }
+            if (!$sale_id) throw new Exception("Gagal menyimpan data Master Sales.");
+
+            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1";
 
             foreach ($cart as $item) {
-                $sqlLastStock = "SELECT qty_total FROM stocks 
-                                WHERE item_id = :item_id AND warehouse = :warehouse 
-                                ORDER BY id DESC LIMIT 1";
-                $stmt = $this->db->prepare($sqlLastStock);
-                $stmt->execute([':item_id' => $item['id'], ':warehouse' => $warehouse]);
-                $lastStockRow = $stmt->fetch(PDO::FETCH_ASSOC);
-                $qty_open = $lastStockRow ? $lastStockRow['qty_total'] : 0;
-                $qty_out  = $item['qty'];
+                $lastStockRow = $this->query_one($sqlLastStock, [
+                    'item_id'   => $item['id'], 
+                    'warehouse' => $warehouse
+                ]);
+                
+                $qty_open  = $lastStockRow ? $lastStockRow['qty_total'] : 0;
+                $qty_out   = $item['qty'];
                 $qty_total = $qty_open - $qty_out;
 
                 $this->insert('sales_detail', [
@@ -68,26 +62,26 @@ class SalesModel extends DatabaseHelper {
                     'type'             => 'OUT',
                     'qty'              => $item['qty'],
                     'reference_no'     => $invoice_no,
-                    'notes'            => "Penjualan BS - $invoice_no"
+                    'notes'            => "Penjualan - $invoice_no"
                 ]);
 
                 $this->insert('stocks', [
-                    'item_id'          => $item['id'],
-                    'warehouse'        => $warehouse,
-                    'date' => date('Y-m-d H:i:s'),
-                    'qty_open'         => $qty_open,
-                    'qty_in'           => 0,
-                    'qty_out'          => $qty_out,
-                    'qty_total'        => $qty_total,
+                    'item_id'   => $item['id'],
+                    'warehouse' => $warehouse,
+                    'date'      => date('Y-m-d H:i:s'), 
+                    'qty_open'  => $qty_open,
+                    'qty_in'    => 0,
+                    'qty_out'   => $qty_out,
+                    'qty_total' => $qty_total,
                 ]);
             }
 
-            $this->db->commit();
-            return ['sale_id' => $sale_id,'status' => 'success', 'message' => 'Transaksi berhasil disimpan!'];
+            $this->commit();
+            return ['sale_id' => $sale_id, 'status' => 'success', 'message' => 'Transaksi berhasil disimpan!'];
 
         } catch (Exception $e) {
-            $this->db->rollBack();
-            return ['status' => 'error', 'message' => 'Gagal DB: ' . $e->getMessage()];
+            $this->rollBack();
+            return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
 
@@ -107,17 +101,14 @@ class SalesModel extends DatabaseHelper {
             $sql .= " AND (b.buyer_name LIKE :search OR b.buyer_code LIKE :search OR s.invoice_no LIKE :search)";
             $params['search'] = "%{$search}%";
         }
-        
         if ($warehouse !== '') {
             $sql .= " AND s.warehouse = :warehouse";
             $params['warehouse'] = $warehouse;
         }
-
         if ($type !== '') {
             $sql .= " AND s.sale_type = :type";
             $params['type'] = $type;
         }
-
         if (!empty($startDate)) {
             $sql .= " AND DATE(s.sales_date) >= :start_date";
             $params['start_date'] = $startDate;
@@ -127,9 +118,7 @@ class SalesModel extends DatabaseHelper {
             $params['end_date'] = $endDate;
         }
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->query_all($sql, $params);
     }
 
     public function getSalesHeader($sales_id) {
@@ -142,9 +131,7 @@ class SalesModel extends DatabaseHelper {
                 LEFT JOIN buyer b ON s.buyer = b.id
                 WHERE s.id = :id";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(['id' => $sales_id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $this->query_one($sql, ['id' => $sales_id]);
     }
 
     public function getTransactionItems($sale_id) {
@@ -153,9 +140,7 @@ class SalesModel extends DatabaseHelper {
                 LEFT JOIN items i ON sd.item_id = i.id 
                 WHERE sd.sale_id = :sale_id";
                 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(['sale_id' => $sale_id]);
-        return $stmt->fetchAll();
+        return $this->query_all($sql, ['sale_id' => $sale_id]);
     }
 }
 ?>

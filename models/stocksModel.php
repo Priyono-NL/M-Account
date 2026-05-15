@@ -89,39 +89,50 @@ class StocksModel extends DatabaseHelper {
     public function doClosing($monthPeriod = '') {
         $endDate = date('Y-m-t', strtotime($monthPeriod . '-01'));
         $prevMonth = date('Y-m', strtotime($monthPeriod . '-01 -1 month'));
-        $currentStock = $this->getFiltered('', '', '', $endDate);
 
+        $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod LIMIT 1";
+        $checkLock = $this->query_one($sqlCheck, ['monthPeriod' => $monthPeriod]);
+
+        if ($checkLock && $checkLock['is_closed'] == 1) throw new Exception("Periode $monthPeriod sudah dikunci permanen! Buka gembok terlebih dahulu jika ingin mengulang closing.");
+
+        $currentStock = $this->getFiltered('', '', '', $endDate);
         $insertedCount = 0;
         if (!empty($currentStock)) {
-            $stmtPrev = $this->db->prepare("SELECT item_id, warehouse, qty_close FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :prevMonth");
-            $stmtPrev->execute(['prevMonth' => $prevMonth]);
-            
-            $prevStockData = [];
-            while ($row = $stmtPrev->fetch(PDO::FETCH_ASSOC)) {
-                $key = $row['item_id'] . '_' . $row['warehouse'];
-                $prevStockData[$key] = $row['qty_close']; 
-            }
-
-            $stmtDelete = $this->db->prepare("DELETE FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod");
-            $stmtDelete->execute(['monthPeriod' => $monthPeriod]);
-
-            $insertSql = "INSERT INTO stock_closing (item_id, warehouse, date, qty_open, qty_close) 
-                            VALUES (:item_id, :warehouse, :date, :qty_open, :qty_close)";
-            $stmtInsert = $this->db->prepare($insertSql);
-
-            foreach ($currentStock as $stock) {
-                $key = $stock['id'] . '_' . $stock['warehouse'];
-                $qtyOpen = isset($prevStockData[$key]) ? $prevStockData[$key] : 0;
-
-                $stmtInsert->execute([
-                    'item_id'   => $stock['id'],
-                    'warehouse' => $stock['warehouse'],
-                    'date'      => $endDate,
-                    'qty_open'  => $qtyOpen,
-                    'qty_close' => $stock['qty_total']
-                ]);
+            try {
+                $this->beginTransaction();
+                $sqlPrev = "SELECT item_id, warehouse, qty_close FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :prevMonth";
+                $prevData = $this->query_all($sqlPrev, ['prevMonth' => $prevMonth]);
                 
-                $insertedCount++;
+                $prevStockData = [];
+                foreach ($prevData as $row) {
+                    $key = $row['item_id'] . '_' . $row['warehouse'];
+                    $prevStockData[$key] = $row['qty_close']; 
+                }
+
+                $stmtDelete = $this->db->prepare("DELETE FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod");
+                $stmtDelete->execute(['monthPeriod' => $monthPeriod]);
+
+                foreach ($currentStock as $stock) {
+                    $key = $stock['id'] . '_' . $stock['warehouse'];
+                    $qtyOpen = isset($prevStockData[$key]) ? $prevStockData[$key] : 0;
+
+                    $dataInsert = [
+                        'item_id'   => $stock['id'],
+                        'warehouse' => $stock['warehouse'],
+                        'date'      => $endDate,
+                        'qty_open'  => $qtyOpen,
+                        'qty_close' => $stock['qty_total'],
+                        'is_closed' => 1
+                    ];
+
+                    $this->insert('stock_closing', $dataInsert);
+                    
+                    $insertedCount++;
+                }
+                $this->commit();
+            } catch (Exception $e) {
+                $this->rollback();
+                throw $e;
             }
         }
 

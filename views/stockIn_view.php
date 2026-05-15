@@ -10,7 +10,7 @@ class StockIn_view {
         ?>
         
         <div class="row g-3">
-            <div class="col-lg-8">
+            <div class="col-12">
                 
                 <div class="card border-0 shadow-sm mb-3 bg-white">
                     <div class="card-body">
@@ -55,7 +55,7 @@ class StockIn_view {
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG</label>
-                                <select class="form-select" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
+                                <select class="form-select form-select-sm" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
 
                                     <?php $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : $current_warehouse; ?>
 
@@ -94,7 +94,7 @@ class StockIn_view {
                         <?php endif; ?>
 
                         <div class="table-responsive" style="min-height: 250px;">
-                            <table class="table align-middle table-hover" id="cartTable">
+                            <table class="table align-middle table-hover mb-0" id="cartTable">
                                 <thead class="text-muted" style="font-size: 12px; background-color: #f8f9fa; text-transform: uppercase;">
                                     <tr>
                                         <th class="ps-3">Produk</th>
@@ -106,7 +106,7 @@ class StockIn_view {
                                 </thead>
                                 <tbody id="cartTableBody">
                                     <tr id="emptyCartRow">
-                                        <td colspan="<?= $isViewMode ? '2' : '3' ?>" class="text-center text-muted py-5">
+                                        <td colspan="<?= $isViewMode ? '2' : '3' ?>" class="text-center text-muted py-5 border-bottom-0">
                                             <i class="fa-solid fa-box-open fs-2 mb-3 d-block opacity-25"></i>
                                             <?= $isViewMode ? 'Memuat rincian barang...' : 'Belum ada barang di keranjang.<br><small>Silakan cari dan pilih produk di atas.</small>' ?>
                                         </td>
@@ -114,37 +114,29 @@ class StockIn_view {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card h-100 border-0 shadow-sm bg-white">
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title fw-bold mb-4 text-dark border-bottom pb-2">
-                            <i class="fa-solid fa-calculator me-2 text-primary"></i>Ringkasan
-                        </h6>
 
                         <?php if (!$isViewMode): ?>
-                        <div class="mt-auto">
-                            <button class="btn btn-primary w-100 fw-medium rounded-3 mb-2 shadow-sm" id="btnCheckout">
-                                <i class="fa-solid fa-check-double me-2"></i> Save
-                            </button>
-                            <button class="btn btn-light border w-100 text-danger fw-medium" id="btnClearCart">
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <button class="btn btn-light border text-danger fw-medium px-4" id="btnClearCart">
                                 <i class="fa-solid fa-rotate-left me-1"></i> Clear Form
+                            </button>
+                            <button class="btn btn-primary fw-medium px-5 shadow-sm" id="btnCheckout">
+                                <i class="fa-solid fa-check-double me-2"></i> Save Transaksi
                             </button>
                         </div>
                         <?php else: ?>
-                        <div class="alert alert-info border-0 small">
+                        <div class="alert alert-info border-0 small mt-4 mb-0">
                             <i class="fa-solid fa-circle-info me-2"></i>
                             Anda sedang dalam mode pratinjau. Data transaksi ini sudah terkunci dan tidak dapat diubah.
                         </div>
                         <?php endif; ?>
+                        
                     </div>
                 </div>
+
             </div>
-        </div>
+            
+            </div>
         
         <?php
         $content = ob_get_clean();

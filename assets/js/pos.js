@@ -343,8 +343,19 @@ $(document).ready(function() {
                         showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
                     }
                 },
-                error: function() {
-                    showNotification('Terjadi kesalahan sistem pada server.', 'danger');
+                error: function(xhr, textStatus, errorThrown) {
+                    let errorMessage = 'Terjadi kesalahan sistem pada server.';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) errorMessage = xhr.responseJSON.message;
+                    else if (xhr.responseText) {
+                        try {
+                            let res = JSON.parse(xhr.responseText);
+                            if (res.message) errorMessage = res.message;
+                        } catch (e) {
+                            console.error("Respons dari server bukan JSON yang valid:", xhr.responseText);
+                        }
+                    }
+                    showNotification(errorMessage, 'danger');
                 },
                 complete: function() {
                     btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> SIMPAN TRANSAKSI');

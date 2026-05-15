@@ -5,12 +5,13 @@ class DatabaseHelper {
 
     public function __construct() {
         $host = DB_HOST;
+        $port = DB_PORT;
         $dbname = DB_NAME;
         $user = DB_USER;
         $pass = DB_PASS;
 
         try {
-            $this->db = new PDO("mysql:host=$host;port=3306;dbname=$dbname;charset=utf8mb4", $user, $pass);
+            $this->db = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
@@ -55,6 +56,32 @@ class DatabaseHelper {
         }
 
         return $where;
+    }
+
+    public function beginTransaction() {
+        return $this->db->beginTransaction();
+    }
+
+    public function commit() {
+        return $this->db->commit();
+    }
+
+    public function rollBack() {
+        if ($this->db->beginTransaction()) return $this->db->rollBack();
+        return false;
+    }
+
+    public function satpamGembok($date, $warehouse) {
+        $monthPeriod = date('Y-m', strtotime($date));
+        $sql = "SELECT is_closed FROM stock_closing 
+            WHERE DATE_FORMAT(date, '%Y-%m') = :month 
+            AND warehouse = :warehouse 
+            LIMIT 1";
+        $lock = $this->query_one($sql, [
+            'month' => $monthPeriod,
+            'warehouse' => $warehouse
+        ]);
+        if ($lock && $lock['is_closed'] == 1) throw New Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang $warehouse sudah ditutup (Locked).");
     }
 
     public function query_one($sql, $params = []) {
