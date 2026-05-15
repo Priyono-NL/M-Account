@@ -168,12 +168,12 @@ class POSController extends BaseController {
         ob_start();
         // Konversi CM ke Points: 1cm = 28.3465pt
         if ($header['warehouse'] == 1) {
-            $width = 8.5 * 28.3465;
+            $width = 13.5 * 28.3465;
             $height = 9.7 * 28.3465;
             InvoiceView::render($header, $items);
         } else {
-            $width = 21 * 28.3465;
-            $height = 13.9 * 28.3465;
+            $width = 27 * 28.3465;
+            $height = 17 * 28.3465;
             SuratView::render($header, $items);
         }
         $html = ob_get_clean();
