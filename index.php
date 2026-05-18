@@ -17,6 +17,7 @@ require_once 'models/stocksModel.php';
 require_once 'models/stockInModel.php';
 
 // Load Semua Views
+require_once 'views/changeLogin_view.php';
 require_once 'views/dashboard_view.php';
 require_once 'views/pos_view.php';
 require_once 'views/sales_view.php';
@@ -51,7 +52,8 @@ $controllers = [
     'history' => 'reportsController',
     'stocks' => 'stocksController',
     'stockClose' => 'stockCloseController',
-    'sales' => 'salesPivotController'
+    'sales' => 'salesPivotController',
+    'changeLogin' => 'changeLoginController',
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

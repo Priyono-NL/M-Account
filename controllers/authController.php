@@ -15,7 +15,7 @@ class AuthController extends BaseController {
 
         $app_id     = getenv('APP_ID');
         $app_secret = getenv('APP_SECRET');
-        $sso_verify_url = getenv('SSO_VERIFY_URL');
+        $sso_verify_url = getenv('SSO_BASE_URL'). 'verify';
 
         $data = json_encode(['access_token' => $token]);
 

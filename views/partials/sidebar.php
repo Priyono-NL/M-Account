@@ -114,5 +114,11 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
         
+        <li class="nav-item">
+            <a href="/m-account/changeLogin" class="nav-link <?= ($uri_page == 'changeLogin') ? 'active' : '' ?>">
+                <i class="fa-solid fa-user-gear"></i>
+                <span class="link-text">Change Login</span>
+            </a>
+        </li>
     </ul>
 </nav>
