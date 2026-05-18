@@ -161,6 +161,17 @@ class POSController extends BaseController {
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items = $this->salesModel->getTransactionItems($sales_id);
 
+        if ($header['warehouse'] == 1) InvoiceView::render($header, $items);
+        else SuratView::render($header, $items);        
+    }
+
+    public function print_invoice_pdf() {
+        $sales_id = $_GET['id'] ?? null;
+        if (!$sales_id) die("ID Transaksi tidak ditemukan.");
+
+        $header = $this->salesModel->getSalesHeader($sales_id);
+        $items = $this->salesModel->getTransactionItems($sales_id);
+
         require_once 'vendors/dompdf/autoload.inc.php'; 
     
         $options = new \Dompdf\Options();
@@ -172,13 +183,13 @@ class POSController extends BaseController {
         ob_start();
         // Konversi CM ke Points: 1cm = 28.3465pt
         if ($header['warehouse'] == 1) {
-            $width = 13.5 * 28.3465;
+            $width = 8.5 * 28.3465;
             $height = 9.7 * 28.3465;
-            InvoiceView::render($header, $items);
+            InvoiceViewPdf::render($header, $items);
         } else {
-            $width = 27 * 28.3465;
+            $width = 26 * 28.3465;
             $height = 17 * 28.3465;
-            SuratView::render($header, $items);
+            SuratViewPdf::render($header, $items);
         }
         $html = ob_get_clean();
 
