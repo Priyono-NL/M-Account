@@ -81,7 +81,7 @@ class DatabaseHelper {
             'month' => $monthPeriod,
             'warehouse' => $warehouse
         ]);
-        if ($lock && $lock['is_closed'] == 1) throw New Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang $warehouse sudah ditutup (Locked).");
+        if ($lock && $lock['is_closed'] == 1) throw New Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang ini sudah ditutup (Locked).");
     }
 
     public function query_one($sql, $params = []) {
