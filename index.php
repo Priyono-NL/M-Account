@@ -43,17 +43,17 @@ $action = $segments[1] ?? 'index';
 
 // Mapping Page ke Controller
 $controllers = [
-    'auth' => 'authController',
-    'dashboard' => 'dashboardController',
+    'auth' => 'AuthController',
+    'dashboard' => 'DashboardController',
     'pos' => 'POSController',
-    'receive' => 'stockInController',
-    'items' => 'itemsController',
-    'buyers' => 'buyerController',
-    'history' => 'reportsController',
-    'stocks' => 'stocksController',
-    'stockClose' => 'stockCloseController',
-    'sales' => 'salesPivotController',
-    'changeLogin' => 'changeLoginController',
+    'receive' => 'StockInController',
+    'items' => 'ItemsController',
+    'buyers' => 'BuyerController',
+    'history' => 'ReportsController',
+    'stocks' => 'StocksController',
+    'stockClose' => 'StockCloseController',
+    'sales' => 'SalesPivotController',
+    'changeLogin' => 'ChangeLoginController',
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

@@ -84,5 +84,6 @@ class ChangeLoginController extends BaseController {
             return $this->jsonError("SSO Error: " . $error_msg);
         }
     }
+
 }
 ?>

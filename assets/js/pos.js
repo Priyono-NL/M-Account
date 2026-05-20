@@ -39,7 +39,7 @@ $(document).ready(function() {
             placeholder: "-- Cari Pelanggan --",
             allowClear: true,
             ajax: {
-                url: window.location.href,
+                url: 'index.php?page=pos',
                 type: "POST",
                 dataType: 'json',
                 delay: 250,
@@ -84,7 +84,7 @@ $(document).ready(function() {
             placeholder: "Ketik nama atau kode produk...",
             allowClear: true,
             ajax: {
-                url: window.location.href,
+                url: 'index.php?page=pos',
                 type: "POST",
                 dataType: 'json',
                 delay: 250,
@@ -318,7 +318,7 @@ $(document).ready(function() {
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
             $.ajax({
-                url: window.location.href,
+                url: 'index.php?page=pos',
                 type: 'POST',
                 dataType: 'json',
                 data: {

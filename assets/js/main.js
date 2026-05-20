@@ -146,4 +146,60 @@ $(document).ready(function() {
         $('#sidebar').toggleClass('expanded');
     });
 
+    const checkSsoSession = () => {
+        $.ajax({
+            url: 'index.php?page=auth',
+            method: 'POST',
+            dataType: 'json',
+            data: { 
+                action: 'checkSession'
+            },
+            success: function(response) {
+                if (response.status === 'expired') {
+                    showNotification("Sesi SSO Anda telah berakhir. Mengalihkan...", "danger");                    
+                    setTimeout(function() {
+                        window.location.href = response.redirect_url;
+                    }, 2000);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.warn("Pengecekan sesi SSO gagal berjalan.");
+            }
+        });
+    };
+    checkSsoSession();
+    setInterval(checkSsoSession, 600000);
+
+    $(document).on('click', '#btnStopImpersonate', function(e) {
+        e.preventDefault();
+        let btn = $(this);
+        let originalText = btn.html();
+
+        btn.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: 'index.php?page=auth',
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'stopImpersonate'
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    showNotification(response.message, "success");
+                    setTimeout(function() {
+                        window.location.href = '/m-account';
+                    }, 1500);
+                } else {
+                    showNotification(response.message || "Gagal menghentikan impersonate", "danger");
+                    btn.html(originalText).prop('disabled', false);
+                }
+            },
+            error: function() {
+                showNotification("Terjadi kesalahan koneksi sistem.", "danger");
+                btn.html(originalText).prop('disabled', false);
+            }
+        });
+    });
 });
