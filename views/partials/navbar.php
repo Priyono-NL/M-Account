@@ -10,7 +10,7 @@
                     <?= $_SESSION['user']['username'] ?? 'Unknown User' ?>
                 </div>
                 <div class="text-muted" style="font-size: 11px;">
-                    <?= $_SESSION['user']['role'] ?? 'Staff' ?>
+                    <?= $_SESSION['user']['role_name'] ?? 'Staff' ?>
                 </div>
             </div>
             <img src="https://ui-avatars.com/api/?name=<?= urlencode($_SESSION['user']['username'] ?? 'User') ?>&background=0d6efd&color=fff" 

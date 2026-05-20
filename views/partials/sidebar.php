@@ -5,7 +5,7 @@ $uri_action = $current_uri[2] ?? '';
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view');
 
-$role         = $_SESSION['user']['role'] ?? '';
+$role         = $_SESSION['user']['role_name'] ?? '';
 $extra_config = $_SESSION['user']['extra_config'] ?? [];
 $isAdmin = in_array($role, ['superadmin', 'admin']);
 
@@ -114,11 +114,13 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
         
+        <?php if($role == 'superadmin') :?>
         <li class="nav-item">
             <a href="/m-account/changeLogin" class="nav-link <?= ($uri_page == 'changeLogin') ? 'active' : '' ?>">
                 <i class="fa-solid fa-user-gear"></i>
                 <span class="link-text">Change Login</span>
             </a>
         </li>
+        <?php endif; ?>
     </ul>
 </nav>

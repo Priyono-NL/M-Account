@@ -9,7 +9,7 @@ class ChangeLoginController extends BaseController {
         
         parent::__construct();
 
-        $current_role = $_SESSION['user']['role'] ?? '';
+        $current_role = $_SESSION['user']['role_name'] ?? '';
         if ($current_role !== 'superadmin') {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 echo json_encode(['status' => 'error', 'message' => 'Akses ilegal. Anda bukan Superadmin.']);

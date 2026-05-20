@@ -1,10 +1,7 @@
 <?php
 class ChangeLoginView {
     public static function render() {
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'superadmin') {
-            echo "<div class='alert alert-danger m-4'>Akses Ditolak. Halaman ini hanya untuk Superadmin.</div>";
-            return;
-        }
+        
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
