@@ -7,23 +7,24 @@ class POSController extends BaseController {
     private $salesModel;
 
     public function __construct() {
-        $this->stocksModel = new StocksModel();
-        $this->buyerModel = new BuyerModel();
-        $this->salesModel = new SalesModel();
         parent::__construct();
+
+        $this->stocksModel = new StocksModel();
+        $this->buyerModel  = new BuyerModel();
+        $this->salesModel  = new SalesModel();
     }
 
     public function index() {
-        $mode = $_POST['mode'] ?? 'create';
-        $sales_id = $_POST['id'] ?? null;
+        $mode = $this->getPost('mode', 'create');
+        
+        $sales_id = isset($_POST['id']) ? (int)$_POST['id'] : null;
         $transactionData = null;
 
-        if ($mode === 'view' && $sales_id) {
+        if ($mode === 'view' && $sales_id > 0) {
             $header = $this->salesModel->getSalesHeader($sales_id);
             
             if ($header) {
-                $id_aman = intval($sales_id);
-                $items = $this->salesModel->getTransactionItems($id_aman);
+                $items = $this->salesModel->getTransactionItems($sales_id);
                 
                 $transactionData = [
                     'header' => $header,
@@ -41,9 +42,9 @@ class POSController extends BaseController {
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
+        $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
-        $type = $this->getPost('type', '');
+        $type      = $this->getPost('type', '');
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
 
@@ -53,26 +54,22 @@ class POSController extends BaseController {
     }
 
     public function get_products() {
-        $keyword = $this->getPost('keyword', '');
+        $keyword   = $this->getPost('keyword', '');
         $warehouse = $this->getPost('warehouse', '');
-        $results = $this->stocksModel->getFiltered($keyword, $warehouse); 
+        $results   = $this->stocksModel->getFiltered($keyword, $warehouse); 
         
-        header('Content-Type: application/json');
-        echo json_encode($results);
-        exit;
+        return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }
 
     public function get_buyers() {
         $keyword = $this->getPost('keyword', '');        
         $results = $this->buyerModel->getFiltered($keyword);
 
-        header('Content-Type: application/json');
-        echo json_encode($results);
-        exit;
+        return $this->jsonSuccess("Data pelanggan berhasil dimuat", $results);
     }
 
     public function checkout() {
-        $cartRaw = $this->getPost('cart');
+        $cartRaw    = $this->getPost('cart');
         $buyer_id   = $this->getPost('buyer_id');
         $warehouse  = $this->getPost('warehouse');
         $sales_date = $this->getPost('sales_date');
@@ -90,20 +87,19 @@ class POSController extends BaseController {
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
         } else {
-            $errorMessage = isset($result['message']) ? $result['message'] : "Gagal menyimpan transaksi ke database.";
+            $errorMessage = $result['message'] ?? "Gagal menyimpan transaksi ke database.";
             return $this->jsonError($errorMessage);
         }
     }
 
     public function export_xls() {
-        $search    = $_POST['search'] ?? '';
-        $warehouse = $_POST['warehouse'] ?? '';
-        $startDate = $_POST['start_date'] ?? '';
-        $endDate   = $_POST['end_date'] ?? '';
-        $type      = $_POST['type'] ?? '';
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+        $type      = $this->getPost('type', '');
 
         $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
-
         $grand_total = 0;
 
         $rows = [[
@@ -122,7 +118,6 @@ class POSController extends BaseController {
             elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang Sampah';
 
             $tipeTransaksi = ($item['sale_type'] === 'SLS') ? 'Normal Sales' : 'Expense Sales';
-
             $tanggal = date('d M Y', strtotime($item['sales_date']));
 
             $total = ($item['sale_type'] === 'EXP') ? 0 : (int)$item['total'];
@@ -140,11 +135,7 @@ class POSController extends BaseController {
         }
 
         $rows[] = [
-            '<b></b>', 
-            '<b></b>', 
-            '<b></b>', 
-            '<b></b>',  
-            '<b></b>',
+            '<b></b>', '<b></b>', '<b></b>', '<b></b>', '<b></b>',
             '<b>GRAND TOTAL</b>',
             '<style nf="#,##0"><b>' . $grand_total . '</b></style>'
         ];
@@ -155,22 +146,29 @@ class POSController extends BaseController {
     }
 
     public function print_invoice() {
-        $sales_id = $_GET['id'] ?? null;
-        if (!$sales_id) die("ID Transaksi tidak ditemukan.");
+        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
         $header = $this->salesModel->getSalesHeader($sales_id);
-        $items = $this->salesModel->getTransactionItems($sales_id);
+        $items  = $this->salesModel->getTransactionItems($sales_id);
 
-        if ($header['warehouse'] == 1) InvoiceView::render($header, $items);
-        else SuratView::render($header, $items);        
+        if (!$header) die("Data transaksi tidak ditemukan.");
+
+        if ($header['warehouse'] == 1) {
+            InvoiceView::render($header, $items);
+        } else {
+            SuratView::render($header, $items);
+        }        
     }
 
     public function print_invoice_pdf() {
-        $sales_id = $_GET['id'] ?? null;
-        if (!$sales_id) die("ID Transaksi tidak ditemukan.");
+        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
         $header = $this->salesModel->getSalesHeader($sales_id);
-        $items = $this->salesModel->getTransactionItems($sales_id);
+        $items  = $this->salesModel->getTransactionItems($sales_id);
+
+        if (!$header) die("Data transaksi tidak ditemukan.");
 
         require_once 'vendors/dompdf/autoload.inc.php'; 
     
@@ -183,11 +181,11 @@ class POSController extends BaseController {
         ob_start();
         // Konversi CM ke Points: 1cm = 28.3465pt
         if ($header['warehouse'] == 1) {
-            $width = 8.5 * 28.3465;
+            $width  = 8.5 * 28.3465;
             $height = 9.7 * 28.3465;
             InvoiceViewPdf::render($header, $items);
         } else {
-            $width = 26 * 28.3465;
+            $width  = 26 * 28.3465;
             $height = 17 * 28.3465;
             SuratViewPdf::render($header, $items);
         }

@@ -49,8 +49,7 @@ class ChangeLoginView {
         <?php
         $content = ob_get_clean();
         
-        // HANYA muat JS logic Anda
-        $extra_js = '<script src="/m-account/assets/js/changeLogin.js"></script>';
+        $extra_js = '<script src="/maccount/assets/js/changeLogin.js"></script>';
         
         include __DIR__ . '/layouts/main.php';
     }

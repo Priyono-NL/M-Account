@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-//load env
+// load env
 require_once 'env_loader.php';
 
 // Load Konfigurasi Database & Helper
@@ -35,11 +35,27 @@ require_once 'views/receive_view.php';
 
 require_once 'views/salesPivot_view.php';
 
+// =======================================================
+// PARSING ROUTING TANPA .HTACCESS
+// =======================================================
 $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
-$page = $segments[0];
-$action = $segments[1] ?? 'index';
+
+// Jaga-jaga jika kata 'maccount' tidak sengaja masuk ke dalam query string page
+if (isset($segments[0]) && $segments[0] === 'maccount') {
+    array_shift($segments); 
+}
+
+// Tentukan Nama Page / Controller
+$page = $segments[0] ?? 'dashboard';
+
+// Ambil Action secara fleksibel:
+// 1. Dari segment URL setelah slash (misal: ?page=items/create)
+// 2. Dari parameter $_GET['action'] (misal: ?page=items&action=create)
+// 3. Default ke 'index'
+$action = $segments[1] ?? ($_GET['action'] ?? 'index');
+// =======================================================
 
 // Mapping Page ke Controller
 $controllers = [
@@ -65,8 +81,10 @@ if (file_exists("controllers/{$controllerName}.php")) {
     die("Error: Controller file 'controllers/{$controllerName}.php' tidak ditemukan.");
 }
 
+// Jalankan Method Berdasarkan Request Method
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? 'index';
+    // Di request POST, prioritaskan $_POST['action'], jika tidak ada gunakan $action dari URL
+    $action = $_POST['action'] ?? $action;
 
     if (method_exists($app, $action)) {
         $app->$action();

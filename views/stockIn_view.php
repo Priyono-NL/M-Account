@@ -34,27 +34,31 @@ class StockIn_view {
                         
                         <div class="row g-3 mb-3">
                             <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI</label>
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control form-control-sm" id="date_receive" 
                                         value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
-                                        <?= $isViewMode ? 'disabled' : '' ?>>
+                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
                             </div> 
                             <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER</label>
-                                <input type="text" class="form-control form-control-sm" id="docNumber" 
-                                        placeholder="RCV-001" 
-                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
-                                        <?= $isViewMode ? 'readonly' : '' ?>>
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
+                                <?php if ($isViewMode): ?>
+									<span class="d-block fw-bold text-dark py-1 px-2 bg-light rounded border" id="docNumber" style="font-size: 13px; min-height: 31px;">
+										<?= htmlspecialchars($transactionData['header']['doc_number'] ?? '-'); ?>
+									</span>
+								<?php else: ?>
+									<input type="text" class="form-control form-control-sm" id="docNumber" 
+										   placeholder="W-001" value="">
+								<?php endif; ?>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PENERIMA</label>
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PENERIMA <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="received_by" 
                                         placeholder="Nama Penerima ..."
                                         value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
                                         <?= $isViewMode ? 'disabled' : '' ?>>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG</label>
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
 
                                     <?php $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : $current_warehouse; ?>
@@ -73,6 +77,13 @@ class StockIn_view {
                                     <input type="hidden" name="warehouse" value="<?= $selected_id ?>">
                                 <?php endif; ?>
                             </div>
+							<div class="col-md-6">
+								<label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NOTES</label>
+								<input type="text" class="form-control form-control-sm" id="notes" 
+                                        placeholder="Detail Dokumen ..."
+                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['notes']) : '' ?>"
+                                        <?= $isViewMode ? 'disabled' : '' ?>>
+							</div>
                         </div>
 
                     </div>
@@ -141,13 +152,12 @@ class StockIn_view {
         <?php
         $content = ob_get_clean();
 
-        // --- SUNTIKKAN DATA KE JAVASCRIPT ---
         $extra_js = '<script>';
         $extra_js .= 'const IS_VIEW_MODE = ' . ($isViewMode ? 'true' : 'false') . ';';
         $extra_js .= 'const VIEW_DATA_ITEMS = ' . ($isViewMode ? json_encode($transactionData['items']) : '[]') . ';';
         $extra_js .= '</script>';
         
-        $extra_js .= '<script src="/m-account/assets/js/receive.js"></script>';
+        $extra_js .= '<script src="/maccount/assets/js/receive.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

@@ -25,19 +25,17 @@ class ReportModel extends DatabaseHelper {
         }
 
         if (!empty($startDate)) {
-            $sql .= " AND DATE(t.transaction_date) >= :start_date";
-            $params['start_date'] = $startDate;
+            $sql .= " AND t.transaction_date >= :start_date";
+            $params['start_date'] = $startDate . " 00:00:00";
         }
         if (!empty($endDate)) {
-            $sql .= " AND DATE(t.transaction_date) <= :end_date";
-            $params['end_date'] = $endDate;
+            $sql .= " AND t.transaction_date <= :end_date";
+            $params['end_date'] = $endDate . " 23:59:59";
         }
 
         $sql .= " ORDER BY t.transaction_date DESC";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->query_all($sql, $params);
     }
 }
 ?>

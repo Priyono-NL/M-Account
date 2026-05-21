@@ -1,12 +1,13 @@
 <?php
 require_once 'BaseController.php';
 
-class salesPivotController extends BaseController {
+class SalesPivotController extends BaseController {
     private $model;
 
     public function __construct() {
-        $this->model = new SalesModel();
         parent::__construct();
+        
+        $this->model = new SalesModel();
     }
 
     public function index() {
@@ -15,9 +16,9 @@ class salesPivotController extends BaseController {
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
+        $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
-        $type = $this->getPost('type', '');
+        $type      = $this->getPost('type', '');
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
 
@@ -27,13 +28,10 @@ class salesPivotController extends BaseController {
     }
 
     public function export_xls() {
-        $html = $_POST['tabel_html'] ?? '';
+        $html = $this->getPost('tabel_html', '');
 
         if (empty($html)) {
-            header('Content-Type: application/json');
-            http_response_code(400);
-            echo json_encode(["message" => "Data tabel HTML tidak diterima oleh server."]);
-            exit;
+            return $this->jsonError("Data tabel HTML tidak diterima oleh server.", 400);
         }
 
         $dom = new \DOMDocument();
@@ -57,11 +55,13 @@ class salesPivotController extends BaseController {
                 if (!($cell instanceof \DOMElement)) continue;
                 if ($cell->nodeName !== 'td' && $cell->nodeName !== 'th') continue;
 
-                $val = trim($cell->textContent);                
+                $val     = trim($cell->textContent);                
                 $colspan = $cell->hasAttribute('colspan') ? (int)$cell->getAttribute('colspan') : 1;
                 $rowspan = $cell->hasAttribute('rowspan') ? (int)$cell->getAttribute('rowspan') : 1;
 
-                while (isset($matrix[$rowIndex][$colIndex])) $colIndex++;
+                while (isset($matrix[$rowIndex][$colIndex])) {
+                    $colIndex++;
+                }
 
                 if ($colspan > 1 || $rowspan > 1) {
                     $startCol = $numToAlpha($colIndex);
@@ -75,20 +75,26 @@ class salesPivotController extends BaseController {
                 }
 
                 for ($rs = 0; $rs < $rowspan; $rs++) {
-                    for ($cs = 0; $cs < $colspan; $cs++) $matrix[$rowIndex + $rs][$colIndex + $cs] = ($rs === 0 && $cs === 0) ? $val : "";
+                    for ($cs = 0; $cs < $colspan; $cs++) {
+                        $matrix[$rowIndex + $rs][$colIndex + $cs] = ($rs === 0 && $cs === 0) ? $val : "";
+                    }
                 }
             }
         }
 
         ksort($matrix);
-        foreach ($matrix as &$rowItem) ksort($rowItem);
+        foreach ($matrix as &$rowItem) {
+            ksort($rowItem);
+        }
 
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($matrix);
-        foreach ($merges as $mergeRange) $xlsx->mergeCells($mergeRange);
+        foreach ($merges as $mergeRange) {
+            $xlsx->mergeCells($mergeRange);
+        }
+        
         $fileName = "Laporan_Pivot_" . date('Ymd_His') . ".xlsx";
         $xlsx->downloadAs($fileName);
         exit;
     }
-
 }
 ?>

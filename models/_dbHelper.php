@@ -4,21 +4,24 @@ class DatabaseHelper {
     protected $configs = [];
 
     public function __construct() {
-        $host = DB_HOST;
-        $port = DB_PORT;
+        $host   = DB_HOST;
+        $port   = DB_PORT;
         $dbname = DB_NAME;
-        $user = DB_USER;
-        $pass = DB_PASS;
+        $user   = DB_USER;
+        $pass   = DB_PASS;
 
         try {
             $this->db = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+			$this->db->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
         } catch(PDOException $e) {
             die("Koneksi Database Gagal: " . $e->getMessage());
         }
 
-        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->configs = $_SESSION['user']['extra_config'] ?? [];
     }
 
@@ -40,10 +43,12 @@ class DatabaseHelper {
                     
                     if ($table === $mapTable) {
                         if (is_array($value)) {
-                            $vals = "'" . implode("','", $value) . "'";
+                            $quotedValues = array_map([$this->db, 'quote'], $value);
+                            $vals = implode(",", $quotedValues);
                             $active_filters[] = "{$mapColumn} IN ({$vals})";
                         } else {
-                            $active_filters[] = "{$mapColumn} = '{$value}'";
+                            $quotedValue = $this->db->quote($value);
+                            $active_filters[] = "{$mapColumn} = {$quotedValue}";
                         }
                     }
                 }
@@ -67,21 +72,25 @@ class DatabaseHelper {
     }
 
     public function rollBack() {
-        if ($this->db->beginTransaction()) return $this->db->rollBack();
+        if ($this->db->inTransaction()) { 
+            return $this->db->rollBack();
+        }
         return false;
     }
 
     public function satpamGembok($date, $warehouse) {
         $monthPeriod = date('Y-m', strtotime($date));
         $sql = "SELECT is_closed FROM stock_closing 
-            WHERE DATE_FORMAT(date, '%Y-%m') = :month 
-            AND warehouse = :warehouse 
-            LIMIT 1";
+                WHERE DATE_FORMAT(date, '%Y-%m') = :month 
+                AND warehouse = :warehouse 
+                LIMIT 1";
         $lock = $this->query_one($sql, [
-            'month' => $monthPeriod,
+            'month'     => $monthPeriod,
             'warehouse' => $warehouse
         ]);
-        if ($lock && $lock['is_closed'] == 1) throw New Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang ini sudah ditutup (Locked).");
+        if ($lock && $lock['is_closed'] == 1) {
+            throw new Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang ini sudah ditutup (Locked).");
+        }
     }
 
     public function query_one($sql, $params = []) {
@@ -96,12 +105,14 @@ class DatabaseHelper {
         return $stmt->fetchAll();
     }
 
-    public function getAll($table, $where = null, $orderBy = null) {
+    public function getAll($table, $where = null, $orderBy = null, $params = []) {
         $where = $this->applySsoFilter($table, $where);
         $sql = "SELECT * FROM {$table}";        
         if ($where) $sql .= " WHERE {$where}";
         if ($orderBy) $sql .= " ORDER BY {$orderBy}";
-        $stmt = $this->db->query($sql);
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -136,7 +147,7 @@ class DatabaseHelper {
         return $this->db->lastInsertId();
     }
 
-    public function update($table, $data, $where) {
+    public function update($table, $data, $where, $params = []) {
         $where = $this->applySsoFilter($table, $where);
         $mapping = $this->getFilterMapping();
         foreach ($this->configs as $key => $value) {
@@ -154,15 +165,17 @@ class DatabaseHelper {
         }
         $setStr = implode(', ', $setParts);
         $sql = "UPDATE {$table} SET {$setStr} WHERE {$where}";
+        
+        $executeParams = array_merge($data, $params);
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute($data);
+        return $stmt->execute($executeParams);
     }
 
-    public function delete($table, $where) {
+    public function delete($table, $where, $params = []) {
         $where = $this->applySsoFilter($table, $where);
-        $sql = "UPDATE {$table} SET is_active = 0 WHERE {$where}";
+        $sql = "UPDATE {$table} SET is_active = 1 WHERE {$where}";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute();
+        return $stmt->execute($params);
     }
 }
 ?>

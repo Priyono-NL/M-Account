@@ -5,19 +5,20 @@ class StockCloseController extends BaseController {
     private $model;
 
     public function __construct() {
-        $this->model = new StocksModel();
         parent::__construct();
+        
+        $this->model = new StocksModel();
     }
 
     public function index() {
         $closeMonth = date('Y-m');
-        $result = $this->model->getClosingData('','',$closeMonth);
+        $result = $this->model->getClosingData('', '', $closeMonth);
         StockCloseView::render($result);
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
+        $search     = $this->getPost('search', '');
+        $warehouse  = $this->getPost('warehouse', '');
         $closeMonth = $this->getPost('closeMonth', date('Y-m'));
 
         $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
@@ -29,9 +30,10 @@ class StockCloseController extends BaseController {
     }
 
     public function export_xls() {
-        $search    = $_POST['search'] ?? '';
-        $warehouse = $_POST['warehouse'] ?? '';
-        $closeMonth = $_POST['closeMonth'] ?? date('Y-m');
+        $search     = $this->getPost('search', '');
+        $warehouse  = $this->getPost('warehouse', '');
+        $closeMonth = $this->getPost('closeMonth', date('Y-m'));
+        
         $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
         $data = $result['data'];
 
@@ -39,7 +41,7 @@ class StockCloseController extends BaseController {
             '<b>No</b>', '<b>Gudang</b>', '<b>Kode Barang</b>', '<b>Nama Barang</b>',
             '<b>Qty Open</b>', '<b>Qty In</b>', '<b>Qty Out</b>',
             '<b>Qty Close</b>', '<b>Qty Onhand</b>', '<b>Selisih</b>',
-            ]];
+        ]];
 
         foreach ($data as $index => $item) {
             $namaGudang = $item['warehouse'];
@@ -51,9 +53,9 @@ class StockCloseController extends BaseController {
 
             $rows[] = [
                 $index + 1,
+                $namaGudang,
                 $item['item_code'],
                 $item['item_name'],
-                $namaGudang,
                 (float)$item['qty_open'],
                 (float)$item['qty_in'],
                 (float)$item['qty_out'],
@@ -69,31 +71,19 @@ class StockCloseController extends BaseController {
     }
 
     public function do_closing() {
-        $closeMonth = isset($_POST['monthPeriod']) ? $_POST['monthPeriod'] : '';
+        $closeMonth = $this->getPost('monthPeriod', '');
 
         if (empty($closeMonth)) {
-            echo json_encode([
-                'status' => 'error', 
-                'message' => 'Bulan tidak boleh kosong!'
-            ]);
-            exit;
+            return $this->jsonError('Bulan tidak boleh kosong!', 400);
         }
 
         try {
             $jmlClosing = $this->model->doClosing($closeMonth);
-            echo json_encode([
-                'status' => 'success',
-                'message' => "Proses Closing berhasil! Sebanyak $jmlClosing barang untuk periode $closeMonth telah dikunci."
-            ]);
+            
+            return $this->jsonSuccess("Proses Closing berhasil! Sebanyak {$jmlClosing} barang untuk periode {$closeMonth} telah dikunci.");
         } catch (Exception $e) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Gagal melakukan closing: ' . $e->getMessage()
-            ]);
+            return $this->jsonError('Gagal melakukan closing: ' . $e->getMessage(), 500);
         }
-
-        exit;
     }
-
 }
 ?>

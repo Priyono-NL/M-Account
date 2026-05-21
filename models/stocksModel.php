@@ -29,11 +29,11 @@ class StocksModel extends DatabaseHelper {
         $params = [];
 
         if (!empty($startDate)) {
-            $sql .= " AND DATE(date) >= :start_date";
+            $sql .= " AND date >= :start_date";
             $params['start_date'] = $startDate;
         }
         if (!empty($endDate)) {
-            $sql .= " AND DATE(date) <= :end_date";
+            $sql .= " AND date <= :end_date";
             $params['end_date'] = $endDate;
         }
 
@@ -93,7 +93,7 @@ class StocksModel extends DatabaseHelper {
             ];
         } else {
             $startDate = date('Y-m-01', strtotime($monthPeriod . '-01'));
-            $endDate = date('Y-m-t', strtotime($monthPeriod .'-01'));
+            $endDate = date('Y-m-t', strtotime($monthPeriod . '-01'));
             return [
                 'status' => 'ONGOING',
                 'data' => $this->getFiltered($search, $warehouse, $startDate, $endDate)
@@ -108,13 +108,17 @@ class StocksModel extends DatabaseHelper {
         $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod LIMIT 1";
         $checkLock = $this->query_one($sqlCheck, ['monthPeriod' => $monthPeriod]);
 
-        if ($checkLock && $checkLock['is_closed'] == 1) throw new Exception("Periode $monthPeriod sudah dikunci permanen! Buka gembok terlebih dahulu jika ingin mengulang closing.");
+        if ($checkLock && $checkLock['is_closed'] == 1) {
+            throw new Exception("Periode {$monthPeriod} sudah dikunci permanen! Buka gembok terlebih dahulu jika ingin mengulang closing.");
+        }
 
         $currentStock = $this->getFiltered('', '', '', $endDate);
         $insertedCount = 0;
+        
         if (!empty($currentStock)) {
             try {
                 $this->beginTransaction();
+                
                 $sqlPrev = "SELECT item_id, warehouse, qty_close FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :prevMonth";
                 $prevData = $this->query_all($sqlPrev, ['prevMonth' => $prevMonth]);
                 
@@ -141,12 +145,13 @@ class StocksModel extends DatabaseHelper {
                     ];
 
                     $this->insert('stock_closing', $dataInsert);
-                    
                     $insertedCount++;
                 }
+                
                 $this->commit();
+                
             } catch (Exception $e) {
-                $this->rollback();
+                $this->rollBack();
                 throw $e;
             }
         }

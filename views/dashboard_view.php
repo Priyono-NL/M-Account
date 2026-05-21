@@ -78,7 +78,7 @@ class DashboardView {
         $val_rec     = json_encode(array_column($data['in7'], 'total_transaksi'));
 
         $extra_js = "
-        <script src='/m-account/vendors/chart-js-4.5.1/chart.umd.min.js'></script>
+        <script src='/maccount/vendors/chart-js-4.5.1/chart.umd.min.js'></script>
         <script>
             // Fungsi untuk memfilter data berdasarkan Warehouse
             function filterByWarehouse(val) {

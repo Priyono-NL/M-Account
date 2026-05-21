@@ -5,8 +5,8 @@ class ItemsController extends BaseController {
     private $model;
 
     public function __construct() {
-        $this->model = new ItemsModel();
         parent::__construct();
+        $this->model = new ItemsModel();
     }
 
     public function index() {
@@ -33,12 +33,21 @@ class ItemsController extends BaseController {
             'unit_cost'  => $this->getPost('unit_cost')
         ]);
 
+        if (empty($data['item_code']) || empty($data['item_name'])) {
+            return $this->jsonError("Kode Barang dan Nama Barang wajib diisi.");
+        }
+
         $res = $this->model->insert('items', $data);
         return $res ? $this->jsonSuccess("Barang berhasil ditambah") : $this->jsonError("Gagal menambah barang");
     }
 
     public function update() {
-        $id = $this->getPost('id');
+        $id = (int)$this->getPost('id');
+        
+        if ($id <= 0) {
+            return $this->jsonError("ID Barang tidak valid.");
+        }
+
         $data = $this->sanitize([
             'item_name'  => $this->getPost('item_name'),
             'category'   => $this->getPost('category'),
@@ -52,7 +61,12 @@ class ItemsController extends BaseController {
     }
 
     public function delete() {
-        $id = $this->getPost('id');
+        $id = (int)$this->getPost('id');
+
+        if ($id <= 0) {
+            return $this->jsonError("ID Barang tidak valid.");
+        }
+
         $res = $this->model->delete('items', "id = $id");
         return $res ? $this->jsonSuccess("Barang berhasil dihapus") : $this->jsonError("Gagal menghapus barang");
     }
@@ -65,7 +79,7 @@ class ItemsController extends BaseController {
             '<b>UoM</b>',
             '<b>Harga Jual</b>',
             '<b>Harga Cost</b>',
-            ]];
+        ]];
         $rows[] = [ 
             'C123456', 
             'TEST',
@@ -73,21 +87,24 @@ class ItemsController extends BaseController {
             'Kg/Pcs/Zak',
             '1000',
             '1000',
-            ];
+        ];
 
-        $fileName = "Format Buyer.xlsx";
+        $fileName = "Format Barang.xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }
 
     public function upload() {
-        header('Content-Type: application/json');
         try {
-            if (!isset($_FILES['file_excel'])) throw new Exception("Tidak ada file yang diterima oleh server.");
+            if (!isset($_FILES['file_excel'])) {
+                throw new Exception("Tidak ada file yang diterima oleh server.");
+            }
 
             $file = $_FILES['file_excel'];
 
-            if ($file['error'] !== UPLOAD_ERR_OK) throw new Exception("Error upload file: " . $file['error']);
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception("Error upload file: " . $file['error']);
+            }
 
             if ($xlsx = \Shuchkin\SimpleXLSX::parse($file['tmp_name'])) {
                 $rows = $xlsx->rows();
@@ -96,14 +113,17 @@ class ItemsController extends BaseController {
                 $successCount = 0;
                 $errorCount = 0;
 
-                foreach ($rows as $index => $row) {
-                    $item_code = trim($row[0] ?? '');
-                    $item_name = trim($row[1] ?? '');
-                    $category = trim($row[2] ?? '1');
-                    $item_uom = trim($row[3] ?? '');
+                foreach ($rows as $row) {
+                    $item_code  = trim($row[0] ?? '');
+                    $item_name  = trim($row[1] ?? '');
+                    $category   = trim($row[2] ?? '1');
+                    $item_uom   = trim($row[3] ?? '');
                     $unit_price = trim($row[4] ?? 0);
-                    $unit_cost = trim($row[5] ?? 0);
-                    if (empty($item_code) || empty($item_name)) continue;
+                    $unit_cost  = trim($row[5] ?? 0);
+                    
+                    if (empty($item_code) || empty($item_name)) {
+                        continue;
+                    }
 
                     $data = $this->sanitize([
                         'item_code'  => $item_code,
@@ -113,26 +133,23 @@ class ItemsController extends BaseController {
                         'unit_price' => $unit_price,
                         'unit_cost'  => $unit_cost
                     ]);
+                    
                     $res = $this->model->insert('items', $data);
-                    if ($res) $successCount++;
+                    if ($res) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                    }
                 }
 
-                echo json_encode([
-                    "status" => "success",
-                    "message" => "Berhasil memproses data. Total: $successCount baris diperbarui."
-                ]);
+                return $this->jsonSuccess("Proses Excel selesai. Berhasil: {$successCount}, Gagal/Duplikat: {$errorCount}");
 
             } else {
                 throw new Exception("Gagal membaca format Excel: " . \Shuchkin\SimpleXLSX::parseError());
             }
 
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode([
-                "status" => "error",
-                "message" => $e->getMessage()
-            ]);
+            return $this->jsonError($e->getMessage(), 400);
         }
-        exit;
     }
 }

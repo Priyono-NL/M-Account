@@ -1,7 +1,3 @@
-// =========================================================================
-// MAIN LOGIC (assets/js/main.js)
-// =========================================================================
-
 const formatRupiah = (number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -12,10 +8,16 @@ const formatRupiah = (number) => {
 
 const formatAngka = (number) => {
     if (!number && number !== 0) return "";
-    let cleanNumber = String(number).replace(/\D/g, "");
-    return new Intl.NumberFormat('id-ID').format(cleanNumber);
+    
+    let cleanNumber = parseFloat(number);
+    if (isNaN(cleanNumber)) return "";
+    
+    return new Intl.NumberFormat('id-ID', {
+        maximumFractionDigits: 2
+    }).format(cleanNumber);
 }
 
+// Notifikasi Universal Menggunakan Toastify
 const showNotification = (message, type) => {
     let bgColor = "#0d6efd";
     let textColor = "#ffffff";
@@ -43,6 +45,7 @@ const showNotification = (message, type) => {
     }).showToast();
 };
 
+// Download File Excel Secara Async/AJAX
 const downloadExcelAjax = (btnElement, url, requestData, filePrefix = 'Export_Data') => {
     let btn = $(btnElement);
     let originalText = btn.html();
@@ -61,20 +64,19 @@ const downloadExcelAjax = (btnElement, url, requestData, filePrefix = 'Export_Da
     })
     .then(response => {
         if (!response.ok) throw new Error("Gagal koneksi ke server");
-        return response.blob();
-    })
-    .then(blob => {
-        if (blob.type === 'application/json') {
-            return blob.text().then(text => {
-                let err = JSON.parse(text);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json().then(err => {
                 throw new Error(err.message || "Gagal export dari server");
             });
         }
-
+        return response.blob();
+    })
+    .then(blob => {
         let fileUrl = window.URL.createObjectURL(blob);
         let a = document.createElement('a');
         a.href = fileUrl;
-        
         a.download = `${filePrefix}.xlsx`; 
         
         document.body.appendChild(a);
@@ -94,10 +96,13 @@ const downloadExcelAjax = (btnElement, url, requestData, filePrefix = 'Export_Da
     });
 };
 
+// Import Excel / Upload Bulk Universal
 const addBulk = (btnElement, url, fileInputId, additionalData = {}, onSuccess = null) => {
     let btn = $(btnElement);
     let originalText = btn.html();
     let fileInput = document.getElementById(fileInputId);
+    
+    if (!fileInput) return;
     let file = fileInput.files[0];
 
     if (!file) {
@@ -162,43 +167,40 @@ $(document).ready(function() {
                     }, 2000);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function() {
                 console.warn("Pengecekan sesi SSO gagal berjalan.");
             }
         });
     };
+    
     checkSsoSession();
     setInterval(checkSsoSession, 600000);
 
     $(document).on('click', '#btnStopImpersonate', function(e) {
         e.preventDefault();
-        let btn = $(this);
-        let originalText = btn.html();
-
-        btn.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...');
-        btn.prop('disabled', true);
+        
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...');
 
         $.ajax({
             url: 'index.php?page=auth',
-            method: 'POST',
+            type: 'POST',
+            data: { action: 'stopImpersonate' },
             dataType: 'json',
-            data: {
-                action: 'stopImpersonate'
-            },
             success: function(response) {
                 if (response.status === 'success') {
                     showNotification(response.message, "success");
                     setTimeout(function() {
-                        window.location.href = '/m-account';
+                        window.location.href = 'index.php?page=dashboard';
                     }, 1500);
                 } else {
-                    showNotification(response.message || "Gagal menghentikan impersonate", "danger");
-                    btn.html(originalText).prop('disabled', false);
+                    alert(response.message);
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-right-from-bracket me-1"></i> Kembali ke Admin');
                 }
             },
             error: function() {
-                showNotification("Terjadi kesalahan koneksi sistem.", "danger");
-                btn.html(originalText).prop('disabled', false);
+                alert('Terjadi kesalahan sistem saat mencoba keluar dari mode penyamaran.');
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-right-from-bracket me-1"></i> Kembali ke Admin');
             }
         });
     });

@@ -7,7 +7,7 @@ class StockInModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive) {
+    public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes) {
         try {
             $this->satpamGembok($date_receive, $warehouse);
 
@@ -18,13 +18,18 @@ class StockInModel extends DatabaseHelper {
                 'received_by'   => $received_by,
                 'warehouse'     => $warehouse,
                 'date_receive'  => $date_receive,
+				'notes'			=> $notes
             ];
             
             $receive_id = $this->insert('receivement', $receiveData);
             
-            if (!$receive_id) throw new Exception("Gagal menyimpan data Master Receivement.");
+            if (!$receive_id) {
+                throw new Exception("Gagal menyimpan data Master Receivement.");
+            }
 
-            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1";
+            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE";
+
+            $stockLogTimestamp = $date_receive . ' ' . date('H:i:s');
 
             foreach ($cart as $item) {
                 $lastStockRow = $this->query_one($sqlLastStock, [
@@ -32,8 +37,8 @@ class StockInModel extends DatabaseHelper {
                     'warehouse' => $warehouse
                 ]);
                 
-                $qty_open = $lastStockRow ? $lastStockRow['qty_total'] : 0;
-                $qty_in = $item['qty'];
+                $qty_open  = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
+                $qty_in    = (float)$item['qty'];
                 $qty_total = $qty_open + $qty_in;
 
                 $this->insert('receivement_detail', [
@@ -45,7 +50,7 @@ class StockInModel extends DatabaseHelper {
                 $this->insert('item_transactions', [
                     'item_id'          => $item['id'],
                     'warehouse'        => $warehouse,
-                    'transaction_date' => $date_receive,
+                    'transaction_date' => $stockLogTimestamp,
                     'type'             => 'IN',
                     'qty'              => $item['qty'],
                     'reference_no'     => $doc_number,
@@ -55,7 +60,7 @@ class StockInModel extends DatabaseHelper {
                 $this->insert('stocks', [
                     'item_id'   => $item['id'],
                     'warehouse' => $warehouse,
-                    'date'      => date('Y-m-d H:i:s'),
+                    'date'      => $stockLogTimestamp,
                     'qty_open'  => $qty_open,
                     'qty_in'    => $qty_in,
                     'qty_out'   => 0,
@@ -64,7 +69,12 @@ class StockInModel extends DatabaseHelper {
             }
 
             $this->commit();
-            return ['status' => 'success', 'message' => 'Transaksi berhasil disimpan!'];
+            
+            return [
+                'status'     => 'success', 
+                'message'    => 'Transaksi berhasil disimpan!',
+                'receive_id' => $receive_id
+            ];
 
         } catch (Exception $e) {
             $this->rollBack();
@@ -88,13 +98,15 @@ class StockInModel extends DatabaseHelper {
         }
 
         if (!empty($startDate)) {
-            $sql .= " AND DATE(r.date_receive) >= :start_date";
+            $sql .= " AND r.date_receive >= :start_date";
             $params['start_date'] = $startDate;
         }
         if (!empty($endDate)) {
-            $sql .= " AND DATE(r.date_receive) <= :end_date";
+            $sql .= " AND r.date_receive <= :end_date";
             $params['end_date'] = $endDate;
         }
+
+        $sql .= " ORDER BY r.date_receive DESC, r.id DESC";
 
         return $this->query_all($sql, $params);
     }
@@ -105,7 +117,7 @@ class StockInModel extends DatabaseHelper {
                 LEFT JOIN items i ON rd.item_id = i.id 
                 WHERE rd.receive_id = :receive_id";
                 
-        return $this->query_all($sql, ['receive_id' => $receive_id]);
+        return $this->query_all($sql, ['receive_id' => (int)$receive_id]);
     }
 }
 ?>

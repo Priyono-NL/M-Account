@@ -5,9 +5,9 @@ class StocksController extends BaseController {
     private $model;
 
     public function __construct() {
-        // Memuatkan model laporan
-        $this->model = new StocksModel();
         parent::__construct();
+        
+        $this->model = new StocksModel();
     }
 
     public function index() {
@@ -16,7 +16,7 @@ class StocksController extends BaseController {
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
+        $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
@@ -27,17 +27,18 @@ class StocksController extends BaseController {
     }
 
     public function export_xls() {
-        $search    = $_POST['search'] ?? '';
-        $warehouse = $_POST['warehouse'] ?? '';
-        $startDate = $_POST['start_date'] ?? '';
-        $endDate   = $_POST['end_date'] ?? '';
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+        
         $data = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
 
         $rows = [[
             '<b>No</b>', '<b>Tanggal Update</b>', 
             '<b>Kode Barang</b>', '<b>Nama Barang</b>', '<b>Gudang</b>',
             '<b>Qty Awal</b>', '<b>Qty Masuk</b>', '<b>Qty Keluar</b>', '<b>Saldo Akhir</b>'
-            ]];
+        ]];
 
         foreach ($data as $index => $item) {
             $namaGudang = $item['warehouse'];
@@ -47,9 +48,11 @@ class StocksController extends BaseController {
                 $namaGudang = 'Gudang Sampah';
             }
 
+            $tanggalFormatted = !empty($item['date']) ? date('d-m-Y H:i', strtotime($item['date'])) : '-';
+
             $rows[] = [
                 $index + 1,
-                $item['date'],
+                $tanggalFormatted,
                 $item['item_code'],
                 $item['item_name'],
                 $namaGudang,

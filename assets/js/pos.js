@@ -5,8 +5,8 @@ function printReceipt(id) {
         alert("ID Transaksi tidak ditemukan.");
         return;
     }
-    const printUrl = '/m-account/pos/print_invoice?id=' + id;
-    // const printUrl = '/m-account/pos/print_invoice_pdf?id=' + id;
+    const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
+    // const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
@@ -14,6 +14,7 @@ $(document).ready(function() {
 
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 
+    // MODE VIEW ONLY (Melihat Detail Transaksi Riwayat Lama)
     if (isViewOnly) {
         if (typeof VIEW_DATA_ITEMS !== 'undefined') {
             const currentSalesType = document.getElementById('salesType').value;
@@ -34,7 +35,9 @@ $(document).ready(function() {
         renderCart();
     }
 
+    // MODE TRANSAKSI AKTIF (Kasir Bisa Berbelanja)
     if (!isViewOnly) {
+        // Select2 Pencarian Data Pelanggan/Buyer
         $('#buyerSelect').select2({
             placeholder: "-- Cari Pelanggan --",
             allowClear: true,
@@ -46,14 +49,16 @@ $(document).ready(function() {
                 data: function (params) {
                     return { action: 'get_buyers', keyword: params.term || '' };
                 },
-                processResults: function (data) {
+                processResults: function (response) {
+                    // Mengakses data dari standarisasi helper jsonSuccess BaseController
+                    const buyersData = response.data || [];
                     return {
-                        results: $.map(data, function (item) {
+                        results: $.map(buyersData, function (item) {
                             return { 
                                 id: item.id, 
                                 text: item.buyer_code + ' - ' + item.buyer_name,
                                 is_exp: item.buyer_status
-                                };
+                            };
                         })
                     };
                 },
@@ -80,6 +85,7 @@ $(document).ready(function() {
             if ($('#salesType').val() === 'EXP') $('#salesType').val('SLS').trigger('change');
         });
 
+        // Select2 Pencarian Produk Barang Berdasarkan Gudang Terpilih
         $('#productSearch').select2({
             placeholder: "Ketik nama atau kode produk...",
             allowClear: true,
@@ -95,9 +101,10 @@ $(document).ready(function() {
                         warehouse: $('#warehouseSelect').val()
                     };
                 },
-                processResults: function (data) {
-                    let liveSalesType = $('#salesType').val();
-                    let filteredData = data.filter(function(item) {
+                processResults: function (response) {
+                    // Mengakses data dari standarisasi helper jsonSuccess BaseController
+                    const productsData = response.data || [];
+                    let filteredData = productsData.filter(function(item) {
                         return parseFloat(item.qty_close) > 0;
                     });
                     return {
@@ -108,7 +115,7 @@ $(document).ready(function() {
                                 nama: item.item_name,
                                 kode: item.item_code,
                                 harga_asli: parseFloat(item.unit_price || 0),
-                                harga: (liveSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
+                                harga: ($('#salesType').val() === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
                                 stok: parseFloat(item.qty_close)
                             }
                         })
@@ -125,8 +132,6 @@ $(document).ready(function() {
             if (!id) return; 
 
             let nama = data.nama;
-            let kode = data.kode;
-            let harga = parseFloat(data.harga) || 0;
             let stok = parseFloat(data.stok) || 0;
 
             if (stok <= 0) {
@@ -162,6 +167,7 @@ $(document).ready(function() {
         });
     }
 
+    // Fungsi Render Tampilan Item Keranjang Belanja HTML
     function renderCart() {
         let tbody = $('#cartTableBody');
         tbody.empty();
@@ -225,19 +231,21 @@ $(document).ready(function() {
         $('#summaryTotal').text(formatRupiah(grandTotal));
     }
 
+    // Trigger Perubahan Tipe Sales (Normal vs Expense)
     $('#salesType').on('change', function() {
-    let newType = $(this).val();
+        let newType = $(this).val();
 
-    cart.forEach(item => {
-        if (newType === 'EXP') item.harga = 0;
-        else item.harga = item.harga_asli;
+        cart.forEach(item => {
+            if (newType === 'EXP') item.harga = 0;
+            else item.harga = item.harga_asli;
+        });
+
+        renderCart();    
+        if (newType === 'EXP') showNotification('Tipe EXP dipilih: Semua harga diatur ke 0', 'info');
     });
 
-    renderCart();    
-    if (newType === 'EXP') showNotification('Tipe EXP dipilih: Semua harga diatur ke 0', 'info');
-});
-
     if (!isViewOnly) {
+        // Tombol Plus (+) Qty
         $(document).on('click', '.btn-plus', function() {
             let index = $(this).data('index');
             if (cart[index].qty + 1 > cart[index].stok) {
@@ -248,6 +256,7 @@ $(document).ready(function() {
             }
         });
 
+        // Tombol Minus (-) Qty
         $(document).on('click', '.btn-minus', function() {
             let index = $(this).data('index');
             let removedName = cart[index].nama; 
@@ -260,6 +269,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Event Input Manual Kolom Qty
         $(document).on('change', '.qty-input', function() {
             let index = $(this).data('index');
             let val = parseInt($(this).val());
@@ -275,6 +285,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Tombol Hapus Barang Tunggal dari Keranjang
         $(document).on('click', '.btn-remove', function() {
             let index = $(this).data('index');
             let removedName = cart[index].nama;
@@ -283,6 +294,7 @@ $(document).ready(function() {
             showNotification(`Dihapus: ${removedName}`, 'warning');
         });
 
+        // Tombol Batalkan / Clear Form Transaksi
         $('#btnClearCart').click(function() {
             if (cart.length > 0) {
                 if (!confirm("Apakah Anda yakin ingin membatalkan transaksi dan membersihkan form?")) {
@@ -298,6 +310,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Prosedur Simpan Transaksi / Checkout Kasir
         $('#btnCheckout').click(function() {
             if (cart.length === 0) {
                 showNotification('Keranjang masih kosong!', 'danger');
@@ -338,7 +351,8 @@ $(document).ready(function() {
                         $('#productSearch').val(null).trigger('change');
                         renderCart();
 
-                        window.open('/m-account/pos/print_invoice?id=' + response.data.sale_id, '_blank');
+                        const completedPrintUrl = 'index.php?page=pos&action=print_invoice&id=' + response.data.sale_id;
+                        window.open(completedPrintUrl, '_blank');
                     } else {
                         showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
                     }
@@ -358,7 +372,7 @@ $(document).ready(function() {
                     showNotification(errorMessage, 'danger');
                 },
                 complete: function() {
-                    btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> SIMPAN TRANSAKSI');
+                    btn.prop('disabled', false).html('<i class="fa-double-check me-2"></i> SIMPAN TRANSAKSI');
                 }
             });
         });

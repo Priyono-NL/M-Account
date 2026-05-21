@@ -7,12 +7,16 @@ class DashboardModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function getData($warehouse = '1') {
+    public function getData($warehouse = 1) {
         $results = [];
 
-        if (session_status() === PHP_SESSION_NONE) session_start();
-        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;        
-        if ($sso_warehouse !== null) $warehouse = $sso_warehouse;
+        $sso_warehouse = $this->configs['warehouse'] ?? null;        
+        if ($sso_warehouse !== null) {
+            $warehouse = $sso_warehouse;
+        }
+
+        $warehouse = (int)$warehouse;
+        $params = ['warehouse' => $warehouse];
 
         $q_items = "SELECT SUM(qty_total) AS total 
                     FROM stocks s
@@ -22,9 +26,7 @@ class DashboardModel extends DatabaseHelper {
                         WHERE warehouse = :warehouse 
                         GROUP BY item_id
                     )";
-        $stmt_items = $this->db->prepare($q_items);
-        $stmt_items->execute(['warehouse' => $warehouse]);
-        $res_items = $stmt_items->fetch(PDO::FETCH_ASSOC);
+        $res_items = $this->query_one($q_items, $params);
         $results['inWarehouse'] = (int)($res_items['total'] ?? 0);
 
         $q_sales = "SELECT SUM(sd.item_qty * i.unit_price) AS total 
@@ -35,31 +37,28 @@ class DashboardModel extends DatabaseHelper {
                     AND YEAR(s.sales_date) = YEAR(CURRENT_DATE)
                     AND s.sale_type = 'SLS'
                     AND s.warehouse = :warehouse";
-        $stmt_sales = $this->db->prepare($q_sales);
-        $stmt_sales->execute(['warehouse' => $warehouse]);
-        $res_sales = $stmt_sales->fetch(PDO::FETCH_ASSOC);
+        $res_sales = $this->query_one($q_sales, $params);
         $results['total_sales'] = (int)($res_sales['total'] ?? 0);
 
+
         $q_in7 = "SELECT date_receive, COUNT(id) AS total_transaksi
-                    FROM receivement
-                    WHERE date_receive >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
-                    AND warehouse = :warehouse   
-                    GROUP BY date_receive
-                    ORDER BY date_receive ASC";
-        $stmt_in7 = $this->db->prepare($q_in7);
-        $stmt_in7->execute(['warehouse' => $warehouse]);
-        $results['in7'] = $stmt_in7->fetchAll(PDO::FETCH_ASSOC);
+                  FROM receivement
+                  WHERE date_receive >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
+                  AND warehouse = :warehouse   
+                  GROUP BY date_receive
+                  ORDER BY date_receive ASC";
+        $results['in7'] = $this->query_all($q_in7, $params);
+
 
         $q_sales7 = "SELECT sales_date, COUNT(id) AS total_transaksi
-                    FROM sales
-                    WHERE sales_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
-                    AND warehouse = :warehouse   
-                    GROUP BY sales_date
-                    ORDER BY sales_date ASC";
-        $stmt_sales7 = $this->db->prepare($q_sales7);
-        $stmt_sales7->execute(['warehouse' => $warehouse]);
-        $results['sales7'] = $stmt_sales7->fetchAll(PDO::FETCH_ASSOC);
+                     FROM sales
+                     WHERE sales_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
+                     AND warehouse = :warehouse   
+                     GROUP BY sales_date
+                     ORDER BY sales_date ASC";
+        $results['sales7'] = $this->query_all($q_sales7, $params);
 
         return $results;
     }
 }
+?>

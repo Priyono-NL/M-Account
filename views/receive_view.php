@@ -90,7 +90,7 @@ class Receive_view {
         </div>
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="/m-account/assets/js/r_history.js"></script>';
+        $extra_js = '<script src="/maccount/assets/js/r_history.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

@@ -8,7 +8,7 @@ class ItemsModel extends DatabaseHelper {
     }
 
     public function getFiltered($search = '', $category = '') {
-        $sql = "SELECT * FROM items WHERE is_active=0";
+        $sql = "SELECT * FROM items WHERE is_active = 0";
         $params = [];
 
         if (!empty($search)) {
@@ -21,9 +21,7 @@ class ItemsModel extends DatabaseHelper {
             $params['category'] = $category;
         }        
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->query_all($sql, $params);
     }
 
 }

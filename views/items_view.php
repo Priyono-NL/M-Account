@@ -134,7 +134,7 @@ class ItemsView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="/m-account/assets/js/items.js"></script>';
+        $extra_js = '<script src="/maccount/assets/js/items.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

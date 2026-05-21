@@ -14,10 +14,12 @@ class SalesModel extends DatabaseHelper {
             $this->beginTransaction();
 
             $prefix = ($sales_type == 'EXP') ? 'EXP - ' : 'SLS - ';            
+            
             $lastRecord = $this->query_one(
-                "SELECT invoice_no FROM sales WHERE invoice_no LIKE :prefix ORDER BY id DESC LIMIT 1", 
+                "SELECT invoice_no FROM sales WHERE invoice_no LIKE :prefix ORDER BY id DESC LIMIT 1 FOR UPDATE", 
                 ['prefix' => $prefix . '%']
             );
+            
             $nextNum = 1;
             if ($lastRecord) {
                 $lastNum = (int) substr($lastRecord['invoice_no'], 6);
@@ -35,9 +37,13 @@ class SalesModel extends DatabaseHelper {
             
             $sale_id = $this->insert('sales', $saleData);
             
-            if (!$sale_id) throw new Exception("Gagal menyimpan data Master Sales.");
+            if (!$sale_id) {
+                throw new Exception("Gagal menyimpan data Master Sales.");
+            }
 
-            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1";
+            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE";
+
+            $stockLogTimestamp = $sales_date . ' ' . date('H:i:s');
 
             foreach ($cart as $item) {
                 $lastStockRow = $this->query_one($sqlLastStock, [
@@ -45,8 +51,8 @@ class SalesModel extends DatabaseHelper {
                     'warehouse' => $warehouse
                 ]);
                 
-                $qty_open  = $lastStockRow ? $lastStockRow['qty_total'] : 0;
-                $qty_out   = $item['qty'];
+                $qty_open  = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
+                $qty_out   = (float)$item['qty'];
                 $qty_total = $qty_open - $qty_out;
 
                 $this->insert('sales_detail', [
@@ -55,10 +61,10 @@ class SalesModel extends DatabaseHelper {
                     'item_qty' => $item['qty'] 
                 ]);
                 
-                $this->insert('item_transactions', [
+                 $this->insert('item_transactions', [
                     'item_id'          => $item['id'],
                     'warehouse'        => $warehouse,
-                    'transaction_date' => $sales_date,
+                    'transaction_date' => $stockLogTimestamp,
                     'type'             => 'OUT',
                     'qty'              => $item['qty'],
                     'reference_no'     => $invoice_no,
@@ -68,7 +74,7 @@ class SalesModel extends DatabaseHelper {
                 $this->insert('stocks', [
                     'item_id'   => $item['id'],
                     'warehouse' => $warehouse,
-                    'date'      => date('Y-m-d H:i:s'), 
+                    'date'      => $stockLogTimestamp,
                     'qty_open'  => $qty_open,
                     'qty_in'    => 0,
                     'qty_out'   => $qty_out,
@@ -109,14 +115,17 @@ class SalesModel extends DatabaseHelper {
             $sql .= " AND s.sale_type = :type";
             $params['type'] = $type;
         }
+        
         if (!empty($startDate)) {
-            $sql .= " AND DATE(s.sales_date) >= :start_date";
+            $sql .= " AND s.sales_date >= :start_date";
             $params['start_date'] = $startDate;
         }
         if (!empty($endDate)) {
-            $sql .= " AND DATE(s.sales_date) <= :end_date";
+            $sql .= " AND s.sales_date <= :end_date";
             $params['end_date'] = $endDate;
         }
+		
+        $sql .= " ORDER BY s.sales_date DESC, s.id DESC";
         
         return $this->query_all($sql, $params);
     }
@@ -131,7 +140,7 @@ class SalesModel extends DatabaseHelper {
                 LEFT JOIN buyer b ON s.buyer = b.id
                 WHERE s.id = :id";
         
-        return $this->query_one($sql, ['id' => $sales_id]);
+        return $this->query_one($sql, ['id' => (int)$sales_id]);
     }
 
     public function getTransactionItems($sale_id) {
@@ -140,7 +149,7 @@ class SalesModel extends DatabaseHelper {
                 LEFT JOIN items i ON sd.item_id = i.id 
                 WHERE sd.sale_id = :sale_id";
                 
-        return $this->query_all($sql, ['sale_id' => $sale_id]);
+        return $this->query_all($sql, ['sale_id' => (int)$sale_id]);
     }
 }
 ?>

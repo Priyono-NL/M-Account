@@ -89,15 +89,15 @@ class SalesPivotView {
         $content = ob_get_clean();
 
         $extra_css = "
-        <link rel='stylesheet' type='text/css' href='/m-account/vendors/jquery-ui/jquery-ui.min.css'>
-        <link rel='stylesheet' type='text/css' href='/m-account/vendors/pivottable/pivot.min.css'>
-        <link rel='stylesheet' type='text/css' href='/m-account/assets/css/salesPivot.css'>";
+        <link rel='stylesheet' type='text/css' href='/maccount/vendors/jquery-ui/jquery-ui.min.css'>
+        <link rel='stylesheet' type='text/css' href='/maccount/vendors/pivottable/pivot.min.css'>
+        <link rel='stylesheet' type='text/css' href='/maccount/assets/css/salesPivot.css'>";
 
         $extra_js = "
-        <script src='/m-account/vendors/jquery-ui/jquery-ui.min.js'></script>
-        <script src='/m-account/vendors/plotly/plotly-basic.min.js'></script>
-        <script src='/m-account/vendors/pivottable/pivot.min.js'></script>
-        <script src='/m-account/assets/js/salesPivot.js'></script>";
+        <script src='/maccount/vendors/jquery-ui/jquery-ui.min.js'></script>
+        <script src='/maccount/vendors/plotly/plotly-basic.min.js'></script>
+        <script src='/maccount/vendors/pivottable/pivot.min.js'></script>
+        <script src='/maccount/assets/js/salesPivot.js'></script>";
 
         include __DIR__ . '/layouts/main.php';
     }

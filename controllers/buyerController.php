@@ -5,8 +5,8 @@ class BuyerController extends BaseController {
     private $model;
 
     public function __construct() {
-        $this->model = new BuyerModel();
         parent::__construct();
+        $this->model = new BuyerModel();
     }
 
     public function index() {
@@ -15,29 +15,38 @@ class BuyerController extends BaseController {
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
-        $items = $this->model->getFiltered($search);
+        $search = $this->getPost('search', '');
+        $items  = $this->model->getFiltered($search);
                 
         return $this->jsonSuccess("Data Filtered", $items);
     }
 
     public function add() {
         $data = $this->sanitize([
-            'buyer_code' => $this->getPost('buyer_code'),
-            'buyer_name' => $this->getPost('buyer_name'),
-            'buyer_status' => $this->getPost('buyer_status'),
+            'buyer_code'    => $this->getPost('buyer_code'),
+            'buyer_name'    => $this->getPost('buyer_name'),
+            'buyer_status'  => $this->getPost('buyer_status'),
             'buyer_address' => $this->getPost('buyer_address')
         ]);
+
+        if (empty($data['buyer_code']) || empty($data['buyer_name'])) {
+            return $this->jsonError("Kode dan Nama Pembeli wajib diisi.");
+        }
 
         $res = $this->model->insert('buyer', $data);
         return $res ? $this->jsonSuccess("Pelanggan berhasil ditambah") : $this->jsonError("Gagal menambah pelanggan");
     }
 
     public function update() {
-        $id = $this->getPost('id');
+        $id = (int)$this->getPost('id');
+        
+        if ($id <= 0) {
+            return $this->jsonError("ID Pelanggan tidak valid.");
+        }
+
         $data = $this->sanitize([
-            'buyer_name' => $this->getPost('buyer_name'),
-            'buyer_status' => $this->getPost('buyer_status'),
+            'buyer_name'    => $this->getPost('buyer_name'),
+            'buyer_status'  => $this->getPost('buyer_status'),
             'buyer_address' => $this->getPost('buyer_address')
         ]);
 
@@ -47,9 +56,9 @@ class BuyerController extends BaseController {
 
     public function download_template() {
         $rows = [[ 
-            '<b>Buyer Code(NRP)</b>',  '<b>Name</b>',
-            '<b>Status</b>',  '<b>Address/Department</b>',
-            ]];
+            '<b>Buyer Code(NRP)</b>', '<b>Name</b>',
+            '<b>Status</b>', '<b>Address/Department</b>',
+        ]];
         $rows[] = [ '100xx', 'Contoh', 'REG/EXP', 'Alamat/Departemen' ];
 
         $fileName = "Format Buyer.xlsx";
@@ -58,13 +67,16 @@ class BuyerController extends BaseController {
     }
 
     public function upload() {
-        header('Content-Type: application/json');
         try {
-            if (!isset($_FILES['file_excel'])) throw new Exception("Tidak ada file yang diterima oleh server.");
+            if (!isset($_FILES['file_excel'])) {
+                throw new Exception("Tidak ada file yang diterima oleh server.");
+            }
 
             $file = $_FILES['file_excel'];
 
-            if ($file['error'] !== UPLOAD_ERR_OK) throw new Exception("Error upload file: " . $file['error']);
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception("Error upload file dengan kode error: " . $file['error']);
+            }
 
             if ($xlsx = \Shuchkin\SimpleXLSX::parse($file['tmp_name'])) {
                 $rows = $xlsx->rows();
@@ -73,39 +85,39 @@ class BuyerController extends BaseController {
                 $successCount = 0;
                 $errorCount = 0;
 
-                foreach ($rows as $index => $row) {
-                    $code = trim($row[0] ?? '');
-                    $name = trim($row[1] ?? '');
-                    $status = trim($row[2] ?? '');
+                foreach ($rows as $row) {
+                    $code    = trim($row[0] ?? '');
+                    $name    = trim($row[1] ?? '');
+                    $status  = trim($row[2] ?? '');
                     $address = trim($row[3] ?? '');
-                    if (empty($code) || empty($name)) continue;
+
+                    if (empty($code) || empty($name)) {
+                        continue;
+                    }
 
                     $data = $this->sanitize([
-                        'buyer_code' => $code,
-                        'buyer_name' => $name,
-                        'buyer_status' => $status,
+                        'buyer_code'    => $code,
+                        'buyer_name'    => $name,
+                        'buyer_status'  => $status,
                         'buyer_address' => $address
                     ]);
+                    
                     $res = $this->model->insert('buyer', $data);                    
-                    if ($res) $successCount++;
+                    if ($res) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                    }
                 }
 
-                echo json_encode([
-                    "status" => "success",
-                    "message" => "Berhasil memproses data. Total: $successCount baris diperbarui."
-                ]);
+                return $this->jsonSuccess("Proses Excel selesai. Berhasil: {$successCount}, Gagal/Duplikat: {$errorCount}");
 
             } else {
                 throw new Exception("Gagal membaca format Excel: " . \Shuchkin\SimpleXLSX::parseError());
             }
 
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode([
-                "status" => "error",
-                "message" => $e->getMessage()
-            ]);
+            return $this->jsonError($e->getMessage(), 400);
         }
-        exit;
     }
 }

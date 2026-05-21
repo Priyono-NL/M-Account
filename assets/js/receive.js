@@ -12,14 +12,16 @@ $(document).ready(function() {
                     kode: item.item_code,
                     nama: item.item_name,
                     qty: parseFloat(item.item_qty || item.qty || 1),
-                    stok: 999999
+                    stok: 999999 // Batasan stok diabaikan karena ini mode melihat histori
                 };
             });
         }
         renderCart();
     }
 
+    // MODE INPUT DATA AKTIF
     if (!isViewOnly) {
+        // Select2 Pencarian Produk Barang Masuk
         $('#productSearch').select2({
             placeholder: "Ketik nama atau kode produk...",
             allowClear: true,
@@ -34,9 +36,10 @@ $(document).ready(function() {
                         keyword: params.term || '',
                     };
                 },
-                processResults: function (data) {
+                processResults: function (response) {
+                    const productsList = response.data || [];
                     return {
-                        results: $.map(data, function (item) {
+                        results: $.map(productsList, function (item) {
                             return {
                                 id: item.id,
                                 text: item.item_code + ' | ' + item.item_name,
@@ -50,6 +53,7 @@ $(document).ready(function() {
             }
         });
 
+        // Handler saat produk dipilih dari Select2
         $('#productSearch').on('select2:select', function (e) {
             let data = e.params.data;
             let id = data.id;
@@ -64,6 +68,7 @@ $(document).ready(function() {
                 existingItem.qty += 1;
                 showNotification(`Qty ${nama} ditambahkan`, 'success');
             } else {
+                // Pada barang masuk, 'stok' diatur default besar karena tidak ada batasan kuantitas input
                 cart.push({ id: id, kode: kode, nama: nama, qty: 1, stok: 999999 });
                 showNotification(`Ditambahkan: ${nama}`, 'success');
             }
@@ -73,6 +78,7 @@ $(document).ready(function() {
         });
     }
 
+    // Fungsi Render Tabel Keranjang HTML
     function renderCart() {
         let tbody = $('#cartTableBody');
         tbody.empty();
@@ -127,12 +133,14 @@ $(document).ready(function() {
     }
 
     if (!isViewOnly) {
+        // Tombol Plus (+) Qty
         $(document).on('click', '.btn-plus', function() {
             let index = $(this).data('index');
             cart[index].qty += 1;
             renderCart();
         });
 
+        // Tombol Minus (-) Qty
         $(document).on('click', '.btn-minus', function() {
             let index = $(this).data('index');
             let removedName = cart[index].nama; 
@@ -145,6 +153,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Perubahan Input Manual Kolom Qty
         $(document).on('change', '.qty-input', function() {
             let index = $(this).data('index');
             let val = parseInt($(this).val());
@@ -157,6 +166,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Tombol Hapus Baris Barang Tunggal
         $(document).on('click', '.btn-remove', function() {
             let index = $(this).data('index');
             let removedName = cart[index].nama;
@@ -165,6 +175,7 @@ $(document).ready(function() {
             showNotification(`Dihapus: ${removedName}`, 'warning');
         });
 
+        // Reset / Bersihkan Form Transaksi
         $('#btnClearCart').click(function() {
             if (cart.length > 0) {
                 if (!confirm("Apakah Anda yakin ingin membatalkan transaksi dan membersihkan form?")) {
@@ -180,6 +191,7 @@ $(document).ready(function() {
             renderCart();
         });
 
+        // Proses Tombol Kirim / Simpan Transaksi Barang Masuk
         $('#btnCheckout').click(function() {
             if (cart.length === 0) {
                 showNotification('Keranjang masih kosong!', 'danger');
@@ -233,8 +245,9 @@ $(document).ready(function() {
                 error: function(xhr, textStatus, errorThrown) {
                     let errorMessage = 'Terjadi kesalahan sistem pada server.';
                     
-                    if (xhr.responseJSON && xhr.responseJSON.message) errorMessage = xhr.responseJSON.message;
-                    else if (xhr.responseText) {
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
                         try {
                             let res = JSON.parse(xhr.responseText);
                             if (res.message) errorMessage = res.message;

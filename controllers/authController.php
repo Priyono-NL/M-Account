@@ -13,9 +13,9 @@ class AuthController extends BaseController {
             die("Token tidak ditemukan.");
         }
 
-        $app_id     = getenv('APP_ID');
-        $app_secret = getenv('APP_SECRET');
-        $sso_verify_url = getenv('SSO_BASE_URL'). 'verify';
+        $app_id         = getenv('APP_ID');
+        $app_secret     = getenv('APP_SECRET');
+        $sso_verify_url = rtrim(getenv('SSO_BASE_URL'), '/') . '/verify';
 
         $data = json_encode(['access_token' => $token]);
 
@@ -31,6 +31,7 @@ class AuthController extends BaseController {
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
         $result = json_decode($response, true);
 
@@ -39,7 +40,8 @@ class AuthController extends BaseController {
             $_SESSION['user'] = $result['user'];
             $_SESSION['token'] = $token;
             $_SESSION['expires_at'] = $result['token_info']['expires_at'];
-            header("Location: /m-account/dashboard");
+            
+            header("Location: index.php?page=dashboard");
             exit;
         } else {
             $error_msg = $result['error'] ?? 'Verifikasi Gagal';
@@ -62,9 +64,9 @@ class AuthController extends BaseController {
             exit;
         }
 
-        $app_id     = getenv('APP_ID');
-        $app_secret = getenv('APP_SECRET');        
-        $sso_api_url = getenv('SSO_BASE_URL') . "validate-token";
+        $app_id      = getenv('APP_ID');
+        $app_secret  = getenv('APP_SECRET');        
+        $sso_api_url = rtrim(getenv('SSO_BASE_URL'), '/') . "/validate-token";
 
         $sso_token = $_SESSION['token'];
         $payload = json_encode([ 'access_token' => $sso_token ]);
@@ -98,7 +100,9 @@ class AuthController extends BaseController {
     }
 
     public function stopImpersonate() {
-        if (!isset($_SESSION['impersonator_user'])) return $this->jsonError("Anda tidak sedang berada dalam mode impersonate.");
+        if (!isset($_SESSION['impersonator_user'])) {
+            return $this->jsonError("Anda tidak sedang berada dalam mode impersonate.");
+        }
 
         $_SESSION['logged_in']  = true;
         $_SESSION['user']       = $_SESSION['impersonator_user'];
@@ -109,7 +113,9 @@ class AuthController extends BaseController {
         unset($_SESSION['impersonator_token']);
         unset($_SESSION['impersonator_expires']);
 
-        if (isset($_SESSION['user']['is_impersonating'])) unset($_SESSION['user']['is_impersonating']);
+        if (isset($_SESSION['user']['is_impersonating'])) {
+            unset($_SESSION['user']['is_impersonating']);
+        }
 
         return $this->jsonSuccess("Berhasil kembali ke akun utama (" . $_SESSION['user']['full_name'] . ")");
     }

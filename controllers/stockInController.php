@@ -7,23 +7,24 @@ class StockInController extends BaseController {
     private $stockInModel;
 
     public function __construct() {
-        $this->itemsModel = new ItemsModel();
-        $this->personModel = new BuyerModel();
-        $this->stockInModel = new StockInModel();
         parent::__construct();
+
+        $this->itemsModel   = new ItemsModel();
+        $this->personModel   = new BuyerModel();
+        $this->stockInModel = new StockInModel();
     }
 
     public function index() {
-        $mode = $_POST['mode'] ?? 'create';
-        $receive_id = $_POST['id'] ?? null;
+        $mode       = $this->getPost('mode', 'create');
+        $receive_id = isset($_POST['id']) ? (int)$_POST['id'] : null;
+        
         $transactionData = null;
 
-        if ($mode === 'view' && $receive_id) {
+        if ($mode === 'view' && $receive_id > 0) {
             $header = $this->stockInModel->getById('receivement', $receive_id);
             
             if ($header) {
-                $id_aman = intval($receive_id);
-                $items = $this->stockInModel->getTransactionItems($id_aman);
+                $items = $this->stockInModel->getTransactionItems($receive_id);
                 
                 $transactionData = [
                     'header' => $header,
@@ -41,7 +42,7 @@ class StockInController extends BaseController {
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');
+        $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
@@ -55,25 +56,21 @@ class StockInController extends BaseController {
         $keyword = $this->getPost('keyword', '');
         $results = $this->itemsModel->getFiltered($keyword); 
         
-        header('Content-Type: application/json');
-        echo json_encode($results);
-        exit;
+        return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }
 
     public function get_buyers() {
         $keyword = $this->getPost('keyword', '');        
         $results = $this->personModel->getFiltered($keyword);
 
-        header('Content-Type: application/json');
-        echo json_encode($results);
-        exit;
+        return $this->jsonSuccess("Data pihak/pembeli berhasil dimuat", $results);
     }
 
     public function checkout() {
-        $cartRaw = $this->getPost('cart');
-        $doc_number = $this->getPost('doc_number');
-        $received_by = $this->getPost('received_by');
-        $warehouse = $this->getPost('warehouse');
+        $cartRaw      = $this->getPost('cart');
+        $doc_number   = $this->getPost('doc_number');
+        $received_by  = $this->getPost('received_by');
+        $warehouse    = $this->getPost('warehouse');
         $date_receive = $this->getPost('date_receive');        
 
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
@@ -81,23 +78,24 @@ class StockInController extends BaseController {
         $cart = json_decode($cartRaw, true);
         if (!$cart) return $this->jsonError("Data keranjang tidak valid.");
 
-        if (empty($received_by)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
+        if (empty($received_by)) return $this->jsonError("Harap pilih penerima terlebih dahulu.");
 
         $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
-            return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
+            $returnId = $result['sale_id'] ?? ($result['receive_id'] ?? null);
+            return $this->jsonSuccess($result['message'], ['sale_id' => $returnId]);
         } else {
-            $errorMessage = isset($result['message']) ? $result['message'] : "Gagal menyimpan transaksi ke database.";
+            $errorMessage = $result['message'] ?? "Gagal menyimpan transaksi ke database.";
             return $this->jsonError($errorMessage);
         }
     }
 
     public function export_xls() {
-        $search    = $_POST['search'] ?? '';
-        $warehouse = $_POST['warehouse'] ?? '';
-        $startDate = $_POST['start_date'] ?? '';
-        $endDate   = $_POST['end_date'] ?? '';
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
 
         $data = $this->stockInModel->getFiltered($search, $warehouse, $startDate, $endDate);
 
@@ -111,8 +109,11 @@ class StockInController extends BaseController {
 
         foreach ($data as $index => $item) {
             $namaGudang = $item['warehouse'];
-            if ($item['warehouse'] == '1') $namaGudang = 'Gudang BS';
-            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang Sampah';
+            if ($item['warehouse'] == '1') {
+                $namaGudang = 'Gudang BS';
+            } elseif ($item['warehouse'] == '2') {
+                $namaGudang = 'Gudang Sampah';
+            }
 
             $tanggal = date('d M Y', strtotime($item['date_receive']));
 
@@ -125,7 +126,7 @@ class StockInController extends BaseController {
             ];
         }
 
-        $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
+        $fileName = "Laporan_Penerimaan_Stok_" . date('Ymd_His') . ".xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }

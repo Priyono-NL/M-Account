@@ -31,7 +31,7 @@
 
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
             <li>
-                <a class="dropdown-item text-danger" href="index.php?page=auth/logout">
+                <a class="dropdown-item text-danger" href="index.php?page=auth&action=logout">
                     <i class="fa-solid fa-right-from-bracket me-2"></i> Keluar
                 </a>
             </li>

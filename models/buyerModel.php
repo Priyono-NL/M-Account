@@ -8,7 +8,7 @@ class BuyerModel extends DatabaseHelper {
     }
 
     public function getFiltered($search = '') {
-        $sql = "SELECT * FROM buyer WHERE is_active=0";
+        $sql = "SELECT * FROM buyer WHERE is_active = 0";
         $params = [];
 
         if (!empty($search)) {
@@ -16,9 +16,9 @@ class BuyerModel extends DatabaseHelper {
             $params['search'] = "%{$search}%";
         }
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql .= " ORDER BY buyer_name ASC"; // Tambahan opsional: Urutkan alfabetis agar front-end rapi
+
+        return $this->query_all($sql, $params);
     }
 
 }
