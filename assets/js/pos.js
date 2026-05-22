@@ -11,6 +11,41 @@ function printReceipt(id) {
 }
 
 $(document).ready(function() {
+	
+	let dateTimeout = null;
+	const jedaMengetik = 500;
+	
+	$('#salesDate').on('input change', function() {
+		clearTimeout(dateTimeout);
+		const $this = $(this);
+		const selectedDateStr = $this.val();
+		if (!selectedDateStr) return; 
+
+		dateTimeout = setTimeout(function() {			
+			let parts = selectedDateStr.split('-');
+			if (parts.length !== 3) return;
+
+			let year  = parseInt(parts[0], 10);
+			let month = parseInt(parts[1], 10) - 1;
+			let day   = parseInt(parts[2], 10);
+
+			if (year < 2000) return;
+
+			let selectedDate = new Date(year, month, day);
+			selectedDate.setHours(0, 0, 0, 0);
+
+			let today = new Date();
+			today.setHours(0, 0, 0, 0);
+
+			let minDate = new Date();
+			minDate.setDate(minDate.getDate() - 14);
+			minDate.setHours(0, 0, 0, 0);
+
+			if (selectedDate.getTime() < minDate.getTime()) {
+				showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
+			}			
+		}, jedaMengetik);
+	});
 
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 

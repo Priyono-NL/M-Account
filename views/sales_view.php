@@ -35,32 +35,37 @@ class Sales_view {
                         </div>
                     </div>
 
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light">Dari</span>
-                            <input type="date" class="form-control" id="startDate">
+                            <input type="date" class="form-control" id="startDate" value=<?= date('Y-m-d', strtotime('-14 days')) ?>>
                             <span class="input-group-text bg-light border-start-0 border-end-0">Sampai</span>
-                            <input type="date" class="form-control" id="endDate">
+                            <input type="date" class="form-control" id="endDate" value=<?= date('Y-m-d') ?>>
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                         <div class="row g-1">
-                            <div class="col-5">
+                            <div class="col-4">
                                 <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>>
                                     <option value="">Semua Gudang</option>
                                     <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
                                     <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
                                 </select>
                             </div>
-                            <div class="col-5">
+                            <div class="col-4">
                                 <select class="form-select form-select-sm" id="filterType">
                                     <option value="">Semua Tipe</option>
                                     <option value="SLS">Normal</option>
                                     <option value="EXP">Expense</option>
                                 </select>
                             </div>
-                            <div class="col-2">
+							<div class="col-2">
+								<button type="button" id="btnFilter" class="btn btn-primary border btn-sm w-100" title="Data Filter">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+							</div>
+                            <div class="col-2">								
                                 <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
                                     <i class="fa-solid fa-rotate-right"></i>
                                 </button>
@@ -90,8 +95,8 @@ class Sales_view {
                         <tbody style="font-size: 13px;">
                             <tr id="loadingRow">
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
-                                    Memuat data ...
+                                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+									Lakukan Pencarian ...
                                 </td>
                             </tr>
                         </tbody>

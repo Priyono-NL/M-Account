@@ -72,6 +72,7 @@ class StockInController extends BaseController {
         $received_by  = $this->getPost('received_by');
         $warehouse    = $this->getPost('warehouse');
         $date_receive = $this->getPost('date_receive');        
+		$notes		  = $this->getPost('notes');
 
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
@@ -80,7 +81,7 @@ class StockInController extends BaseController {
 
         if (empty($received_by)) return $this->jsonError("Harap pilih penerima terlebih dahulu.");
 
-        $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive);
+        $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             $returnId = $result['sale_id'] ?? ($result['receive_id'] ?? null);

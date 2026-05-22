@@ -1,4 +1,6 @@
-$(document).ready(function() {
+$(document).ready(function() {	
+	
+	let tbody = $("#historyTable tbody");
 
     function loadFilteredHistory() {
         $.ajax({
@@ -13,8 +15,7 @@ $(document).ready(function() {
                 end_date: $("#endDate").val()
             },
             success: function(res) {
-                if (res.status === "success") {
-                    let tbody = $("#historyTable tbody");
+                if (res.status === "success") {                    
                     tbody.empty();
 
                     if (res.data.length === 0) {
@@ -59,24 +60,44 @@ $(document).ready(function() {
             }
         });
     }
+	
+	function clearTable() {
+		tbody.empty();
+		tbody.append(`
+			<tr>
+				<td colspan="7" class="text-center py-5 text-muted">
+					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+					Pencarian dibersihkan
+				</td>
+			</tr>
+		`);
+	}
 
-    loadFilteredHistory();
-
-    $("#search").on("keyup", loadFilteredHistory);
-    $("#filterWarehouse, #startDate, #endDate").on("change", loadFilteredHistory);
-
+    $("#search").on("keyup", clearTable);
+    $("#filterWarehouse, #startDate, #endDate").on("change", clearTable);
+	
+	$("#btnFilter").click(function() {
+		loadFilteredHistory();
+	});
+	
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        loadFilteredHistory();
+		clearTable();
     });
 
     $("#btnResetAll").click(function() {
+		let before = new Date();
+		let now = new Date();
+		before.setDate(before.getDate() - 14);
+		now.setDate(now.getDate());
+		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+		
         $("#search").val("");
         $("#filterWarehouse").val("");
-        $("#startDate").val("");
-        $("#endDate").val("");
-        
-        loadFilteredHistory();
+        $("#startDate").val(beforeLokal);
+        $("#endDate").val(nowLokal);
+		clearTable();
     });
 
     $("#btnExportExcel").click(function() {

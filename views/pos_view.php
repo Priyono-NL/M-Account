@@ -25,7 +25,7 @@ class POSView {
                             
                             <?php if ($isViewMode): ?>
                             <div>
-                                <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='/m-account/pos/history'">
+                                <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='index.php?page=pos&action=history'">
                                     <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                                 </button>
                             </div>
@@ -43,7 +43,7 @@ class POSView {
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI</label>
                                 <input type="date" class="form-control form-control-sm" id="salesDate" 
                                         value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['sales_date'])) : date('Y-m-d') ?>" 
-                                        <?= $isViewMode ? 'disabled' : '' ?>>
+                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TIPE SALES</label>

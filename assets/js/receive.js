@@ -1,6 +1,41 @@
 let cart = [];
 
 $(document).ready(function() {
+	
+	let dateTimeout = null;
+	const jedaMengetik = 500;
+	
+	$('#date_receive').on('input change', function() {
+		clearTimeout(dateTimeout);
+		const $this = $(this);
+		const selectedDateStr = $this.val();
+		if (!selectedDateStr) return; 
+
+		dateTimeout = setTimeout(function() {			
+			let parts = selectedDateStr.split('-');
+			if (parts.length !== 3) return;
+
+			let year  = parseInt(parts[0], 10);
+			let month = parseInt(parts[1], 10) - 1;
+			let day   = parseInt(parts[2], 10);
+
+			if (year < 2000) return;
+
+			let selectedDate = new Date(year, month, day);
+			selectedDate.setHours(0, 0, 0, 0);
+
+			let today = new Date();
+			today.setHours(0, 0, 0, 0);
+
+			let minDate = new Date();
+			minDate.setDate(minDate.getDate() - 14);
+			minDate.setHours(0, 0, 0, 0);
+
+			if (selectedDate.getTime() < minDate.getTime()) {
+				showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
+			}			
+		}, jedaMengetik);
+	});
 
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 
@@ -215,6 +250,7 @@ $(document).ready(function() {
             let received_by = receivedBy;
             let warehouse = $('#warehouseSelect').val();
             let transDate = $('#date_receive').val();
+			let notes = $('#notes').val();
 
             let btn = $(this);
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
@@ -229,6 +265,7 @@ $(document).ready(function() {
                     received_by: received_by,
                     warehouse: warehouse,
                     date_receive: transDate,
+					notes: notes,
                     cart: JSON.stringify(cart)
                 },
                 success: function(response) {

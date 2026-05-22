@@ -1,7 +1,7 @@
 function viewDetail(id) {
     let form = document.createElement("form");
     form.setAttribute("method", "post");
-    form.setAttribute("action", "/m-account/pos");
+    form.setAttribute("action", "index.php?page=pos");
 
     let actionInput = document.createElement("input");
     actionInput.setAttribute("type", "hidden");
@@ -26,6 +26,8 @@ function viewDetail(id) {
 }
 
 $(document).ready(function() {
+	
+	let tbody = $("#historyTable tbody");
 
     function loadFilteredHistory() {
         $.ajax({
@@ -42,7 +44,6 @@ $(document).ready(function() {
             },
             success: function(res) {
                 if (res.status === "success") {
-                    let tbody = $("#historyTable tbody");
                     tbody.empty();
 
                     if (res.data.length === 0) {
@@ -100,24 +101,45 @@ $(document).ready(function() {
         });
     }
 
-    loadFilteredHistory();
+    function clearTable() {
+		tbody.empty();
+		tbody.append(`
+			<tr>
+				<td colspan="7" class="text-center py-5 text-muted">
+					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+					Pencarian dibersihkan
+				</td>
+			</tr>
+		`);
+	}
 
-    $("#search").on("keyup", loadFilteredHistory);
-    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", loadFilteredHistory);
+    $("#search").on("keyup", clearTable);
+    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", clearTable);
+	
+	$("#btnFilter").click(function() {
+		loadFilteredHistory();
+	});
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        loadFilteredHistory();
+		clearTable();
     });
 
     $("#btnResetAll").click(function() {
+		let before = new Date();
+		let now = new Date();
+		before.setDate(before.getDate() - 14);
+		now.setDate(now.getDate());
+		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+		
         $("#search").val("");
         $("#filterWarehouse").val("");
         $("#filterType").val("");
-        $("#startDate").val("");
-        $("#endDate").val("");
+        $("#startDate").val(beforeLokal);
+        $("#endDate").val(nowLokal);
         
-        loadFilteredHistory();
+        clearTable();
     });
 
     $("#btnExportExcel").click(function() {

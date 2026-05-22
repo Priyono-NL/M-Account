@@ -78,19 +78,38 @@ $(document).ready(function() {
         });
     }
 
-    loadFilteredHistory();
+    function clearPivot() {
+		$("#pivot_loading").show();
+		$("#pivot_output").hide();
+	}
 
-    $("#search").on("keyup", loadFilteredHistory);
-    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", loadFilteredHistory);
+    $("#search").on("keyup", clearPivot);
+    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", clearPivot);
+	
+	$("#btnFilter").click(function() {
+		loadFilteredHistory();
+	});
+	
+	$("#btnClearSearch").click(function() {
+        $("#search").val("");
+		clearPivot();
+    });
 
     $("#btnResetAll").click(function() {
+		let before = new Date();
+		let now = new Date();
+		before.setDate(before.getDate() - 14);
+		now.setDate(now.getDate());
+		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+		
         $("#search").val("");
         $("#filterWarehouse").val("");
         $("#filterType").val("");
-        $("#startDate").val("");
-        $("#endDate").val("");
+        $("#startDate").val(beforeLokal);
+        $("#endDate").val(nowLokal);
         
-        loadFilteredHistory();
+        clearPivot();
     });
 
     $("#btnExportExcel").on("click", function() {

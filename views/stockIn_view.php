@@ -25,7 +25,7 @@ class StockIn_view {
 
                             <?php if ($isViewMode): ?>
                             <div>
-                                <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='/m-account/receive/history'">
+                                <button type="button" class="btn btn-sm btn-light border me-1 text-muted" onclick="window.location.href='index.php?page=receive&action=history'">
                                     <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                                 </button>
                             </div>
@@ -33,31 +33,7 @@ class StockIn_view {
                         </div>
                         
                         <div class="row g-3 mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm" id="date_receive" 
-                                        value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
-                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
-                            </div> 
-                            <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
-                                <?php if ($isViewMode): ?>
-									<span class="d-block fw-bold text-dark py-1 px-2 bg-light rounded border" id="docNumber" style="font-size: 13px; min-height: 31px;">
-										<?= htmlspecialchars($transactionData['header']['doc_number'] ?? '-'); ?>
-									</span>
-								<?php else: ?>
-									<input type="text" class="form-control form-control-sm" id="docNumber" 
-										   placeholder="W-001" value="">
-								<?php endif; ?>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PENERIMA <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" id="received_by" 
-                                        placeholder="Nama Penerima ..."
-                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
-                                        <?= $isViewMode ? 'disabled' : '' ?>>
-                            </div>
-                            <div class="col-md-3">
+							<div class="col-md-2">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
 
@@ -77,7 +53,27 @@ class StockIn_view {
                                     <input type="hidden" name="warehouse" value="<?= $selected_id ?>">
                                 <?php endif; ?>
                             </div>
-							<div class="col-md-6">
+                            <div class="col-md-2">
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" id="date_receive" 
+                                        value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
+                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
+                            </div>
+							<div class="col-md-2">
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PENERIMA <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="received_by" 
+                                        placeholder="Nama Penerima ..."
+                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
+                                        <?= $isViewMode ? 'disabled' : '' ?>>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="docNumber" 
+                                        placeholder="W-001" 
+                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
+                                        <?= $isViewMode ? 'readonly' : '' ?>>
+                            </div>                                                        
+							<div class="col-md-4">
 								<label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NOTES</label>
 								<input type="text" class="form-control form-control-sm" id="notes" 
                                         placeholder="Detail Dokumen ..."
