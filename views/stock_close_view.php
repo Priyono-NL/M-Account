@@ -16,10 +16,6 @@ class StockCloseView {
                 <p class="text-muted small mb-0">Pantau stok awal, pergerakan, dan stok akhir barang.</p>
             </div>
             <div>
-                <button type="button" id="btnClosing" class="btn btn-primary btn-sm px-3 rounded-3 shadow-sm">
-                    <i class="fa-solid fa-shop-lock me-2"></i> Closing Stock
-                </button>
-
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
                     <i class="fa-solid fa-file-excel me-2"></i> Export Excel
                 </button>
@@ -44,23 +40,28 @@ class StockCloseView {
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-calendar me-1"></i> Bulan</span>
                             <input type="month" class="form-control shadow-none" id="closeMonth" value="<?php echo date('Y-m'); ?>">
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="row g-1">
-                            <div class="col-8">
+                            <div class="col-6">
                                 <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>>
                                     <option value="">Semua Gudang</option>
                                     <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
                                     <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
                                 </select>
                             </div>
-                            <div class="col-4">
+							<div class="col-3">
+								<button type="button" id="btnFilter" class="btn btn-primary border btn-sm w-100" title="Data Filter">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+							</div>
+                            <div class="col-3">
                                 <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
                                     <i class="fa-solid fa-rotate-right"></i>
                                 </button>
@@ -90,8 +91,8 @@ class StockCloseView {
                         <tbody style="font-size: 13px;">
                             <tr id="loadingRow">
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
-                                    Memuat data ...
+                                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+									Lakukan Pencarian ...
                                 </td>
                             </tr>
                         </tbody>

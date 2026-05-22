@@ -1,4 +1,5 @@
 $(document).ready(function() {
+	let tbody = $("#stockTable tbody");
 
     function renderStatusBanner(status) {
         let bannerHtml = '';
@@ -40,16 +41,17 @@ $(document).ready(function() {
                 closeMonth: $("#closeMonth").val(),
             },
             success: function(res) {
-                if (res.status === "success") {
-                    let tbody = $("#stockTable tbody");
+                if (res.status === "success") {                    
                     tbody.empty();
 
                     let currentStatus = res.data.status;
+					console.log(res.data.status);
                     renderStatusBanner(currentStatus);
 
                     let itemsArray = res.data.stocks || [];
 
                     if (itemsArray.length === 0) {
+						$('#statusBannerContainer').empty();
                         tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
                         return;
                     }
@@ -92,22 +94,42 @@ $(document).ready(function() {
         });
     }
 
-    loadFilteredHistory();
+    function clearTable() {
+		$('#statusBannerContainer').empty();
+		tbody.empty();
+		tbody.append(`
+			<tr>
+				<td colspan="7" class="text-center py-5 text-muted">
+					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+					Pencarian dibersihkan
+				</td>
+			</tr>
+		`);
+	}
+	
+	$("#btnFilter").click(function() {
+		loadFilteredHistory();
+	})
 
-    $("#search").on("keyup", loadFilteredHistory);
-    $("#filterWarehouse, #closeMonth").on("change", loadFilteredHistory);
+    $("#search").on("keyup", clearTable);
+    $("#filterWarehouse, #closeMonth").on("change", clearTable);
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        loadFilteredHistory();
+        clearTable();
     });
 
     $("#btnResetAll").click(function() {
+		let d = new Date();
+		let tahun = d.getFullYear();
+		let bulan = String(d.getMonth() + 1).padStart(2, '0');
+		let nowMonth = tahun + '-' + bulan;
+	
         $("#search").val("");
         $("#filterWarehouse").val("");
-        $("#closeMonth").val("");
+        $("#closeMonth").val(nowMonth);
         
-        loadFilteredHistory();
+        clearTable();
     });
 
     $("#btnExportExcel").click(function() {

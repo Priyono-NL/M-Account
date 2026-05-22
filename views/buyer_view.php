@@ -35,7 +35,7 @@ class BuyerView {
                             </button>
                         </div>
                     </div>
-                    
+					
                 </div>
             </div>
         </div>
@@ -56,8 +56,8 @@ class BuyerView {
                         <tbody style="font-size: 13px;">
                             <tr id="loadingRow">
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>
-                                    Memuat data ...
+                                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+									Ketik di Pencarian untuk memuat data...
                                 </td>
                             </tr>
                         </tbody>

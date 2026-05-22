@@ -55,7 +55,12 @@ class StocksView {
                                     <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
                                 </select>
                             </div>
-                            <div class="col-4">
+							<div class="col-2">
+								<button type="button" id="btnFilter" class="btn btn-primary border btn-sm w-100" title="Data Filter">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+							</div>
+                            <div class="col-2">
                                 <button type="button" id="btnResetAll" class="btn btn-light border btn-sm w-100 text-muted" title="Reset Filter">
                                     <i class="fa-solid fa-rotate-right"></i>
                                 </button>

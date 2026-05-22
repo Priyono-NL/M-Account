@@ -1,4 +1,5 @@
 $(document).ready(function() {
+	let tbody = $("#buyerTable tbody");
 
     function loadFilteredBuyers() {
         $.ajax({
@@ -12,7 +13,6 @@ $(document).ready(function() {
             },
             success: function(res) {
                 if (res.status === "success") {
-                    let tbody = $("#buyerTable tbody");
                     tbody.empty();
 
                     if (res.data.length === 0) {
@@ -47,14 +47,26 @@ $(document).ready(function() {
             }
         });
     }
-
-    loadFilteredBuyers();
+	
+	function clearTable() {
+		tbody.empty();
+		tbody.append(`
+			<tr>
+				<td colspan="7" class="text-center py-5 text-muted">
+					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+					Ketik di Pencarian untuk memuat data...
+				</td>
+			</tr>
+		`);
+	}
+	
+	loadFilteredBuyers();
 
     $("#search").on("keyup", loadFilteredBuyers);
     
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        loadFilteredBuyers();
+        clearTable();
     });
 
     $("#btnAddBuyer").click(function() {

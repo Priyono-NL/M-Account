@@ -16,7 +16,7 @@ class BuyerModel extends DatabaseHelper {
             $params['search'] = "%{$search}%";
         }
 
-        $sql .= " ORDER BY buyer_name ASC"; // Tambahan opsional: Urutkan alfabetis agar front-end rapi
+        $sql .= " ORDER BY buyer_name ASC";
 
         return $this->query_all($sql, $params);
     }

@@ -36,12 +36,21 @@ $(document).ready(function() {
                             "Total": row.sale_type === 'EXP' ? 0 : parseFloat(row.total)
                         };
                     });
+					
+					let totalUniqueValues = {};
+					if (mappedData.length > 0) {
+						let keys = Object.keys(mappedData[0]);
+						keys.forEach(function(key) {
+							let uniqueVals = new Set(mappedData.map(row => row[key]));
+							totalUniqueValues[key] = uniqueVals.size;
+						});
+					}
 
                     const pivotRupiahFormatter = (number) => {
                         if (number === 0 || isNaN(number)) return "-";
                         return formatRupiah(number);
                     };
-
+					
                     const tpl = $.pivotUtilities.aggregatorTemplates;
 
                     $("#pivot_output").show().pivotUI(mappedData, {
@@ -61,11 +70,31 @@ $(document).ready(function() {
                         ),
                         
                         rendererName: "Table", 
-
+						
                         onRefresh: function(config) {
                             $(".pvtTable").addClass("table table-sm table-bordered mt-3");
                             $(".pvtCols, .pvtVals").hide();
                             $(".pvtTotal, .pvtTotalLabel, .pvtGrandTotal").show();
+							
+							$(".pvtAttr").each(function() {
+								let attrName = $(this).data("attrName");
+								
+								if (attrName && totalUniqueValues[attrName] !== undefined) {
+									let totalCount = totalUniqueValues[attrName];
+									let selectedCount = totalCount;
+									
+									if (config.inclusions && config.inclusions[attrName]) selectedCount = Object.keys(config.inclusions[attrName]).length;
+									let newLabel = attrName + " (" + selectedCount + "/" + totalCount + ")";
+									
+									let textNode = $(this).contents().filter(function() { 
+										return this.nodeType === 3;
+									})[0];
+									
+									if (textNode) {
+										textNode.nodeValue = newLabel + " ";
+									}
+								}
+							});
                         }
                     });
                 }
