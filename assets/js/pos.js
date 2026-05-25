@@ -6,236 +6,120 @@ function printReceipt(id) {
         return;
     }
     const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
-    // const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
 $(document).ready(function() {
-	
-	let dateTimeout = null;
-	const jedaMengetik = 500;
-	
-	$('#salesDate').on('input change', function() {
-		clearTimeout(dateTimeout);
-		const $this = $(this);
-		const selectedDateStr = $this.val();
-		if (!selectedDateStr) return; 
+    let dateTimeout = null;
+    const jedaMengetik = 500;
+    
+    // ==========================================
+    // 1. VALIDASI TANGGAL & GUDANG
+    // ==========================================
+    $('#salesDate').on('input change', function() {
+        clearTimeout(dateTimeout);
+        const selectedDateStr = $(this).val();
+        if (!selectedDateStr) return; 
 
-		dateTimeout = setTimeout(function() {			
-			let parts = selectedDateStr.split('-');
-			if (parts.length !== 3) return;
+        dateTimeout = setTimeout(function() {            
+            let parts = selectedDateStr.split('-');
+            if (parts.length !== 3) return;
+            let year = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1, day = parseInt(parts[2], 10);
+            if (year < 2000) return;
 
-			let year  = parseInt(parts[0], 10);
-			let month = parseInt(parts[1], 10) - 1;
-			let day   = parseInt(parts[2], 10);
+            let selectedDate = new Date(year, month, day); selectedDate.setHours(0, 0, 0, 0);
+            let minDate = new Date(); minDate.setDate(minDate.getDate() - 14); minDate.setHours(0, 0, 0, 0);
 
-			if (year < 2000) return;
+            if (selectedDate.getTime() < minDate.getTime()) {
+                showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
+            }            
+        }, jedaMengetik);
+    });
 
-			let selectedDate = new Date(year, month, day);
-			selectedDate.setHours(0, 0, 0, 0);
+    // Kosongkan keranjang otomatis jika gudang asal diubah (karena stok barang tiap gudang berbeda)
+    $('#warehouseSelect').on('change', function() {
+        if (cart.length > 0) {
+            showNotification('Gudang diubah! Keranjang dikosongkan untuk menyesuaikan stok gudang baru.', 'warning');
+            cart = [];
+            renderCart();
+        }
+    });
 
-			let today = new Date();
-			today.setHours(0, 0, 0, 0);
-
-			let minDate = new Date();
-			minDate.setDate(minDate.getDate() - 14);
-			minDate.setHours(0, 0, 0, 0);
-
-			if (selectedDate.getTime() < minDate.getTime()) {
-				showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
-			}			
-		}, jedaMengetik);
-	});
 
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 
-    // MODE VIEW ONLY (Melihat Detail Transaksi Riwayat Lama)
-    if (isViewOnly) {
-        if (typeof VIEW_DATA_ITEMS !== 'undefined') {
-            const currentSalesType = document.getElementById('salesType').value;
-            
-            cart = VIEW_DATA_ITEMS.map(function(item) {
-                let hargaDb = parseFloat(item.unit_price || 0);
-                return {
-                    id: item.item_id || item.id,
-                    kode: item.item_code,
-                    nama: item.item_name,
-                    harga_asli: hargaDb,
-                    harga: (currentSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
-                    qty: parseFloat(item.item_qty || 1), 
-                    stok: 0
-                };
-            });
-        }
+    // ==========================================
+    // 2. RENDER KERANJANG UTAMA
+    // ==========================================
+    if (isViewOnly && typeof VIEW_DATA_ITEMS !== 'undefined') {
+        const currentSalesType = document.getElementById('salesType').value;
+        cart = VIEW_DATA_ITEMS.map(function(item) {
+            return {
+                id: item.item_id || item.id,
+                kode: item.item_code,
+                nama: item.item_name,
+                uom: item.item_uom,
+                harga_asli: parseFloat(item.unit_price || 0),
+                harga: (currentSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
+                qty: parseFloat(item.item_qty || 1), 
+                stok: 999999 // Saat view, abaikan batas stok
+            };
+        });
         renderCart();
     }
 
-    // MODE TRANSAKSI AKTIF (Kasir Bisa Berbelanja)
-    if (!isViewOnly) {
-        // Select2 Pencarian Data Pelanggan/Buyer
-        $('#buyerSelect').select2({
-            placeholder: "-- Cari Pelanggan --",
-            allowClear: true,
-            ajax: {
-                url: 'index.php?page=pos',
-                type: "POST",
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return { action: 'get_buyers', keyword: params.term || '' };
-                },
-                processResults: function (response) {
-                    // Mengakses data dari standarisasi helper jsonSuccess BaseController
-                    const buyersData = response.data || [];
-                    return {
-                        results: $.map(buyersData, function (item) {
-                            return { 
-                                id: item.id, 
-                                text: item.buyer_code + ' - ' + item.buyer_name,
-                                is_exp: item.buyer_status
-                            };
-                        })
-                    };
-                },
-                cache: true
-            }
-        });
-
-        $('#buyerSelect').on('select2:select', function (e) {
-            let data = e.params.data;
-            let canExp = (data.is_exp == 'EXP'); 
-
-            if (canExp) $('#salesType option[value="EXP"]').prop('disabled', false);
-            else {
-                if ($('#salesType').val() === 'EXP') {
-                    $('#salesType').val('SLS').trigger('change');
-                    showNotification('Expense tidak tersedia untuk Pelanggan ini. Kembali ke Normal Sales.', 'warning');
-                }
-                $('#salesType option[value="EXP"]').prop('disabled', true);
-            }
-        });
-
-        $('#buyerSelect').on('select2:clear', function () {
-            $('#salesType option[value="EXP"]').prop('disabled', true);
-            if ($('#salesType').val() === 'EXP') $('#salesType').val('SLS').trigger('change');
-        });
-
-        // Select2 Pencarian Produk Barang Berdasarkan Gudang Terpilih
-        $('#productSearch').select2({
-            placeholder: "Ketik nama atau kode produk...",
-            allowClear: true,
-            ajax: {
-                url: 'index.php?page=pos',
-                type: "POST",
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return {
-                        action: 'get_products',
-                        keyword: params.term || '',
-                        warehouse: $('#warehouseSelect').val()
-                    };
-                },
-                processResults: function (response) {
-                    // Mengakses data dari standarisasi helper jsonSuccess BaseController
-                    const productsData = response.data || [];
-                    let filteredData = productsData.filter(function(item) {
-                        return parseFloat(item.qty_close) > 0;
-                    });
-                    return {
-                        results: $.map(filteredData, function (item) {
-                            return {
-                                id: item.id,
-                                text: item.item_code + ' | ' + item.item_name + ' | ' + parseFloat(item.qty_close),
-                                nama: item.item_name,
-                                kode: item.item_code,
-                                harga_asli: parseFloat(item.unit_price || 0),
-                                harga: ($('#salesType').val() === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
-                                stok: parseFloat(item.qty_close)
-                            }
-                        })
-                    };
-                },
-                cache: true
-            }
-        });
-
-        $('#productSearch').on('select2:select', function (e) {
-            let data = e.params.data;
-            let liveSalesType = $('#salesType').val();
-            let id = data.id;
-            if (!id) return; 
-
-            let nama = data.nama;
-            let stok = parseFloat(data.stok) || 0;
-
-            if (stok <= 0) {
-                showNotification(`Stok ${nama} di gudang ini kosong/habis!`, 'danger');
-                $('#productSearch').val(null).trigger('change');
-                return;
-            }
-
-            let existingItem = cart.find(item => item.id == id);
-
-            if (existingItem) {
-                if (existingItem.qty + 1 > stok) {
-                    showNotification(`Maksimal Qty untuk ${nama} adalah ${stok}!`, 'warning');
-                } else {
-                    existingItem.qty += 1;
-                    showNotification(`Qty ${nama} ditambahkan`, 'success');
-                }
-            } else {
-                cart.push({ 
-                    id: data.id, 
-                    kode: data.kode, 
-                    nama: data.nama, 
-                    harga_asli: data.harga_asli,
-                    harga: (liveSalesType === 'EXP') ? 0 : data.harga_asli, 
-                    qty: 1, 
-                    stok: data.stok 
-                });
-                showNotification(`Ditambahkan: ${nama}`, 'success');
-            }
-
-            $('#productSearch').val(null).trigger('change');
-            renderCart();
-        });
-    }
-
-    // Fungsi Render Tampilan Item Keranjang Belanja HTML
+    // Fungsi Render Tampilan Item Keranjang Belanja & Ringkasan Kelompok (Diperbarui)
     function renderCart() {
         let tbody = $('#cartTableBody');
+        let summaryCards = $('#mainCartSummaryCards');
+        
         tbody.empty();
+        summaryCards.empty();
         
         let subtotal = 0;
 
         if (cart.length === 0) {
             tbody.append(`
-                <tr>
-                    <td colspan="${isViewOnly ? 4 : 5}" class="text-center text-muted py-5">
+                <tr id="emptyCartRow">
+                    <td colspan="${isViewOnly ? 4 : 5}" class="text-center text-muted py-5 border-bottom-0">
                         <i class="fa-solid fa-box-open fs-2 mb-3 d-block opacity-25"></i>
-                        ${isViewOnly ? 'Memuat data transaksi...' : 'Belum ada barang di keranjang.<br><small>Silakan cari dan pilih produk di atas.</small>'}
+                        ${isViewOnly ? 'Memuat data transaksi...' : 'Belum ada barang di keranjang.<br><small>Silakan klik tombol tambah di atas.</small>'}
                     </td>
                 </tr>
             `);
+            summaryCards.html('<small class="text-muted text-center py-2">Belum ada item terpilih</small>');
         } else {
+            let groupedSummary = {};
+
+            // A. Looping untuk Menggambar Baris Tabel (Kiri)
             cart.forEach((item, index) => {
                 let totalHarga = item.harga * item.qty;
                 subtotal += totalHarga;
 
+                // Logika akumulasi pengelompokan barang untuk Ringkasan Kanan
+                if (!groupedSummary[item.id]) {
+                    groupedSummary[item.id] = { 
+                        nama: item.nama, 
+                        uom: item.uom, 
+                        totalQty: 0, 
+                        totalHargaGroup: 0 
+                    };
+                }
+                groupedSummary[item.id].totalQty += item.qty;
+                groupedSummary[item.id].totalHargaGroup += totalHarga;
+
                 let qtyHTML = isViewOnly 
-                    ? `<span class="fw-bold fs-6 text-dark">${item.qty}</span>`
+                    ? `<span class="fw-bold fs-6 text-dark">${item.qty} <small class="fw-normal text-muted">${item.uom}</small></span>`
                     : `
                         <div class="d-flex justify-content-center align-items-center gap-1">
                             <button class="btn btn-sm btn-light border btn-action btn-minus" data-index="${index}"><i class="fa-solid fa-minus" style="font-size: 10px;"></i></button>
-                            <input type="number" class="form-control form-control-sm text-center qty-input fw-bold" style="width: 75px;" value="${item.qty}" min="1" data-index="${index}">
+                            <input type="number" class="form-control form-control-sm text-center qty-input fw-bold" style="width: 70px;" value="${item.qty}" min="1" data-index="${index}">
                             <button class="btn btn-sm btn-light border btn-action btn-plus" data-index="${index}"><i class="fa-solid fa-plus" style="font-size: 10px;"></i></button>
+                            <span class="text-muted small ms-1 fw-semibold text-start" style="min-width: 30px;">${item.uom}</span>
                         </div>
                     `;
 
-                let actionHTML = isViewOnly 
-                    ? '' 
-                    : `
+                let actionHTML = isViewOnly ? '' : `
                         <td class="text-center align-middle pe-3">
                             <button class="btn btn-sm btn-outline-danger btn-action btn-remove" data-index="${index}">
                                 <i class="fa-solid fa-trash"></i>
@@ -243,174 +127,335 @@ $(document).ready(function() {
                         </td>
                     `;
 
-                let tr = `
+                tbody.append(`
                     <tr style="font-size: 13px;">
-                        <td class="ps-3">
+                        <td class="ps-4">
                             <div class="fw-bold text-dark">${item.nama}</div>
                             <small class="text-muted" style="font-size: 11px;">${item.kode}</small>
                         </td>
                         <td class="text-center align-middle text-muted">${formatRupiah(item.harga)}</td>
-                        <td class="text-center align-middle">
-                            ${qtyHTML}
-                        </td>
-                        <td class="text-end align-middle fw-bold text-dark">${formatRupiah(totalHarga)}</td>
+                        <td class="text-center align-middle">${qtyHTML}</td>
+                        <td class="text-end align-middle fw-bold text-dark pe-4">${formatRupiah(totalHarga)}</td>
                         ${actionHTML}
                     </tr>
+                `);
+            });
+
+            // B. Looping untuk Menggambar Item Kelompok & Subtotalnya di Ringkasan (Kanan)
+            Object.values(groupedSummary).forEach(group => {
+                let cardHTML = `
+                    <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center" style="font-size: 12px;">
+                        <div class="text-truncate" style="max-width: 60%;">
+                            <span class="fw-bold text-dark d-block text-truncate" title="${group.nama}">${group.nama}</span>
+                            <small class="text-muted fw-semibold">${group.totalQty} ${group.uom}</small>
+                        </div>
+                        <span class="fw-bold text-primary">${formatRupiah(group.totalHargaGroup)}</span>
+                    </div>
                 `;
-                tbody.append(tr);
+                summaryCards.append(cardHTML);
             });
         }
 
-        let grandTotal = subtotal;
+        // Set nilai Grand Total Akhir
         $('#summarySubtotal').text(formatRupiah(subtotal));
-        $('#summaryTotal').text(formatRupiah(grandTotal));
+        $('#summaryTotal').text(formatRupiah(subtotal));
     }
 
-    // Trigger Perubahan Tipe Sales (Normal vs Expense)
-    $('#salesType').on('change', function() {
-        let newType = $(this).val();
+    if (!isViewOnly) {
 
-        cart.forEach(item => {
-            if (newType === 'EXP') item.harga = 0;
-            else item.harga = item.harga_asli;
+        // ==========================================
+        // 3. MODAL PELANGGAN (BUYER) - SINGLE SELECT
+        // ==========================================
+        function setBuyerEmpty() {
+            $('#buyerTableBody').html(`<tr><td colspan="2" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik nama pelanggan...</td></tr>`);
+        }
+
+        function loadModalBuyers(keyword = '') {
+            let tbody = $('#buyerTableBody');
+            tbody.html('<tr><td colspan="2" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i> Mencari...</td></tr>');
+            
+            $.ajax({
+                url: 'index.php?page=pos',
+                type: "POST", dataType: 'json',
+                data: { action: 'get_buyers', keyword: keyword },
+                success: function(response) {
+                    tbody.empty();
+                    let data = response.data || [];
+                    if (data.length === 0) {
+                        tbody.append('<tr><td colspan="2" class="text-center text-muted py-4">Pelanggan tidak ditemukan.</td></tr>');
+                        return;
+                    }
+                    data.forEach(item => {
+                        let isExpHTML = item.buyer_status === 'EXP' ? '<span class="badge bg-warning ms-2">Bisa EXP</span>' : '';
+                        tbody.append(`
+                            <tr>
+                                <td class="ps-3 align-middle">
+                                    <span class="fw-bold d-block text-dark">${item.buyer_name} ${isExpHTML}</span>
+                                    <small class="text-muted">${item.buyer_code}</small>
+                                </td>
+                                <td class="text-center align-middle pe-3">
+                                    <button class="btn btn-sm btn-outline-primary btn-pilih-buyer" 
+                                            data-id="${item.id}" 
+                                            data-nama="${item.buyer_name}" 
+                                            data-kode="${item.buyer_code}" 
+                                            data-isexp="${item.buyer_status}">
+                                        Pilih
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        }
+
+        $('#buyerModal').on('show.bs.modal', function () {
+            $('#modalSearchBuyer').val(''); $('#btnClearBuyerSearch').hide(); setBuyerEmpty();
         });
 
-        renderCart();    
-        if (newType === 'EXP') showNotification('Tipe EXP dipilih: Semua harga diatur ke 0', 'info');
-    });
+        let buyerTimeout = null;
+        $('#modalSearchBuyer').on('input', function() {
+            clearTimeout(buyerTimeout);
+            let keyword = $(this).val().trim();
+            if (keyword.length > 0) $('#btnClearBuyerSearch').show(); else $('#btnClearBuyerSearch').hide();
+            if (keyword === '') { setBuyerEmpty(); return; }
+            buyerTimeout = setTimeout(() => loadModalBuyers(keyword), 500);
+        });
 
-    if (!isViewOnly) {
-        // Tombol Plus (+) Qty
+        $('#btnClearBuyerSearch').click(function() {
+            $('#modalSearchBuyer').val('').focus(); $(this).hide(); setBuyerEmpty();
+        });
+
+        $(document).on('click', '.btn-pilih-buyer', function() {
+            let id = $(this).data('id');
+            let nama = $(this).data('nama');
+            let kode = $(this).data('kode');
+            let isExp = $(this).data('isexp');
+
+            $('#buyerId').val(id);
+            $('#buyerNameDisplay').val(nama + ' - ' + kode); 
+            
+            // Logika Dropdown Expense Sales
+            if (isExp === 'EXP') {
+                $('#salesType option[value="EXP"]').prop('disabled', false);
+            } else {
+                if ($('#salesType').val() === 'EXP') {
+                    $('#salesType').val('SLS').trigger('change');
+                    showNotification('Expense tidak tersedia untuk Pelanggan ini. Kembali ke Normal Sales.', 'warning');
+                }
+                $('#salesType option[value="EXP"]').prop('disabled', true);
+            }
+            $('#buyerModal').modal('hide');
+        });
+
+
+        // ==========================================
+        // 4. MODAL BARANG (ITEM) - MULTI SELECT
+        // ==========================================
+        let itemDraft = [];
+
+        function renderItemSummary() {
+            let container = $('#modalItemSummary');
+            container.empty();
+            $('#selectedItemBadge').text(itemDraft.length);
+
+            if (itemDraft.length === 0) {
+                container.html(`<div class="text-center text-muted mt-5 opacity-50 empty-summary"><i class="fa-solid fa-cart-arrow-down fs-1 mb-2"></i><br><small>Belum ada barang dipilih</small></div>`);
+                return;
+            }
+
+            itemDraft.forEach((item) => {
+                container.append(`
+                    <div class="card shadow-sm border-0 mb-2">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                            <div class="me-2 text-truncate" style="font-size: 12px; max-width: 170px;">
+                                <div class="fw-bold text-dark">${item.nama}</div>
+                                <span class="text-muted" style="font-size: 11px;">${item.kode}</span>
+                            </div>
+                            <button class="btn btn-sm btn-light text-danger border btn-remove-item-draft" data-id="${item.id}">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function setItemEmpty() {
+            $('#itemTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-magnifying-glass fs-3 mb-3 d-block opacity-25"></i>Silakan ketik nama atau kode barang...</td></tr>`);
+        }
+
+        function loadModalItems(keyword = '') {
+            let tbody = $('#itemTableBody');
+            tbody.html('<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-spinner fa-spin me-2 fs-3 mb-2 d-block opacity-50"></i> Mencari...</td></tr>');
+
+            $.ajax({
+                url: 'index.php?page=pos',
+                type: 'POST', dataType: 'json',
+                data: { action: 'get_products', keyword: keyword, warehouse: $('#warehouseSelect').val() },
+                success: function(response) {
+                    tbody.empty();
+                    const data = response.data || [];
+                    let filtered = data.filter(item => parseFloat(item.qty_close) > 0);
+
+                    if (filtered.length === 0) {
+                        tbody.append('<tr><td colspan="4" class="text-center text-muted py-5">Barang dengan stok tersedia tidak ditemukan.</td></tr>');
+                        return;
+                    }
+
+                    filtered.forEach(item => {
+                        let isChecked = itemDraft.find(d => d.id == item.id) ? 'checked' : '';
+                        let stok = parseFloat(item.qty_close);
+                        let hargaAsli = parseFloat(item.unit_price || 0);
+
+                        tbody.append(`
+                            <tr>
+                                <td class="text-muted fw-mono align-middle ps-3">${item.item_code}</td>
+                                <td class="align-middle">
+                                    <span class="fw-bold text-dark d-block">${item.item_name}</span>
+                                    <small class="badge bg-light text-secondary border mt-1">${formatRupiah(hargaAsli)}</small>
+                                </td>
+                                <td class="text-center align-middle fw-bold text-primary">${stok} ${item.item_uom || 'Pcs'}</td>
+                                <td class="text-center align-middle pe-3">
+                                    <input type="checkbox" class="form-check-input item-chk border-secondary shadow-sm m-0" 
+                                           style="width: 24px; height: 24px; cursor: pointer;" 
+                                           data-id="${item.id}" data-kode="${item.item_code}" data-nama="${item.item_name}" 
+                                           data-uom="${item.item_uom || 'Pcs'}" data-harga="${hargaAsli}" data-stok="${stok}" ${isChecked}>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        }
+
+        $('#itemModal').on('show.bs.modal', function () {
+            $('#modalSearchItem').val(''); $('#btnClearItemSearch').hide();
+            itemDraft = []; setItemEmpty(); renderItemSummary();
+        });
+
+        let itemTimeout = null;
+        $('#modalSearchItem').on('input', function() {
+            clearTimeout(itemTimeout);
+            let keyword = $(this).val().trim();
+            if (keyword.length > 0) $('#btnClearItemSearch').show(); else $('#btnClearItemSearch').hide();
+            if (keyword === '') { setItemEmpty(); return; }
+            itemTimeout = setTimeout(() => loadModalItems(keyword), 500);
+        });
+
+        $('#btnClearItemSearch').click(function() {
+            $('#modalSearchItem').val('').focus(); $(this).hide(); setItemEmpty();
+        });
+
+        $(document).on('change', '.item-chk', function() {
+            let $chk = $(this); let id = $chk.data('id');
+            if ($chk.is(':checked')) {
+                itemDraft.push({
+                    id: id, kode: $chk.data('kode'), nama: $chk.data('nama'), 
+                    uom: $chk.data('uom'), harga_asli: parseFloat($chk.data('harga')), stok: parseFloat($chk.data('stok')), qty: 1
+                });
+            } else itemDraft = itemDraft.filter(i => i.id != id);
+            renderItemSummary();
+        });
+
+        $(document).on('click', '.btn-remove-item-draft', function() {
+            let id = $(this).data('id');
+            itemDraft = itemDraft.filter(i => i.id != id);
+            $(`.item-chk[data-id="${id}"]`).prop('checked', false);
+            renderItemSummary();
+        });
+
+        $('#btnSubmitItems').click(function() {
+            if (itemDraft.length === 0) { showNotification('Pilih minimal satu barang!', 'warning'); return; }
+            
+            let currentSalesType = $('#salesType').val();
+
+            itemDraft.forEach(draft => {
+                cart.push({
+                    ...draft,
+                    harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
+                });
+            });
+
+            $('#itemModal').modal('hide');
+            renderCart();
+            showNotification(`${itemDraft.length} macam barang ditambahkan.`, 'success');
+        });
+
+
+        // ==========================================
+        // 5. INTERAKSI KERANJANG UTAMA & CHECKOUT
+        // ==========================================
+        $('#salesType').on('change', function() {
+            let newType = $(this).val();
+            cart.forEach(item => { item.harga = (newType === 'EXP') ? 0 : item.harga_asli; });
+            renderCart();    
+            if (newType === 'EXP') showNotification('Tipe EXP dipilih: Harga barang diatur ke Rp 0', 'info');
+        });
+
         $(document).on('click', '.btn-plus', function() {
             let index = $(this).data('index');
-            if (cart[index].qty + 1 > cart[index].stok) {
-                showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
-            } else {
-                cart[index].qty += 1;
-                renderCart();
-            }
+            if (cart[index].qty + 1 > cart[index].stok) showNotification(`Stok maksimal di gudang hanya ${cart[index].stok}!`, 'warning');
+            else { cart[index].qty += 1; renderCart(); }
         });
 
-        // Tombol Minus (-) Qty
         $(document).on('click', '.btn-minus', function() {
             let index = $(this).data('index');
-            let removedName = cart[index].nama; 
-            if (cart[index].qty > 1) {
-                cart[index].qty -= 1;
-            } else {
-                cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'warning');
-            }
-            renderCart();
+            if (cart[index].qty > 1) { cart[index].qty -= 1; renderCart(); }
+            else { cart.splice(index, 1); renderCart(); }
         });
 
-        // Event Input Manual Kolom Qty
         $(document).on('change', '.qty-input', function() {
-            let index = $(this).data('index');
-            let val = parseInt($(this).val());
-            let removedName = cart[index].nama;
-            
-            if (isNaN(val) || val <= 0) {
-                cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'warning');
-            } else if (val > cart[index].stok) {
-                showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
-                cart[index].qty = cart[index].stok;
+            let index = $(this).data('index'); let val = parseFloat($(this).val());
+            if (isNaN(val) || val <= 0) { cart[index].qty = 1; showNotification('Kuantitas tidak valid!', 'warning'); } 
+            else if (val > cart[index].stok) {
+                cart[index].qty = cart[index].stok; showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
             } else cart[index].qty = val;
             renderCart();
         });
 
-        // Tombol Hapus Barang Tunggal dari Keranjang
         $(document).on('click', '.btn-remove', function() {
-            let index = $(this).data('index');
-            let removedName = cart[index].nama;
-            cart.splice(index, 1);
-            renderCart();
-            showNotification(`Dihapus: ${removedName}`, 'warning');
+            cart.splice($(this).data('index'), 1); renderCart();
         });
 
-        // Tombol Batalkan / Clear Form Transaksi
         $('#btnClearCart').click(function() {
-            if (cart.length > 0) {
-                if (!confirm("Apakah Anda yakin ingin membatalkan transaksi dan membersihkan form?")) {
-                    return;
-                }
-            }
+            if (cart.length > 0 && !confirm("Batalkan transaksi dan bersihkan form?")) return;
             cart = [];
-            $('#buyerSelect').val(null).trigger('change');
-            $('#productSearch').val(null).trigger('change');
-            $('#salesType').val('SLS');
-            $('#warehouseSelect').val('1');
+            $('#buyerId').val(''); $('#buyerNameDisplay').val('');
+            $('#salesType').val('SLS'); $('#warehouseSelect').val('1');
             $('#salesDate').val(new Date().toISOString().split('T')[0]);
             renderCart();
         });
 
-        // Prosedur Simpan Transaksi / Checkout Kasir
         $('#btnCheckout').click(function() {
-            if (cart.length === 0) {
-                showNotification('Keranjang masih kosong!', 'danger');
-                return;
-            }
-
-            let buyerId = $('#buyerSelect').val();
-            let warehouse = $('#warehouseSelect').val();
-            let salesDate = $('#salesDate').val();
-            let salesType = $('#salesType').val();
-
-            if (!buyerId) {
-                showNotification('Harap pilih Pembeli (Buyer)!', 'danger');
-                return;
-            }
+            if (cart.length === 0) { showNotification('Keranjang kosong!', 'danger'); return; }
+            let buyerId = $('#buyerId').val();
+            if (!buyerId) { showNotification('Harap pilih Pelanggan (Buyer)!', 'danger'); return; }
 
             let btn = $(this);
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
             $.ajax({
-                url: 'index.php?page=pos',
-                type: 'POST',
-                dataType: 'json',
+                url: 'index.php?page=pos', type: 'POST', dataType: 'json',
                 data: {
-                    action: 'checkout',
-                    buyer_id: buyerId,
-                    warehouse: warehouse,
-                    sales_date: salesDate,
-                    sales_type: salesType,
-                    cart: JSON.stringify(cart)
+                    action: 'checkout', buyer_id: buyerId,
+                    warehouse: $('#warehouseSelect').val(), sales_date: $('#salesDate').val(),
+                    sales_type: $('#salesType').val(), cart: JSON.stringify(cart)
                 },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        showNotification(response.message || 'Transaksi berhasil disimpan!', 'success');
-                        
-                        cart = [];
-                        $('#buyerSelect').val(null).trigger('change');
-                        $('#productSearch').val(null).trigger('change');
-                        renderCart();
-
-                        const completedPrintUrl = 'index.php?page=pos&action=print_invoice&id=' + response.data.sale_id;
-                        window.open(completedPrintUrl, '_blank');
-                    } else {
-                        showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
-                    }
+                success: function(res) {
+                    if (res.status === 'success') {
+                        showNotification(res.message || 'Transaksi berhasil!', 'success');
+                        cart = []; $('#buyerId').val(''); $('#buyerNameDisplay').val(''); renderCart();
+                        window.open('index.php?page=pos&action=print_invoice&id=' + res.data.sale_id, '_blank');
+                    } else showNotification(res.message || 'Gagal menyimpan', 'danger');
                 },
-                error: function(xhr, textStatus, errorThrown) {
-                    let errorMessage = 'Terjadi kesalahan sistem pada server.';
-                    
-                    if (xhr.responseJSON && xhr.responseJSON.message) errorMessage = xhr.responseJSON.message;
-                    else if (xhr.responseText) {
-                        try {
-                            let res = JSON.parse(xhr.responseText);
-                            if (res.message) errorMessage = res.message;
-                        } catch (e) {
-                            console.error("Respons dari server bukan JSON yang valid:", xhr.responseText);
-                        }
-                    }
-                    showNotification(errorMessage, 'danger');
+                error: function(xhr) {
+                    let err = 'Terjadi kesalahan sistem.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
+                    showNotification(err, 'danger');
                 },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fa-double-check me-2"></i> SIMPAN TRANSAKSI');
-                }
+                complete: function() { btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi'); }
             });
         });
     }
-
 });
