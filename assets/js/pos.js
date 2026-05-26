@@ -426,6 +426,9 @@ $(document).ready(function() {
             $('#salesDate').val(new Date().toISOString().split('T')[0]);
             renderCart();
         });
+		
+		const modalCheckoutSuccess = new bootstrap.Modal(document.getElementById('modalCheckoutSuccess'));
+		let currentSaleId = null;
 
         $('#btnCheckout').click(function() {
             if (cart.length === 0) { showNotification('Keranjang kosong!', 'danger'); return; }
@@ -433,7 +436,8 @@ $(document).ready(function() {
             if (!buyerId) { showNotification('Harap pilih Pelanggan (Buyer)!', 'danger'); return; }
 
             let btn = $(this);
-            btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
+			let originalHtml = btn.html();
+			btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
             $.ajax({
                 url: 'index.php?page=pos', type: 'POST', dataType: 'json',
@@ -445,8 +449,12 @@ $(document).ready(function() {
                 success: function(res) {
                     if (res.status === 'success') {
                         showNotification(res.message || 'Transaksi berhasil!', 'success');
-                        cart = []; $('#buyerId').val(''); $('#buyerNameDisplay').val(''); renderCart();
-                        window.open('index.php?page=pos&action=print_invoice&id=' + res.data.sale_id, '_blank');
+                        cart = [];
+						$('#buyerId').val(''); 
+						$('#buyerNameDisplay').val(''); 
+						renderCart();
+                        currentSaleId = res.data.sale_id;
+						modalCheckoutSuccess.show();
                     } else showNotification(res.message || 'Gagal menyimpan', 'danger');
                 },
                 error: function(xhr) {
@@ -457,5 +465,20 @@ $(document).ready(function() {
                 complete: function() { btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi'); }
             });
         });
+		
+		// ==========================================
+		// LOGIKA TOMBOL CETAK DI DALAM MODAL
+		// ==========================================
+		$('#btnPrintInvoice').click(function() {
+			if (currentSaleId) {
+				window.open('index.php?page=pos&action=print_invoice&id=' + currentSaleId, '_blank');
+				modalCheckoutSuccess.hide();
+				currentSaleId = null;
+			}
+		});
+
+		$('#modalCheckoutSuccess').on('hidden.bs.modal', function () {
+			currentSaleId = null;
+		});
     }
 });

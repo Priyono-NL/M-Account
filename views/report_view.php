@@ -86,8 +86,8 @@ class ReportsHistoryView {
                         <tbody style="font-size: 13px;">
                             <tr id="loadingRow">
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-									Lakukan Pencarian ...
+                                    <i class="fa-solid fa-filter fs-4 mb-3 text-secondary"></i><br>
+									Silakan pilih Filter, lalu klik tombol <b>Filter (<i class="fa-solid fa-arrow-right-from-bracket"></i>)</b> untuk menampilkan data.
                                 </td>
                             </tr>
                         </tbody>

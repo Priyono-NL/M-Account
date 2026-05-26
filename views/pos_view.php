@@ -272,6 +272,33 @@ class POSView {
                 </div>
             </div>
         </div>
+		
+		<div class="modal fade" id="modalCheckoutSuccess" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content border-0 shadow-lg">
+					<div class="modal-header bg-success text-white">
+						<h5 class="modal-title fw-bold">
+							<i class="fa-solid fa-circle-check me-2"></i>Transaksi Berhasil!
+						</h5>
+						</div>
+					<div class="modal-body p-4 text-center">
+						<div class="mb-3">
+							<i class="fa-solid fa-receipt text-success opacity-75" style="font-size: 4rem;"></i>
+						</div>
+						<h5 class="fw-bold mb-2 text-dark">Data telah disimpan.</h5>
+						<p class="text-muted mb-0">Apakah Anda ingin mencetak untuk transaksi ini?</p>
+					</div>
+					<div class="modal-footer bg-light justify-content-center border-top-0 pt-0 pb-4">
+						<button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+							<i class="fa-solid fa-plus me-2"></i>Transaksi Baru
+						</button>
+						<button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="btnPrintInvoice">
+							<i class="fa-solid fa-print me-2"></i>Cetak Invoice
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
         
         <?php
         $content = ob_get_clean();

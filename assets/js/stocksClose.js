@@ -142,5 +142,22 @@ $(document).ready(function() {
 
         downloadExcelAjax(this, window.location.href, payload, 'Laporan_Stok');
     });
+	
+	$("#closeMonth").on("keydown", function(e) {
+		if (e.key === "Backspace" || e.key === "Delete") {
+			e.preventDefault();
+		}
+	});
+
+	$("#closeMonth").on("blur", function() {
+		if ($(this).val() === "") {
+			let today = new Date();
+			let year = today.getFullYear();
+			let month = String(today.getMonth() + 1).padStart(2, '0');
+			
+			$(this).val(`${year}-${month}`);
+			showNotification("Periode tidak boleh kosong. Dikembalikan ke bulan berjalan.", "warning");
+		}
+	});
 
 });
