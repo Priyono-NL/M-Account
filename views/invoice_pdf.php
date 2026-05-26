@@ -33,7 +33,7 @@ class InvoiceViewPdf {
         </head>
         <body>
             <div class="text-center">
-                <strong style="font-size: 10pt;">** PASS KELUAR **</strong>
+                <strong style="font-size: 10pt;">¤¤ PASS KELUAR ¤¤</strong>
             </div>
 
             <table style="margin-top: 10px;">

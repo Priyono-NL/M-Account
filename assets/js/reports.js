@@ -109,7 +109,7 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || ""
         };
 
-        downloadExcelAjax(this, '/m-account/history', payload, 'Laporan_Transaksi');
+        downloadExcelAjax(this, window.location.href, payload, 'Laporan_Transaksi');
     });
 
 });

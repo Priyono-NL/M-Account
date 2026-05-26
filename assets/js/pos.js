@@ -296,7 +296,7 @@ $(document).ready(function() {
                 success: function(response) {
                     tbody.empty();
                     const data = response.data || [];
-                    let filtered = data.filter(item => parseFloat(item.qty_close) > 0);
+                    let filtered = data.filter(item => parseFloat(item.current_stock) > 0);
 
                     if (filtered.length === 0) {
                         tbody.append('<tr><td colspan="4" class="text-center text-muted py-5">Barang dengan stok tersedia tidak ditemukan.</td></tr>');
@@ -305,7 +305,7 @@ $(document).ready(function() {
 
                     filtered.forEach(item => {
                         let isChecked = itemDraft.find(d => d.id == item.id) ? 'checked' : '';
-                        let stok = parseFloat(item.qty_close);
+                        let stok = parseFloat(item.current_stock);
                         let hargaAsli = parseFloat(item.unit_price || 0);
 
                         tbody.append(`

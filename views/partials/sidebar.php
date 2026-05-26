@@ -78,14 +78,16 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
                 <span class="link-text">Stock Item</span>
             </a>
         </li>
-
-        <li class="nav-item">
-            <a href="index.php?page=history" class="nav-link <?= ($uri_page == 'history') ? 'active' : '' ?>">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span class="link-text">Item Log</span>
+		
+		<li class="nav-item">
+            <a href="index.php?page=stockClosing" class="nav-link <?= ($uri_page == 'stockClosing') ? 'active' : '' ?>">
+                <i class="fa-solid fa-boxes-packing"></i>
+                <span class="link-text">Closing Stok</span>
             </a>
         </li>
-        
+		
+		<hr class="mx-3 my-2 text-secondary opacity-25">
+
         <?php if($can_sell) : ?>
         <li class="nav-item">
             <a href="index.php?page=sales" class="nav-link <?= ($uri_page == 'sales') ? 'active' : '' ?>">
@@ -116,6 +118,13 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
             </a>
         </li>
         <?php endif; ?>
+		
+		<li class="nav-item">
+            <a href="index.php?page=history" class="nav-link <?= ($uri_page == 'history') ? 'active' : '' ?>">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="link-text">Item Log</span>
+            </a>
+        </li>
 
         <hr class="mx-3 my-2 text-secondary opacity-25">
         

@@ -70,20 +70,5 @@ class StockCloseController extends BaseController {
         exit;
     }
 
-    public function do_closing() {
-        $closeMonth = $this->getPost('monthPeriod', '');
-
-        if (empty($closeMonth)) {
-            return $this->jsonError('Bulan tidak boleh kosong!', 400);
-        }
-
-        try {
-            $jmlClosing = $this->model->doClosing($closeMonth);
-            
-            return $this->jsonSuccess("Proses Closing berhasil! Sebanyak {$jmlClosing} barang untuk periode {$closeMonth} telah dikunci.");
-        } catch (Exception $e) {
-            return $this->jsonError('Gagal melakukan closing: ' . $e->getMessage(), 500);
-        }
-    }
 }
 ?>

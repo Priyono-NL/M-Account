@@ -141,7 +141,7 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || "",
         };
 
-        downloadExcelAjax(this, '/m-account/receive', payload, 'Laporan_Penerimaan');
+        downloadExcelAjax(this, '/maccount/index.php?page=receive', payload, 'Laporan_Penerimaan');
     });
 
 });

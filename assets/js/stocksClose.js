@@ -140,58 +140,7 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || ""
         };
 
-        downloadExcelAjax(this, '/m-account/stockClose', payload, 'Laporan_Stok');
-    });
-
-    $("#btnClosing").click(function() {
-        let monthPeriod = $("#closeMonth").val();
-
-        if (!monthPeriod) {
-            alert("Silakan pilih bulan terlebih dahulu pada filter!");
-            return;
-        }
-
-        let parts = monthPeriod.split("-");
-        let dateObj = new Date(parts[0], parts[1] - 1);
-        let namaBulanIndo = dateObj.toLocaleDateString('id-ID', { 
-            month: 'long', 
-            year: 'numeric' 
-        });
-
-        let konfirmasi = confirm(`Apakah Anda yakin ingin melakukan Closing Stok untuk bulan ${namaBulanIndo.toUpperCase()}?\n\nData stok terakhir di bulan ini akan dikunci sebagai saldo. Data yang sudah diclose sebelumnya di bulan ini akan ditimpa dengan data terbaru.`);
-        
-        if (!konfirmasi) {
-            return;
-        }
-
-        let $btn = $(this);
-        let originalHtml = $btn.html();
-
-        $btn.html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Memproses...').prop('disabled', true);
-
-        $.ajax({
-            url: "index.php?page=stockClose",
-            type: "POST",
-            dataType: "json",
-            data: {
-                action: "do_closing",
-                monthPeriod: monthPeriod
-            },
-            success: function(res) {
-                if (res.status === "success") {
-                    alert(res.message);
-                    loadFilteredHistory(); 
-                } else {
-                    alert("Gagal: " + res.message);
-                }
-            },
-            error: function() {
-                alert("Terjadi kesalahan sistem saat memproses closing.");
-            },
-            complete: function() {
-                $btn.html(originalHtml).prop('disabled', false);
-            }
-        });
+        downloadExcelAjax(this, window.location.href, payload, 'Laporan_Stok');
     });
 
 });

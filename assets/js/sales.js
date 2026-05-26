@@ -152,7 +152,7 @@ $(document).ready(function() {
             type: $("#filterType").val() || "",
         };
 
-        downloadExcelAjax(this, '/m-account/pos', payload, 'Laporan_Penjualan');
+        downloadExcelAjax(this, '/maccount/index.php?page=pos', payload, 'Laporan_Penjualan');
     });
 
 });

@@ -156,7 +156,7 @@ $(document).ready(function() {
         tabel_html: tableHTML
     };
 
-    downloadExcelAjax(this, '/m-account/test', requestData, 'hasil_pivot');
+    downloadExcelAjax(this, window.location.href, requestData, 'hasil_pivot');
 });
 
 });

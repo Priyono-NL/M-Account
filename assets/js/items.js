@@ -151,7 +151,7 @@ $(document).ready(function() {
 
     $("#btnTemplate").click(function() {
         let payload = { action: 'download_template' };
-        downloadExcelAjax(this, '/m-account/items', payload, 'Format Items');
+        downloadExcelAjax(this, window.location.href, payload, 'Format Items');
     });
 
     $("#btnUpload").click(function() {

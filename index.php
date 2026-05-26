@@ -43,9 +43,7 @@ $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
 
 // Jaga-jaga jika kata 'maccount' tidak sengaja masuk ke dalam query string page
-if (isset($segments[0]) && $segments[0] === 'maccount') {
-    array_shift($segments); 
-}
+if (isset($segments[0]) && $segments[0] === 'maccount') array_shift($segments); 
 
 // Tentukan Nama Page / Controller
 $page = $segments[0] ?? 'dashboard';
@@ -66,7 +64,7 @@ $controllers = [
     'items' => 'ItemsController',
     'buyers' => 'BuyerController',
     'history' => 'ReportsController',
-    'stocks' => 'StocksController',
+    'stockClosing' => 'StocksController',
     'stockClose' => 'StockCloseController',
     'sales' => 'SalesPivotController',
     'changeLogin' => 'ChangeLoginController',

@@ -149,7 +149,7 @@ $(document).ready(function() {
 
     $("#btnTemplate").click(function() {
         let payload = { action: 'download_template' };
-        downloadExcelAjax(this, '/m-account/buyers', payload, 'Format Buyer');
+        downloadExcelAjax(this, window.location.href, payload, 'Format Buyer');
     });
 
     $("#btnUpload").click(function() {

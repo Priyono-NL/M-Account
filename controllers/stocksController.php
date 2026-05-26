@@ -18,55 +18,35 @@ class StocksController extends BaseController {
     public function filter_api() {
         $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
+        $periodDate = $this->getPost('periodMonth', '');
 
-        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
+        $items = $this->model->getFiltered($search, $warehouse, $periodDate);
         
         return $this->jsonSuccess("Data Filtered", $items);
     }
+	
+	public function do_closing() {
+        $periodMonth = $this->getPost('periodMonth', '');
+		$warehouse   = $this->getPost('warehouse', '');
 
-    public function export_xls() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
-        
-        $data = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
-
-        $rows = [[
-            '<b>No</b>', '<b>Tanggal Update</b>', 
-            '<b>Kode Barang</b>', '<b>Nama Barang</b>', '<b>Gudang</b>',
-            '<b>Qty Awal</b>', '<b>Qty Masuk</b>', '<b>Qty Keluar</b>', '<b>Saldo Akhir</b>'
-        ]];
-
-        foreach ($data as $index => $item) {
-            $namaGudang = $item['warehouse'];
-            if ($item['warehouse'] == '1') {
-                $namaGudang = 'Gudang BS';
-            } elseif ($item['warehouse'] == '2') {
-                $namaGudang = 'Gudang Sampah';
-            }
-
-            $tanggalFormatted = !empty($item['date']) ? date('d-m-Y H:i', strtotime($item['date'])) : '-';
-
-            $rows[] = [
-                $index + 1,
-                $tanggalFormatted,
-                $item['item_code'],
-                $item['item_name'],
-                $namaGudang,
-                (float)$item['qty_open'],
-                (float)$item['qty_in'],
-                (float)$item['qty_out'],
-                (float)$item['qty_total']
-            ];
+        if (empty($periodMonth)) {
+            return $this->jsonError('Bulan tidak boleh kosong!', 400);
         }
 
-        $fileName = "Laporan_Stok_" . date('Ymd_His') . ".xlsx";
-        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
-        exit;
+        try {
+			$executedBy = $_SESSION['user']['username'] ?? 'Superadmin';
+            $jmlClosing = $this->model->doClosing($periodMonth, $warehouse, $executedBy);
+            
+            return $this->jsonSuccess("Proses Closing berhasil! Sebanyak {$jmlClosing} barang untuk periode {$periodMonth} telah dikunci.");
+        } catch (Exception $e) {
+            return $this->jsonError('Gagal melakukan closing: ' . $e->getMessage(), 500);
+        }
     }
-
+	
+	public function get_history() {
+        $history = $this->model->getClosingHistory();
+        return $this->jsonSuccess("Data riwayat ditemukan", $history);
+    }
+    
 }
 ?>

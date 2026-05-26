@@ -56,7 +56,7 @@ class POSController extends BaseController {
     public function get_products() {
         $keyword   = $this->getPost('keyword', '');
         $warehouse = $this->getPost('warehouse', '');
-        $results   = $this->stocksModel->getFiltered($keyword, $warehouse); 
+        $results   = $this->stocksModel->getLatestStock($keyword, $warehouse); 
         
         return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }
@@ -177,6 +177,7 @@ class POSController extends BaseController {
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new \Dompdf\Dompdf($options);
+		
 
         ob_start();
         // Konversi CM ke Points: 1cm = 28.3465pt
@@ -185,14 +186,14 @@ class POSController extends BaseController {
             $height = 9.7 * 28.3465;
             InvoiceViewPdf::render($header, $items);
         } else {
-            $width  = 26 * 28.3465;
-            $height = 17 * 28.3465;
+            $width  = 17 * 28.3465;
+            $height = 24 * 28.3465;
             SuratViewPdf::render($header, $items);
         }
         $html = ob_get_clean();
 
         $dompdf->loadHtml($html);
-        $dompdf->setPaper([0, 0, $width, $height], 'portrait');
+        $dompdf->setPaper([0, 0, $width, $height], 'landscape');
         
         $dompdf->render();
         $dompdf->stream("Invoice-" . $header['invoice_no'] . ".pdf", [
