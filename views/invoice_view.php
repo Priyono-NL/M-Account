@@ -35,7 +35,6 @@ class InvoiceView {
 		$rawText .= "Remark". $LN;
         
         // Tabel Header
-        // Pembagian ruang: Desc(15) | Qty(4) | Harga(9) | Total(12) = 40
         $th_nama = str_pad("Deskripsi", 38);
 		$th_hrg  = str_pad("Harga", 9, " ", STR_PAD_LEFT);
         $th_qty  = str_pad("Qty", 4, " ", STR_PAD_LEFT);        

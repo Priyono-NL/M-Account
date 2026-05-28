@@ -56,11 +56,10 @@ $(document).ready(function() {
                         tbody.append(tr);
                     });
                     
-                    $("#btnMulaiClosing").prop('disabled', false);
+					if (res.is_closed) $("#btnMulaiClosing").prop('disabled', true);
+					else $("#btnMulaiClosing").prop('disabled', false);
 
-                    if (res.pagination) {
-                        renderPagination(res.pagination);
-                    }
+                    if (res.pagination) renderPagination(res.pagination);
                 }
             },
             error: function() {

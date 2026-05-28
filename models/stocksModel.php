@@ -196,6 +196,20 @@ class StocksModel extends DatabaseHelper {
         $sql .= " ORDER BY executed_at DESC";
         return $this->query_all($sql, $params);
     }
+	
+	public function isPeriodClosed($monthPeriod, $warehouse = '') {
+        $sql = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod";
+        $params = ['monthPeriod' => $monthPeriod];
+        
+        if ($warehouse !== '') {
+            $sql .= " AND warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+        $sql .= " LIMIT 1";
+        
+        $check = $this->query_one($sql, $params);
+        return ($check && $check['is_closed'] == 1);
+    }
 
     public function doClosing($monthPeriod = '', $warehouse = '', $executedBy = 'System') {
         $endDate = date('Y-m-t', strtotime($monthPeriod . '-01'));

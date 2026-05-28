@@ -29,7 +29,6 @@ class SuratView {
 		$judul = $simbol . " FAKTUR PENJUALAN " . $simbol;
 		$rawText .= str_pad($judul, 113, " ", STR_PAD_BOTH) . $LN . $LN;
 		$rawText .= $ESC . "E" . chr(0);
-		$rawText .= $ESC . "R" . chr(0);
         
         // Header Info
         $tgl    = "Tanggal : " . ($header['sales_date'] ?? '-');
@@ -69,12 +68,14 @@ class SuratView {
                 
                 $rawText .= $nama . $qty . $harga . $total . $LN;
             }
-        }
-        
-        $rawText .= str_repeat("-", 113) . $LN;
+        }		
+        $CR = "\x0D";
+		$simbol = "$$$$$";
+		$garis  = str_repeat("-", 113);
+        $rawText .= $simbol . $CR . $garis . $LN;
         
         $grandTotal = $isExp ? '-' : number_format($header['total'] ?? 0, 0, ',', '.');
-        $rawText .= str_pad("GRAND TOTAL:", 97, " ", STR_PAD_LEFT) . str_pad($grandTotal, 16, " ", STR_PAD_LEFT) . $LN . $LN;
+        $rawText .= str_pad("Grand Total:", 97, " ", STR_PAD_LEFT) . str_pad($grandTotal, 16, " ", STR_PAD_LEFT) . $LN . $LN;
         
         $ttd_kiri  = "Yang Menyerahkan";
         $ttd_kanan = "Penerima";

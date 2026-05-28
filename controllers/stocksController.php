@@ -33,12 +33,13 @@ class StocksController extends BaseController {
             $paging['limit'], 
             $paging['offset']
         );
-        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+		$isClosed = $this->model->isPeriodClosed($periodDate, $warehouse);
+        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);		
         
         return $this->jsonSuccess(
             "Data Filtered", 
             $result['data'], 
-            ['pagination' => $paginationMeta]
+            ['pagination' => $paginationMeta, 'is_closed'  => $isClosed]
         );
     }
 	
