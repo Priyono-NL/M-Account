@@ -5,8 +5,8 @@ class ReportModel extends DatabaseHelper {
     public function __construct() {
         parent::__construct();
     }
-
-    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+	
+	private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '') {
         $sql = "SELECT t.*, i.item_name, i.item_code 
                 FROM item_transactions t
                 LEFT JOIN items i ON t.item_id = i.id
@@ -33,9 +33,22 @@ class ReportModel extends DatabaseHelper {
             $params['end_date'] = $endDate . " 23:59:59";
         }
 
-        $sql .= " ORDER BY t.transaction_date DESC";
+        return [
+            'sql'    => $sql,
+            'params' => $params
+        ];
+    }
 
-        return $this->query_all($sql, $params);
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
+        $sql = $query['sql'] . " ORDER BY t.transaction_date ASC";
+        return $this->query_all($sql, $query['params']);
+    }
+	
+	public function getFilteredPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
+        $sql = $query['sql'] . " ORDER BY t.transaction_date DESC";
+        return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 }
 ?>

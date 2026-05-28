@@ -14,6 +14,9 @@ class POSController extends BaseController {
         $this->salesModel  = new SalesModel();
     }
 
+    /**
+     * HALAMAN UTAMA POS: Transaksi Baru & Lihat Detail Transaksi Terkunci
+     */
     public function index() {
         $mode = $this->getPost('mode', 'create');
         
@@ -34,25 +37,11 @@ class POSController extends BaseController {
         }
         
         POSView::render($transactionData);
-    }
+    }    
 
-    public function history() {
-        $sales = $this->salesModel->getFiltered();
-        Sales_view::render($sales);
-    }
-
-    public function filter_api() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
-        $type      = $this->getPost('type', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
-
-        $items = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
-        
-        return $this->jsonSuccess("Data Filtered", $items);
-    }
-
+    /**
+     * API AUTOCOMPLETE: Mengambil list produk dan sisa stok untuk POS (Tanpa Paginasi)
+     */
     public function get_products() {
         $keyword   = $this->getPost('keyword', '');
         $warehouse = $this->getPost('warehouse', '');
@@ -61,6 +50,9 @@ class POSController extends BaseController {
         return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }
 
+    /**
+     * API AUTOCOMPLETE: Mengambil list Pelanggan/Buyer untuk POS (Tanpa Paginasi)
+     */
     public function get_buyers() {
         $keyword = $this->getPost('keyword', '');        
         $results = $this->buyerModel->getFiltered($keyword);
@@ -68,6 +60,9 @@ class POSController extends BaseController {
         return $this->jsonSuccess("Data pelanggan berhasil dimuat", $results);
     }
 
+    /**
+     * PROSES CHECKOUT: Menyimpan seluruh entri transaksi penjualan POS ke Database
+     */
     public function checkout() {
         $cartRaw    = $this->getPost('cart');
         $buyer_id   = $this->getPost('buyer_id');
@@ -91,7 +86,107 @@ class POSController extends BaseController {
             return $this->jsonError($errorMessage);
         }
     }
+	
+	/**
+     * PRINT INVOICE HTML: Menampilkan struk belanja cetak via browser
+     */
+    public function print_invoice() {
+        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
+        $header = $this->salesModel->getSalesHeader($sales_id);
+        $items  = $this->salesModel->getTransactionItems($sales_id);
+
+        if (!$header) die("Data transaksi tidak ditemukan.");
+
+        if ($header['warehouse'] == 1) {
+            InvoiceView::render($header, $items);
+        } else {
+            SuratView::render($header, $items);
+        }        
+    }
+
+    /**
+     * PRINT INVOICE PDF: Menghasilkan berkas PDF cetak thermal/surat jalan otomatis via Dompdf
+     */
+    public function print_invoice_pdf() {
+        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
+
+        $header = $this->salesModel->getSalesHeader($sales_id);
+        $items  = $this->salesModel->getTransactionItems($sales_id);
+
+        if (!$header) die("Data transaksi tidak ditemukan.");
+
+        require_once 'vendors/dompdf/autoload.inc.php'; 
+    
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+
+        ob_start();
+        if ($header['warehouse'] == 1) {
+            $width  = 8.5 * 28.3465;
+            $height = 9.7 * 28.3465;
+            InvoiceViewPdf::render($header, $items);
+        } else {
+            $width  = 17 * 28.3465;
+            $height = 24 * 28.3465;
+            SuratViewPdf::render($header, $items);
+        }
+        $html = ob_get_clean();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper([0, 0, $width, $height], 'landscape');
+        
+        $dompdf->render();
+        $dompdf->stream("Invoice-" . $header['invoice_no'] . ".pdf", [
+            "Attachment" => false
+        ]);
+        exit;     
+    }
+	
+	/**
+     * HALAMAN LIST RIWAYAT: Menampilkan Tabel Riwayat Transaksi Penjualan
+     */
+    public function history() {
+        Sales_view::render([]);
+    }
+
+    /**
+     * API ENDPOINT: Mengambil data riwayat dengan Paginasi Server-Side (Limit 25)
+     */
+    public function filter_api() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $type      = $this->getPost('type', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+
+        $paging = $this->getPaginationParams(25);
+		$result = $this->salesModel->getFilteredPaginated(
+            $search, 
+            $warehouse, 
+            $startDate, 
+            $endDate, 
+            $type, 
+            $paging['limit'], 
+            $paging['offset']
+        );
+		$paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+        
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
+    }
+
+    /**
+     * EXPORT EXCEL: Mendownload seluruh riwayat penjualan tanpa batasan halaman
+     */
     public function export_xls() {
         $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
@@ -144,62 +239,6 @@ class POSController extends BaseController {
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }
-
-    public function print_invoice() {
-        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
-
-        $header = $this->salesModel->getSalesHeader($sales_id);
-        $items  = $this->salesModel->getTransactionItems($sales_id);
-
-        if (!$header) die("Data transaksi tidak ditemukan.");
-
-        if ($header['warehouse'] == 1) {
-            InvoiceView::render($header, $items);
-        } else {
-            SuratView::render($header, $items);
-        }        
-    }
-
-    public function print_invoice_pdf() {
-        $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-        if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
-
-        $header = $this->salesModel->getSalesHeader($sales_id);
-        $items  = $this->salesModel->getTransactionItems($sales_id);
-
-        if (!$header) die("Data transaksi tidak ditemukan.");
-
-        require_once 'vendors/dompdf/autoload.inc.php'; 
     
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-
-        $dompdf = new \Dompdf\Dompdf($options);
-		
-
-        ob_start();
-        // Konversi CM ke Points: 1cm = 28.3465pt
-        if ($header['warehouse'] == 1) {
-            $width  = 8.5 * 28.3465;
-            $height = 9.7 * 28.3465;
-            InvoiceViewPdf::render($header, $items);
-        } else {
-            $width  = 17 * 28.3465;
-            $height = 24 * 28.3465;
-            SuratViewPdf::render($header, $items);
-        }
-        $html = ob_get_clean();
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper([0, 0, $width, $height], 'landscape');
-        
-        $dompdf->render();
-        $dompdf->stream("Invoice-" . $header['invoice_no'] . ".pdf", [
-            "Attachment" => false
-        ]);
-        exit;     
-    }
 }
 ?>

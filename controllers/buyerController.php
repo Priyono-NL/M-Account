@@ -10,15 +10,20 @@ class BuyerController extends BaseController {
     }
 
     public function index() {
-        $buyers = $this->model->getFiltered();
-        BuyerView::render($buyers);
+        BuyerView::render([]);
     }
 
     public function filter_api() {
-        $search = $this->getPost('search', '');
-        $items  = $this->model->getFiltered($search);
-                
-        return $this->jsonSuccess("Data Filtered", $items);
+        $search   = $this->getPost('search', '');		
+		$paging = $this->getPaginationParams(10);
+		$result = $this->model->getFilteredPaginated($search, $paging['limit'], $paging['offset']);
+		$paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+		
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
     }
 
     public function add() {

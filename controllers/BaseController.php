@@ -38,13 +38,18 @@ class BaseController {
         }
     }
     
-    protected function jsonSuccess($message = "Success", $data = []) {
+    protected function jsonSuccess($message = "Success", $data = [], $extra = []) {
         header('Content-Type: application/json');
-        echo json_encode([
+        $response = [
             'status'  => 'success',
             'message' => $message,
             'data'    => $data
-        ]);
+        ];
+
+        if (!empty($extra) && is_array($extra)) {
+            $response = array_merge($response, $extra);
+        }
+        echo json_encode($response);
         exit;
     }
 
@@ -72,6 +77,31 @@ class BaseController {
             }
         }
         return $sanitized;
+    }
+	
+	protected function getPaginationParams($defaultLimit = 25) {
+        $page = (int) $this->getPost('page', 1);
+        $limit = (int) $this->getPost('limit', $defaultLimit);
+        
+        if ($page < 1) $page = 1;
+        if ($limit < 1) $limit = $defaultLimit;
+        
+        $offset = ($page - 1) * $limit;
+
+        return [
+            'page'   => $page,
+            'limit'  => $limit,
+            'offset' => $offset
+        ];
+    }
+	
+	protected function buildPaginationMeta($totalRecords, $page, $limit) {
+        return [
+            'total'      => (int) $totalRecords,
+            'totalPages' => ceil($totalRecords / $limit),
+            'page'       => (int) $page,
+            'limit'      => (int) $limit
+        ];
     }
 
 }

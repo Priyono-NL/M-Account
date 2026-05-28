@@ -42,6 +42,7 @@ class BuyerView {
 
         <div class="card border-0 shadow-sm overflow-hidden">
             <div class="card-body p-0">
+			
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="buyerTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase;">
@@ -63,6 +64,17 @@ class BuyerView {
                         </tbody>
                     </table>
                 </div>
+				
+				<div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                    <div class="small text-muted" id="paginationInfo">
+                        Menampilkan 0 data
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                            </ul>
+                    </nav>
+                </div>
+				
             </div>
         </div>
 

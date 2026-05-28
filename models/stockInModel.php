@@ -7,6 +7,9 @@ class StockInModel extends DatabaseHelper {
         parent::__construct();
     }
 
+    /**
+     * TRANSACTION MUTATION: Menyimpan data penerimaan dan memperbarui stok (ACID Transaction)
+     */
     public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes) {
         try {
             $this->satpamGembok($date_receive, $warehouse);
@@ -18,7 +21,7 @@ class StockInModel extends DatabaseHelper {
                 'received_by'   => $received_by,
                 'warehouse'     => $warehouse,
                 'date_receive'  => $date_receive,
-				'notes'			=> $notes
+                'notes'         => $notes
             ];
             
             $receive_id = $this->insert('receivement', $receiveData);
@@ -82,9 +85,11 @@ class StockInModel extends DatabaseHelper {
         }
     }
 
-    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+    /**
+     * FUNGSI PRIVATE: Menyusun string SQL base dan binding parameters untuk filter data.
+     */
+    private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '') {
         $sql = "SELECT r.* FROM receivement r WHERE 1=1";
-        
         $params = [];
 
         if (!empty($search)) {
@@ -106,11 +111,37 @@ class StockInModel extends DatabaseHelper {
             $params['end_date'] = $endDate;
         }
 
-        $sql .= " ORDER BY r.date_receive DESC, r.id DESC";
-
-        return $this->query_all($sql, $params);
+        return [
+            'sql'    => $sql,
+            'params' => $params
+        ];
     }
 
+    /**
+     * UNTUK EXPORT EXCEL (TANPA LIMIT/PAGINASI)
+     */
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
+        
+        $sql = $query['sql'] . " ORDER BY r.date_receive DESC, r.id DESC";
+
+        return $this->query_all($sql, $query['params']);
+    }
+
+    /**
+     * UNTUK VIEW DATA TABEL JQUERY (DENGAN PAGINASI SERVER-SIDE)
+     */
+    public function getFilteredPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
+        
+        $sql = $query['sql'] . " ORDER BY r.date_receive DESC, r.id DESC";
+
+        return $this->query_paginated($sql, $query['params'], $limit, $offset);
+    }
+
+    /**
+     * VIEW DETAIL: Mengambil produk-produk di dalam satu nomor transaksi penerimaan
+     */
     public function getTransactionItems($receive_id) {
         $sql = "SELECT rd.*, i.item_code, i.item_name, i.unit_price, i.item_uom
                 FROM receivement_detail rd

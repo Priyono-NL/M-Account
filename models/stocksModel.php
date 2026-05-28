@@ -41,9 +41,14 @@ class StocksModel extends DatabaseHelper {
 		return $this->query_all($sql, $params);
 	}
 
-    public function getFiltered($search = '', $warehouse = '', $periodDate = '') {
-		if (empty($periodDate)) return [];
-		
+    /**
+     * FUNGSI PRIVATE: Menghasilkan struktur SQL filter stok bulanan tanpa ORDER BY.
+     */
+    private function buildFilterQuery($search = '', $warehouse = '', $periodDate = '') {
+        if (empty($periodDate)) {
+            return ['sql' => '', 'params' => []];
+        }
+        
         $referenceDate = (strlen($periodDate) === 7) ? $periodDate . '-01' : $periodDate;        
         $startDate = date('Y-m-01', strtotime($referenceDate));
         $endDate   = date('Y-m-t', strtotime($referenceDate));
@@ -56,16 +61,16 @@ class StocksModel extends DatabaseHelper {
                     i.item_uom,
                     base.warehouse,
                     
-                    -- 1. SALDO AWAL: Ambil saldo akhir dari transaksi terakhir SEBELUM bulan ini dimulai
+                    -- 1. SALDO AWAL
                     COALESCE((SELECT qty_total FROM stocks WHERE item_id = base.item_id AND warehouse = base.warehouse AND date < :startDate ORDER BY id DESC LIMIT 1), 0) AS qty_open,
                     
-                    -- 2. TOTAL MASUK: Jumlahkan semua barang masuk khusus dalam range bulan ini
+                    -- 2. TOTAL MASUK
                     COALESCE(mutasi.total_in, 0) AS qty_in,
                     
-                    -- 3. TOTAL KELUAR: Jumlahkan semua barang keluar khusus dalam range bulan ini
+                    -- 3. TOTAL KELUAR
                     COALESCE(mutasi.total_out, 0) AS qty_out,
                     
-                    -- 4. SALDO AKHIR: Ambil saldo akhir dari transaksi paling terakhir SAMPAI akhir bulan ini
+                    -- 4. SALDO AKHIR
                     COALESCE((SELECT qty_total FROM stocks WHERE item_id = base.item_id AND warehouse = base.warehouse AND date <= :endDate ORDER BY id DESC LIMIT 1), 0) AS qty_close,
                     
                     mutasi.last_date AS date
@@ -101,12 +106,36 @@ class StocksModel extends DatabaseHelper {
             $params['warehouse'] = $warehouse;
         }       
         
-        $sql .= " ORDER BY i.item_name ASC, base.warehouse ASC";
-        
-        return $this->query_all($sql, $params);
+        return [
+            'sql'    => $sql,
+            'params' => $params
+        ];
     }
 
-    public function getMonthlyReport($search = '', $warehouse = '', $monthPeriod = '') {
+    /**
+     * UNTUK PROSES INTERNAL CLOSING (TANPA LIMIT DATA)
+     * Tetap menarik seluruh record mutasi agar kalkulasi kunci data akurat.
+     */
+    public function getFiltered($search = '', $warehouse = '', $periodDate = '') {
+        $query = $this->buildFilterQuery($search, $warehouse, $periodDate);
+        if (empty($query['sql'])) return [];
+
+        $sql = $query['sql'] . " ORDER BY i.item_name ASC, base.warehouse ASC";
+        return $this->query_all($sql, $query['params']);
+    }
+
+    /**
+     * UNTUK VIEW DATA TABEL JQUERY STOK BULANAN (DENGAN PAGINASI SERVER-SIDE)
+     */
+    public function getFilteredPaginated($search = '', $warehouse = '', $periodDate = '', $limit = 10, $offset = 0) {
+        $query = $this->buildFilterQuery($search, $warehouse, $periodDate);
+        if (empty($query['sql'])) return ['data' => [], 'total' => 0];
+
+        $sql = $query['sql'] . " ORDER BY i.item_name ASC, base.warehouse ASC";
+        return $this->query_paginated($sql, $query['params'], $limit, $offset);
+    }
+
+    public function getMonthlyReportPaginated($search = '', $warehouse = '', $monthPeriod = '', $limit = 25, $offset = 0) {
         $sql = "SELECT * FROM vw_stock_report WHERE 1=1";        
         $params = [];
 
@@ -127,24 +156,28 @@ class StocksModel extends DatabaseHelper {
 
         $sql .= " ORDER BY item_name ASC, warehouse ASC";		
 
-        return $this->query_all($sql, $params);
+        return $this->query_paginated($sql, $params, $limit, $offset);
     }
 
-    public function getClosingData($search = '', $warehouse = '', $monthPeriod = '') {
+    public function getClosingDataPaginated($search = '', $warehouse = '', $monthPeriod = '', $limit = 25, $offset = 0) {
         $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod LIMIT 1";
         $lock = $this->query_one($sqlCheck, ['monthPeriod' => $monthPeriod]);
         $isClosed = ($lock && $lock['is_closed'] == 1);
         
         if ($isClosed) {
+            $result = $this->getMonthlyReportPaginated($search, $warehouse, $monthPeriod, $limit, $offset);
             return [
                 'status' => 'CLOSED',
-                'data' => $this->getMonthlyReport($search, $warehouse, $monthPeriod)
+                'data'   => $result['data'],
+                'total'  => $result['total']
             ];
         } else {
             $periodDate = date('Y-m-t', strtotime($monthPeriod . '-01'));
+            $result = $this->getFilteredPaginated($search, $warehouse, $periodDate, $limit, $offset);
             return [
                 'status' => 'ONGOING',
-                'data' => $this->getFiltered($search, $warehouse, $periodDate)
+                'data'   => $result['data'],
+                'total'  => $result['total']
             ];
         }
     }

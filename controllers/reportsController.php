@@ -11,8 +11,7 @@ class ReportsController extends BaseController {
     }
 
     public function index() {
-        $transactions = $this->model->getFiltered();
-        ReportsHistoryView::render($transactions);
+        ReportsHistoryView::render([]);
     }
 
     public function filter_api() {
@@ -20,10 +19,23 @@ class ReportsController extends BaseController {
         $warehouse = $this->getPost('warehouse', '');
         $startDate = $this->getPost('start_date', '');
         $endDate   = $this->getPost('end_date', '');
-
-        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate);
+		
+		$paging = $this->getPaginationParams(25);
+        $result = $this->model->getFilteredPaginated(
+            $search, 
+            $warehouse, 
+            $startDate, 
+            $endDate, 
+            $paging['limit'], 
+            $paging['offset']
+        );
+		$paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
         
-        return $this->jsonSuccess("Data Filtered", $items);
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
     }
 
     public function export_xls() {

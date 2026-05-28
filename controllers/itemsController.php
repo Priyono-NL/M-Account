@@ -10,17 +10,22 @@ class ItemsController extends BaseController {
     }
 
     public function index() {
-        $items = $this->model->getFiltered();
-        ItemsView::render($items);
+        ItemsView::render([]);
     }
 
     public function filter_api() {
         $search   = $this->getPost('search', '');
         $category = $this->getPost('category', '');
-
-        $items = $this->model->getFiltered($search, $category);
-        
-        return $this->jsonSuccess("Data Filtered", $items);
+		
+		$paging = $this->getPaginationParams(10);
+		$result = $this->model->getFilteredPaginated($search, $category, $paging['limit'], $paging['offset']);
+		$paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+		
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
     }
 
     public function add() {

@@ -1,13 +1,19 @@
 $(document).ready(function() {
-	let tbody = $("#stockTable tbody");
+    let tbody = $("#stockTable tbody");
 
-    function loadFilteredHistory() {
-		let periodMonth = $("#periodMonth").val();        
+    let currentPage = 1;
+    let limit = 10;
+
+    function loadFilteredHistory(page = 1) {
+        currentPage = page;
+        let periodMonth = $("#periodMonth").val();        
         if (!periodMonth) {
             showNotification("Harap tentukan Periode Bulan terlebih dahulu!", "warning");
             return;
         }
 		
+        tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data mutasi stok ...</td></tr>');
+
         $.ajax({
             url: "index.php?page=stockClosing",
             type: "POST",
@@ -16,14 +22,17 @@ $(document).ready(function() {
                 action: "filter_api",
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
-                periodMonth: $("#periodMonth").val(), 
+                periodMonth: periodMonth, 
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {                    
                     tbody.empty();
 
                     if (res.data.length === 0) {
-                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
@@ -46,31 +55,48 @@ $(document).ready(function() {
                             </tr>`;
                         tbody.append(tr);
                     });
-					$("#btnMulaiClosing").prop('disabled', false);
+                    
+                    $("#btnMulaiClosing").prop('disabled', false);
+
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
+            },
+            error: function() {
+                tbody.html('<tr><td colspan="7" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data stok.</td></tr>');
             }
         });
     }
 
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredHistory(targetPage);
+    });
+
     function clearTable() {
-		$("#btnMulaiClosing").prop('disabled', true);
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Pencarian dibersihkan
-				</td>
-			</tr>
-		`);
-	}
+        $("#btnMulaiClosing").prop('disabled', true);
+        tbody.empty();
+        tbody.append(`
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+                    Pencarian dibersihkan
+                </td>
+            </tr>
+        `);
+        renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
+    }
 	
 	$("#btnFilter").click(function() {
-		loadFilteredHistory();
-	})
+		loadFilteredHistory(1);
+	});
 
     $("#search").on("keyup", clearTable);
-	
     $("#filterWarehouse, #periodMonth").on("change", clearTable);
 
     $("#btnClearSearch").click(function() {
@@ -138,7 +164,6 @@ $(document).ready(function() {
         modalClosing.show();
     });
 
-    // Validasi ketikan user "TUTUP" (Case Sensitive / Insensitive terserah, disini kita buat uppercase otomatis)
     $("#txtKonfirmasi").on("keyup", function() {
         let val = $(this).val().toUpperCase();
         $(this).val(val);
@@ -150,7 +175,6 @@ $(document).ready(function() {
         }
     });
 
-    // Eksekusi AJAX sesungguhnya
     $("#btnEksekusiClosing").click(function() {
         let monthPeriod = $("#periodMonth").val();
         let $btn = $(this);
@@ -172,7 +196,7 @@ $(document).ready(function() {
                 if (res.status === "success") {
                     showNotification(res.message, "success");
 					modalClosing.hide();
-                    loadFilteredHistory(); 
+                    loadFilteredHistory(currentPage); // Muat ulang posisi halaman aktif
                 } else {
                     showNotification(res.message || "Gagal memproses closing.", "danger");
                 }
@@ -188,12 +212,11 @@ $(document).ready(function() {
     });
 	
 	// ==========================================
-    // SELEKTOR OTOMATIS LOAD TAB RIWAYAT
+    // SELEKTOR OTOMATIS LOAD TAB RIWAYAT (LOG)
     // ==========================================
     $('#riwayat-tab').on('shown.bs.tab', function (e) {
         let hBody = $("#historyTable tbody");
         
-        // Tampilkan loading spinner
         hBody.html('<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2 fs-4 d-block mb-2"></i>Memuat riwayat log...</td></tr>');
 
         $.ajax({

@@ -10,21 +10,41 @@ class StocksController extends BaseController {
         $this->model = new StocksModel();
     }
 
+    /**
+     * HALAMAN UTAMA: Menampilkan halaman stok/stok opname bulanan
+     */
     public function index() {
-        $stocks = $this->model->getFiltered();
-        StocksView::render($stocks);
+        StocksView::render([]);
     }
 
+    /**
+     * API ENDPOINT: Mengambil data mutasi stok bulanan dengan Paginasi Server-Side (Limit 10)
+     */
     public function filter_api() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
+        $search     = $this->getPost('search', '');
+        $warehouse  = $this->getPost('warehouse', '');
         $periodDate = $this->getPost('periodMonth', '');
-
-        $items = $this->model->getFiltered($search, $warehouse, $periodDate);
+		
+		$paging = $this->getPaginationParams(10);
+		$result = $this->model->getFilteredPaginated(
+            $search, 
+            $warehouse, 
+            $periodDate, 
+            $paging['limit'], 
+            $paging['offset']
+        );
+        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
         
-        return $this->jsonSuccess("Data Filtered", $items);
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
     }
 	
+    /**
+     * PROSES CLOSING BULANAN: Mengunci pergerakan stok pada bulan dan gudang tertentu
+     */
 	public function do_closing() {
         $periodMonth = $this->getPost('periodMonth', '');
 		$warehouse   = $this->getPost('warehouse', '');
@@ -43,6 +63,9 @@ class StocksController extends BaseController {
         }
     }
 	
+    /**
+     * API LOG: Mengambil data riwayat log penutupan buku (closing history)
+     */
 	public function get_history() {
         $history = $this->model->getClosingHistory();
         return $this->jsonSuccess("Data riwayat ditemukan", $history);

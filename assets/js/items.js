@@ -1,7 +1,14 @@
 $(document).ready(function() {
-	let tbody = $("#itemTable tbody");
+    let tbody = $("#itemTable tbody");
+    
+    let currentPage = 1;
+    let limit = 10;
 
-    function loadFilteredItems() {
+    function loadFilteredItems(page = 1) {
+        currentPage = page;
+        
+        tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data ...</td></tr>');
+
         $.ajax({
             url: "index.php?page=items",
             type: "POST",
@@ -10,13 +17,16 @@ $(document).ready(function() {
                 action: "filter_api",
                 search: $("#search").val(),
                 category: $("#filterCategory").val(),
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {                    
                     tbody.empty();
 
                     if (res.data.length === 0) {
-                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada data yang ditemukan.</td></tr>');
+                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada data yang ditemukan.</td></tr>');
+                        renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
@@ -46,32 +56,47 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+                    
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
+            },
+            error: function() {
+                tbody.html('<tr><td colspan="7" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }
-	
-	function clearTable() {
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Ketik di Pencarian untuk memuat data...
-				</td>
-			</tr>
-		`);
-	}
 
-    loadFilteredItems();
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredItems(targetPage);
+    });
 
-    $("#search").on("keyup", loadFilteredItems);
-    $("#filterCategory, #filterStatus").on("change", loadFilteredItems);
+    let searchTimer;
+    $("#search").on("keyup", function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { loadFilteredItems(1); }, 300);
+    });
+    
+    $("#filterCategory, #filterStatus").on("change", function() { 
+        loadFilteredItems(1); 
+    });
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        clearTable();
+        loadFilteredItems(1);
     });
+
+    loadFilteredItems(1);
+
+    // ==========================================
+    // ACTION HANDLERS (ADD, EDIT, DELETE, EXCEL)
+    // ==========================================
 
     $("#btnAddItem").click(function() {
         $("#formItem")[0].reset();
@@ -87,8 +112,8 @@ $(document).ready(function() {
         $("#itemName").val(data.item_name);
         $("#itemCategory").val(data.category);
         $("#itemUom").val(data.item_uom);
-        $("#itemPrice").val(formatAngka(data.unit_price));
-        $("#itemCost").val(formatAngka(data.unit_cost));
+        $("#itemPrice").val(new Intl.NumberFormat('id-ID').format(data.unit_price));
+        $("#itemCost").val(new Intl.NumberFormat('id-ID').format(data.unit_cost));
         $("#modalTitle").text("Edit Barang");
         $("#modalItem").modal("show");
     });
@@ -100,10 +125,12 @@ $(document).ready(function() {
         const originalText = btn.text();
         const inputHarga = $(".input-harga");
         let originalValues = [];
+        
         inputHarga.each(function() {
             originalValues.push({ el: $(this), val: $(this).val() });
             $(this).val($(this).val().replace(/\./g, ""));
         });
+        
         btn.prop('disabled', true).text('Menyimpan...');
 
         $.ajax({
@@ -114,10 +141,10 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.status === "success") {
                     $("#modalItem").modal("hide");
-                    loadFilteredItems(); 
-                    showNotification("Data berhasil disimpan!", "success");
+                    loadFilteredItems(currentPage); // Muat ulang di Halaman Saat Ini
+                    if(typeof showNotification === "function") showNotification("Data berhasil disimpan!", "success");
                 } else {
-                    showNotification(res.message || "Gagal menyimpan data", "danger");
+                    if(typeof showNotification === "function") showNotification(res.message || "Gagal menyimpan data", "danger");
                     originalValues.forEach(item => item.el.val(item.val));  
                 }
             },
@@ -140,9 +167,9 @@ $(document).ready(function() {
                 data: { action: "delete", id: id },
                 success: function(res) {
                     if(res.status === "success") {
-                        loadFilteredItems();
+                        loadFilteredItems(currentPage); // Muat ulang di Halaman Saat Ini
                     } else {
-                        showNotification(res.message, "danger");
+                        if(typeof showNotification === "function") showNotification(res.message, "danger");
                     }
                 }
             });
@@ -151,7 +178,9 @@ $(document).ready(function() {
 
     $("#btnTemplate").click(function() {
         let payload = { action: 'download_template' };
-        downloadExcelAjax(this, window.location.href, payload, 'Format Items');
+        if(typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, 'Format Items');
+        }
     });
 
     $("#btnUpload").click(function() {
@@ -159,7 +188,11 @@ $(document).ready(function() {
     });
 
     $("#fileCari").change(function() {
-        addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, loadFilteredItems);
+        if(typeof addBulk === "function") {
+            addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, function() {
+                loadFilteredItems(1);
+            });
+        }
     });
 
     document.querySelectorAll('.input-harga').forEach(input => {
@@ -169,5 +202,4 @@ $(document).ready(function() {
             if (this.value === '0' && value === '') this.value = '';
         });
     });
-    
 });

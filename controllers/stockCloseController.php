@@ -10,30 +10,47 @@ class StockCloseController extends BaseController {
         $this->model = new StocksModel();
     }
 
+    /**
+     * HALAMAN UTAMA: Menampilkan layout kerangka laporan stok bulanan
+     */
     public function index() {
-        $closeMonth = date('Y-m');
-        $result = $this->model->getClosingData('', '', $closeMonth);
-        StockCloseView::render($result);
+        // REVISI: Mengirim array kosong karena pemuatan data dikendalikan penuh oleh tombol cari via AJAX
+        StockCloseView::render([]);
     }
 
+    /**
+     * API ENDPOINT: Mengambil data ringkasan mutasi stok dengan Paginasi Server-Side (Limit 25)
+     */
     public function filter_api() {
         $search     = $this->getPost('search', '');
         $warehouse  = $this->getPost('warehouse', '');
         $closeMonth = $this->getPost('closeMonth', date('Y-m'));
 
-        $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
+        // 1. Ambil parameter halaman dan offset dari BaseController (Limit 25)
+        $paging = $this->getPaginationParams(25);
+
+        // 2. Tarik data terpaginasi dari model yang memeriksa status DRAFT/CLOSED secara dinamis
+        $result = $this->model->getClosingDataPaginated($search, $warehouse, $closeMonth, $paging['limit'], $paging['offset']);
         
+        // 3. Susun susunan meta data paginasi berdasarkan jumlah data riil dari database
+        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+        
+        // 4. Balas dengan menyisipkan objek array 'pagination' ke komponen AJAX global
         return $this->jsonSuccess("Data Filtered", [
             'status' => $result['status'],
             'stocks' => $result['data']
-        ]);
+        ], ['pagination' => $paginationMeta]);
     }
 
+    /**
+     * EXPORT EXCEL: Mengunduh semua data ringkasan stok berjalan tanpa batasan limit halaman
+     */
     public function export_xls() {
         $search     = $this->getPost('search', '');
         $warehouse  = $this->getPost('warehouse', '');
         $closeMonth = $this->getPost('closeMonth', date('Y-m'));
         
+        // Tetap memanggil fungsi getClosingData lama tanpa limit data agar Excel terisi lengkap
         $result = $this->model->getClosingData($search, $warehouse, $closeMonth);
         $data = $result['data'];
 
@@ -69,6 +86,5 @@ class StockCloseController extends BaseController {
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }
-
 }
 ?>

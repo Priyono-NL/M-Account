@@ -56,18 +56,23 @@ class POSView {
 
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control bg-white" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly 
-                                           value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['buyer_name']) : '' ?>">
-                                    <?php if (!$isViewMode): ?>
-                                    <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#buyerModal">
-                                        <i class="fa-solid fa-magnifying-glass"></i> Cari
-                                    </button>
-                                    <?php endif; ?>
-                                </div>
-                                <input type="hidden" id="buyerId" value="<?= $isViewMode ? $transactionData['header']['buyer'] : '' ?>">
-                            </div>
+								<label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control bg-white" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly 
+										   value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['buyer_name']) : '' ?>">
+										   
+									<?php if (!$isViewMode): ?>
+									<button class="btn btn-light border text-muted" type="button" id="btnClearBuyer" title="Bersihkan Pelanggan" style="display: none;">
+										<i class="fa-solid fa-xmark"></i>
+									</button>
+									
+									<button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#buyerModal">
+										<i class="fa-solid fa-magnifying-glass"></i> Cari
+									</button>
+									<?php endif; ?>
+								</div>
+								<input type="hidden" id="buyerId" value="<?= $isViewMode ? $transactionData['header']['buyer'] : '' ?>">
+							</div>
                             
                             <div class="col-md-6">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG ASAL <span class="text-danger">*</span></label>

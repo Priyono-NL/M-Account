@@ -26,10 +26,16 @@ function viewDetail(id) {
 }
 
 $(document).ready(function() {
-	
-	let tbody = $("#historyTable tbody");
+    let tbody = $("#historyTable tbody");
 
-    function loadFilteredHistory() {
+    let currentPage = 1;
+    let limit = 10;
+
+    function loadFilteredHistory(page = 1) {
+        currentPage = page;
+        
+        tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data riwayat ...</td></tr>');
+
         $.ajax({
             url: "index.php?page=receive",
             type: "POST",
@@ -39,7 +45,9 @@ $(document).ready(function() {
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 start_date: $("#startDate").val(),
-                end_date: $("#endDate").val()
+                end_date: $("#endDate").val(),
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {                    
@@ -54,12 +62,13 @@ $(document).ready(function() {
                                 </td>
                             </tr>
                         `);
+                        renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
                     res.data.forEach(function(t) {
                         let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
-                                                
+                                                                        
                         let dateObj = new Date(t.date_receive);
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -69,7 +78,7 @@ $(document).ready(function() {
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">
                                         ${warehouseName}
                                     </span>
-                                </td>                              
+                                </td>                               
                                 <td class="fw-bold text-primary">${t.doc_number}</td>                                
                                 <td class="fw-medium text-dark">${t.received_by}</td>                                
                                 <td class="text-center text-muted">${formattedDate}</td>                               
@@ -84,45 +93,59 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
             },
             error: function() {
-                console.error("Gagal menarik data riwayat.");
+                tbody.html('<tr><td colspan="5" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }
-
+    
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredHistory(targetPage);
+    });
+	
     function clearTable() {
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Pencarian dibersihkan
-				</td>
-			</tr>
-		`);
-	}
+        tbody.empty();
+        tbody.append(`
+            <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+                    Pencarian dibersihkan
+                </td>
+            </tr>
+        `);
+        renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit }); 
+    }
 
     $("#search").on("keyup", clearTable);
     $("#filterWarehouse, #startDate, #endDate").on("change", clearTable);
 	
-	$("#btnFilter").click(function() {
-		loadFilteredHistory();
-	});
+    $("#btnFilter").click(function() {
+        loadFilteredHistory(1);
+    });
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-		clearTable();
+        clearTable();
     });
 
     $("#btnResetAll").click(function() {
-		let before = new Date();
-		let now = new Date();
-		before.setDate(before.getDate() - 14);
-		now.setDate(now.getDate());
-		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
-		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+        let before = new Date();
+        let now = new Date();
+        before.setDate(before.getDate() - 14);
+        
+        let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+        let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 		
         $("#search").val("");
         $("#filterWarehouse").val("");
@@ -141,7 +164,8 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || "",
         };
 
-        downloadExcelAjax(this, '/maccount/index.php?page=receive', payload, 'Laporan_Penerimaan');
+        if (typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, '/maccount/index.php?page=receive', payload, 'Laporan_Penerimaan');
+        }
     });
-
 });

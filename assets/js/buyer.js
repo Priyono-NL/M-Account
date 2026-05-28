@@ -1,7 +1,14 @@
 $(document).ready(function() {
-	let tbody = $("#buyerTable tbody");
+    let tbody = $("#buyerTable tbody");
 
-    function loadFilteredBuyers() {
+    let currentPage = 1;
+    let limit = 10;
+
+    function loadFilteredBuyers(page = 1) {
+        currentPage = page;
+
+        tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data pelanggan...</td></tr>');
+
         $.ajax({
             url: "index.php?page=buyers",
             type: "POST",
@@ -9,14 +16,17 @@ $(document).ready(function() {
             data: {
                 action: "filter_api",
                 search: $("#search").val(),
-                status: $("#filterStatus").val()
+                status: $("#filterStatus").val(),
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {
                     tbody.empty();
 
                     if (res.data.length === 0) {
-                        tbody.append('<tr><td colspan="3" class="text-center py-5 text-muted italic">Tidak ada data pelanggan yang ditemukan.</td></tr>');
+                        tbody.append('<tr><td colspan="5" class="text-center py-5 text-muted fst-italic">Tidak ada data pelanggan yang ditemukan.</td></tr>');
+                        renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
@@ -27,8 +37,8 @@ $(document).ready(function() {
                             <tr>
                                 <td class="ps-4 fw-medium text-primary">${b.buyer_code}</td>
                                 <td class="fw-bold">${b.buyer_name}</td>
-                                <td class="fw-bold">${b.buyer_status}</td>
-                                <td class="fw-bold">${b.buyer_address}</td>
+                                <td>${b.buyer_status}</td>
+                                <td>${b.buyer_address}</td>
                                 <td class="text-center pe-4">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${buyerJson}'>
@@ -43,31 +53,48 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
+            },
+            error: function() {
+                tbody.html('<tr><td colspan="5" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }
-	
-	function clearTable() {
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Ketik di Pencarian untuk memuat data...
-				</td>
-			</tr>
-		`);
-	}
-	
-	loadFilteredBuyers();
-
-    $("#search").on("keyup", loadFilteredBuyers);
     
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredBuyers(targetPage);
+    });
+
+    let searchTimer;
+    $("#search").on("keyup", function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { loadFilteredBuyers(1); }, 300);
+    });
+    
+    $("#filterStatus").on("change", function() { 
+        loadFilteredBuyers(1); 
+    });
+
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        clearTable();
+        $("#filterStatus").val("");
+        loadFilteredBuyers(1);
     });
+
+    loadFilteredBuyers(1);
+
+    // ==========================================
+    // ACTION HANDLERS (ADD, EDIT, DELETE, EXCEL)
+    // ==========================================
 
     $("#btnAddBuyer").click(function() {
         $("#formBuyer")[0].reset();
@@ -107,14 +134,14 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.status === "success") {
                     $("#modalBuyer").modal("hide");
-                    loadFilteredBuyers(); 
-                    showNotification("Data berhasil disimpan!", "success");
+                    loadFilteredBuyers(currentPage);
+                    if(typeof showNotification === "function") showNotification("Data berhasil disimpan!", "success");
                 } else {
-                    showNotification(res.message || "Gagal menyimpan data", "danger");
+                    if(typeof showNotification === "function") showNotification(res.message || "Gagal menyimpan data", "danger");
                 }
             },
             error: function() {
-                showNotification("Terjadi kesalahan pada server", "danger");
+                if(typeof showNotification === "function") showNotification("Terjadi kesalahan pada server", "danger");
             },
             complete: function() {
                 btn.prop('disabled', false).text(originalText);
@@ -134,14 +161,14 @@ $(document).ready(function() {
                 data: { action: "delete", id: id },
                 success: function(res) {
                     if(res.status === "success") {
-                        loadFilteredBuyers();
-                        showNotification("Data berhasil dihapus!", "success");
+                        loadFilteredBuyers(currentPage); // Positional reload setelah hapus
+                        if(typeof showNotification === "function") showNotification("Data berhasil dihapus!", "success");
                     } else {
-                        showNotification(res.message || "Gagal menghapus data", "danger");
+                        if(typeof showNotification === "function") showNotification(res.message || "Gagal menghapus data", "danger");
                     }
                 },
                 error: function() {
-                    showNotification("Terjadi kesalahan sistem", "danger");
+                    if(typeof showNotification === "function") showNotification("Terjadi kesalahan sistem", "danger");
                 }
             });
         }
@@ -149,7 +176,9 @@ $(document).ready(function() {
 
     $("#btnTemplate").click(function() {
         let payload = { action: 'download_template' };
-        downloadExcelAjax(this, window.location.href, payload, 'Format Buyer');
+        if(typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, 'Format Buyer');
+        }
     });
 
     $("#btnUpload").click(function() {
@@ -157,6 +186,10 @@ $(document).ready(function() {
     });
 
     $("#fileCari").change(function() {
-        addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, loadFilteredBuyers);
+        if(typeof addBulk === "function") {
+            addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, function() {
+                loadFilteredBuyers(1);
+            });
+        }
     });
 });

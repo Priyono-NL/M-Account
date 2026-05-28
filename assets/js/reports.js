@@ -1,8 +1,14 @@
 $(document).ready(function() {	
-	
-	let tbody = $("#historyTable tbody");
+    let tbody = $("#historyTable tbody");
 
-    function loadFilteredHistory() {
+    let currentPage = 1;
+    let limit = 10; 
+
+    function loadFilteredHistory(page = 1) {
+        currentPage = page;
+
+        tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data riwayat ...</td></tr>');
+
         $.ajax({
             url: "index.php?page=history",
             type: "POST",
@@ -12,14 +18,17 @@ $(document).ready(function() {
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 start_date: $("#startDate").val(),
-                end_date: $("#endDate").val()
+                end_date: $("#endDate").val(),
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {                    
                     tbody.empty();
 
                     if (res.data.length === 0) {
-                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        renderPagination({ total: 0, totalPages: 0, page: 1 }); 
                         return;
                     }
 
@@ -37,9 +46,7 @@ $(document).ready(function() {
 
                         let tr = `
                             <tr>
-                                <td class="ps-4 text-muted">
-                                    ${formattedDate}
-                                </td>
+                                <td class="ps-4 text-muted">${formattedDate}</td>
                                 <td class="fw-medium text-dark">${t.reference_no}</td>
                                 <td>
                                     <div class="fw-bold text-primary">${t.item_name}</div>
@@ -53,51 +60,65 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
             },
             error: function() {
-                console.error("Gagal menarik data riwayat.");
+                tbody.html('<tr><td colspan="7" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }
-	
-	function clearTable() {
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Pencarian dibersihkan
-				</td>
-			</tr>
-		`);
-	}
+
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredHistory(targetPage); 
+    });
+
+    function clearTable() {
+        tbody.empty();
+        tbody.append(`
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+                    Pencarian dibersihkan
+                </td>
+            </tr>
+        `);
+        renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit }); 
+    }
 
     $("#search").on("keyup", clearTable);
     $("#filterWarehouse, #startDate, #endDate").on("change", clearTable);
 	
-	$("#btnFilter").click(function() {
-		loadFilteredHistory();
-	});
+    $("#btnFilter").click(function() {
+        loadFilteredHistory(1);
+    });
 	
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-		clearTable();
+        clearTable();
     });
 
     $("#btnResetAll").click(function() {
-		let before = new Date();
-		let now = new Date();
-		before.setDate(before.getDate() - 14);
-		now.setDate(now.getDate());
-		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
-		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+        let before = new Date();
+        let now = new Date();
+        before.setDate(before.getDate() - 14);
+        
+        let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+        let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
 		
         $("#search").val("");
         $("#filterWarehouse").val("");
         $("#startDate").val(beforeLokal);
         $("#endDate").val(nowLokal);
-		clearTable();
+        clearTable();
     });
 
     $("#btnExportExcel").click(function() {
@@ -109,7 +130,8 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || ""
         };
 
-        downloadExcelAjax(this, window.location.href, payload, 'Laporan_Transaksi');
+        if (typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, 'Laporan_Transaksi');
+        }
     });
-
 });

@@ -7,6 +7,9 @@ class SalesModel extends DatabaseHelper {
         parent::__construct();
     }
 
+    /**
+     * TRANSACTION MUTATION: Menyimpan data POS Penjualan Baru & Memotong Stok Kartu
+     */
     public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
@@ -91,7 +94,10 @@ class SalesModel extends DatabaseHelper {
         }
     }
 
-    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+    /**
+     * FUNGSI PRIVATE: Menghasilkan query filter WHERE yang bersih dari instruksi ORDER BY.
+     */
+    private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
                     (SELECT SUM(sd.item_qty * i.unit_price) 
                     FROM sales_detail sd
@@ -115,7 +121,6 @@ class SalesModel extends DatabaseHelper {
             $sql .= " AND s.sale_type = :type";
             $params['type'] = $type;
         }
-        
         if (!empty($startDate)) {
             $sql .= " AND s.sales_date >= :start_date";
             $params['start_date'] = $startDate;
@@ -124,12 +129,34 @@ class SalesModel extends DatabaseHelper {
             $sql .= " AND s.sales_date <= :end_date";
             $params['end_date'] = $endDate;
         }
-		
-        $sql .= " ORDER BY s.sales_date DESC, s.id DESC";
-        
-        return $this->query_all($sql, $params);
+
+        return [
+            'sql'    => $sql,
+            'params' => $params
+        ];
     }
 
+    /**
+     * UNTUK EXPORT EXCEL (TANPA LIMIT/OFFSET)
+     */
+    public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate, $type);
+        $sql = $query['sql'] . " ORDER BY s.sales_date DESC, s.id DESC";
+        return $this->query_all($sql, $query['params']);
+    }
+
+    /**
+     * UNTUK TABEL WEB INTERAKTIF (PAGINASI SERVER-SIDE)
+     */
+    public function getFilteredPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '', $limit = 25, $offset = 0) {
+        $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate, $type);
+        $sql = $query['sql'] . " ORDER BY s.sales_date DESC, s.id DESC";
+        return $this->query_paginated($sql, $query['params'], $limit, $offset);
+    }
+
+	/**
+     * VIEW DETAIL: Mengambil produk-produk di dalam satu nomor transaksi keluar
+     */
     public function getSalesHeader($sales_id) {
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
                     (SELECT SUM(sd.item_qty * i.unit_price) 
@@ -141,8 +168,8 @@ class SalesModel extends DatabaseHelper {
                 WHERE s.id = :id";
         
         return $this->query_one($sql, ['id' => (int)$sales_id]);
-    }
-
+    }	
+	
     public function getTransactionItems($sale_id) {
         $sql = "SELECT sd.*, i.item_code, i.item_name, i.unit_price, i.item_uom
                 FROM sales_detail sd 

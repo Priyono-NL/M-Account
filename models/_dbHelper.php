@@ -177,5 +177,23 @@ class DatabaseHelper {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($params);
     }
+	
+	public function query_paginated($sql, $params = [], $limit = 25, $offset = 0) {
+        $countSql = "SELECT COUNT(*) as total FROM ($sql) as count_tbl";
+        $stmtCount = $this->db->prepare($countSql);
+        $stmtCount->execute($params);
+        $countResult = $stmtCount->fetch();
+        $totalRecords = $countResult ? (int)$countResult['total'] : 0;
+
+        $dataSql = $sql . " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+        $stmtData = $this->db->prepare($dataSql);
+        $stmtData->execute($params);
+        $data = $stmtData->fetchAll();
+
+        return [
+            'data'  => $data,
+            'total' => $totalRecords
+        ];
+    }
 }
 ?>

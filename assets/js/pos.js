@@ -234,7 +234,8 @@ $(document).ready(function() {
 
             $('#buyerId').val(id);
             $('#buyerNameDisplay').val(nama + ' - ' + kode); 
-            
+            $('#btnClearBuyer').show();
+			
             // Logika Dropdown Expense Sales
             if (isExp === 'EXP') {
                 $('#salesType option[value="EXP"]').prop('disabled', false);
@@ -248,6 +249,18 @@ $(document).ready(function() {
             $('#buyerModal').modal('hide');
         });
 
+		$('#btnClearBuyer').click(function() {
+            $('#buyerId').val('');
+            $('#buyerNameDisplay').val('');
+            $(this).hide();
+
+            $('#salesType').val('SLS').trigger('change');
+            $('#salesType option[value="EXP"]').prop('disabled', true);
+        });
+		
+		$('#buyerModal').on('hide.bs.modal', function () {
+			$('#buyerNameDisplay').focus(); 
+		});
 
         // ==========================================
         // 4. MODAL BARANG (ITEM) - MULTI SELECT
@@ -381,7 +394,10 @@ $(document).ready(function() {
             renderCart();
             showNotification(`${itemDraft.length} macam barang ditambahkan.`, 'success');
         });
-
+		
+		$('#itemModal').on('hide.bs.modal', function () {
+			$('#search').focus(); 
+		});
 
         // ==========================================
         // 5. INTERAKSI KERANJANG UTAMA & CHECKOUT

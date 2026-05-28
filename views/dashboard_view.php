@@ -82,7 +82,7 @@ class DashboardView {
         <script>
             // Fungsi untuk memfilter data berdasarkan Warehouse
             function filterByWarehouse(val) {
-                window.location.href = '/maccount/index.php?page=dashboard?warehouse=' + val;
+                window.location.href = '/maccount/index.php?page=dashboard&warehouse=' + val;
             }
 
             // Sales Chart

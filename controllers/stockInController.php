@@ -10,10 +10,13 @@ class StockInController extends BaseController {
         parent::__construct();
 
         $this->itemsModel   = new ItemsModel();
-        $this->personModel   = new BuyerModel();
+        $this->personModel  = new BuyerModel();
         $this->stockInModel = new StockInModel();
     }
 
+    /**
+     * MENU UTAMA: Input Transaksi Masuk (POS / Create & View Detail)
+     */
     public function index() {
         $mode       = $this->getPost('mode', 'create');
         $receive_id = isset($_POST['id']) ? (int)$_POST['id'] : null;
@@ -35,23 +38,10 @@ class StockInController extends BaseController {
         
         StockIn_view::render($transactionData);
     }
-
-    public function history() {
-        $receivement = $this->stockInModel->getFiltered();
-        Receive_view::render($receivement);
-    }
-
-    public function filter_api() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
-
-        $items = $this->stockInModel->getFiltered($search, $warehouse, $startDate, $endDate);
-        
-        return $this->jsonSuccess("Data Filtered", $items);
-    }
-
+	
+	/**
+     * API AUTOCOMPLETE: Mengambil list produk untuk input barang POS (Tanpa Paginasi)
+     */
     public function get_products() {
         $keyword = $this->getPost('keyword', '');
         $results = $this->itemsModel->getFiltered($keyword); 
@@ -59,6 +49,9 @@ class StockInController extends BaseController {
         return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }
 
+    /**
+     * API AUTOCOMPLETE: Mengambil list Pihak Kedua/Buyer untuk POS (Tanpa Paginasi)
+     */
     public function get_buyers() {
         $keyword = $this->getPost('keyword', '');        
         $results = $this->personModel->getFiltered($keyword);
@@ -66,13 +59,16 @@ class StockInController extends BaseController {
         return $this->jsonSuccess("Data pihak/pembeli berhasil dimuat", $results);
     }
 
+    /**
+     * PROSES CHECKOUT: Menyimpan seluruh inputan POS Penerimaan ke Database
+     */
     public function checkout() {
         $cartRaw      = $this->getPost('cart');
         $doc_number   = $this->getPost('doc_number');
         $received_by  = $this->getPost('received_by');
         $warehouse    = $this->getPost('warehouse');
         $date_receive = $this->getPost('date_receive');        
-		$notes		  = $this->getPost('notes');
+        $notes        = $this->getPost('notes');
 
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
@@ -92,6 +88,45 @@ class StockInController extends BaseController {
         }
     }
 
+    /**
+     * HALAMAN LIST RIWAYAT: Menampilkan Tabel Riwayat Transaksi Penerimaan
+     */
+    public function history() {
+        Receive_view::render([]);
+    }
+
+    /**
+     * API ENDPOINT: Mengambil data riwayat dengan Paginasi Server-Side (Limit 10)
+     */
+    public function filter_api() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+
+        $paging = $this->getPaginationParams(10);
+
+        $result = $this->stockInModel->getFilteredPaginated(
+            $search, 
+            $warehouse, 
+            $startDate, 
+            $endDate, 
+            $paging['limit'], 
+            $paging['offset']
+        );
+        
+        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+        
+        return $this->jsonSuccess(
+            "Data Filtered", 
+            $result['data'], 
+            ['pagination' => $paginationMeta]
+        );
+    }
+
+    /**
+     * EXPORT EXCEL: Mendownload seluruh riwayat penerimaan tanpa batas halaman
+     */
     public function export_xls() {
         $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');

@@ -4,7 +4,7 @@ class StockCloseView {
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
         $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
         $is_locked = ($sso_warehouse !== null);
-        $summaryStatus = $result['status'];
+        $summaryStatus = $result['status'] ?? 'ONGOING';
 
         ob_start();
         ?>
@@ -50,7 +50,7 @@ class StockCloseView {
                     <div class="col-md-4">
                         <div class="row g-1">
                             <div class="col-6">
-                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>>
+                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>
                                     <option value="">Semua Gudang</option>
                                     <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
                                     <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
@@ -75,6 +75,7 @@ class StockCloseView {
 
         <div class="card border-0 shadow-sm overflow-hidden">
             <div class="card-body p-0">
+			
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="stockTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -98,11 +99,22 @@ class StockCloseView {
                         </tbody>
                     </table>
                 </div>
+				
+				<div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                    <div class="small text-muted" id="paginationInfo">
+                        Menampilkan 0 data
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
 
         <?php
         $content = ob_get_clean();
+        // Mempertahankan nama file asset script stocksClose.js asli milikmu dengan tambahan anti-cache otomatis
         $extra_js = '<script src="/maccount/assets/js/stocksClose.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }

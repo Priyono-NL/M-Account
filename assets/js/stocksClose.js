@@ -1,5 +1,8 @@
 $(document).ready(function() {
-	let tbody = $("#stockTable tbody");
+    let tbody = $("#stockTable tbody");
+
+    let currentPage = 1;
+    let limit = 10;
 
     function renderStatusBanner(status) {
         let bannerHtml = '';
@@ -29,7 +32,11 @@ $(document).ready(function() {
         $('#statusBannerContainer').html(bannerHtml);
     }
 
-    function loadFilteredHistory() {
+    function loadFilteredHistory(page = 1) {
+        currentPage = page;
+
+        tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data informasi stok...</td></tr>');
+
         $.ajax({
             url: "index.php?page=stockClose",
             type: "POST",
@@ -39,20 +46,22 @@ $(document).ready(function() {
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 closeMonth: $("#closeMonth").val(),
+                page: currentPage,
+                limit: limit
             },
             success: function(res) {
                 if (res.status === "success") {                    
                     tbody.empty();
 
                     let currentStatus = res.data.status;
-					console.log(res.data.status);
                     renderStatusBanner(currentStatus);
 
                     let itemsArray = res.data.stocks || [];
 
                     if (itemsArray.length === 0) {
-						$('#statusBannerContainer').empty();
-                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        $('#statusBannerContainer').empty();
+                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada riwayat transaksi ditemukan.</td></tr>');
+                        renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
@@ -86,30 +95,46 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+
+                    $("#btnMulaiClosing").prop('disabled', false);
+
+                    if (res.pagination) {
+                        renderPagination(res.pagination);
+                    }
                 }
             },
             error: function() {
-                console.error("Gagal menarik data.");
+                tbody.html('<tr><td colspan="7" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }
 
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        let $parent = $(this).parent();
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
+        
+        let targetPage = $(this).data('page');
+        loadFilteredHistory(targetPage);
+    });
+
     function clearTable() {
-		$('#statusBannerContainer').empty();
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Pencarian dibersihkan
-				</td>
-			</tr>
-		`);
-	}
+        $('#statusBannerContainer').empty();
+        tbody.empty();
+        tbody.append(`
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+                    Pencarian dibersihkan
+                </td>
+            </tr>
+        `);
+        renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
+    }
 	
 	$("#btnFilter").click(function() {
-		loadFilteredHistory();
-	})
+		loadFilteredHistory(1);
+	});
 
     $("#search").on("keyup", clearTable);
     $("#filterWarehouse, #closeMonth").on("change", clearTable);
@@ -120,10 +145,10 @@ $(document).ready(function() {
     });
 
     $("#btnResetAll").click(function() {
-		let d = new Date();
-		let tahun = d.getFullYear();
-		let bulan = String(d.getMonth() + 1).padStart(2, '0');
-		let nowMonth = tahun + '-' + bulan;
+        let d = new Date();
+        let tahun = d.getFullYear();
+        let bulan = String(d.getMonth() + 1).padStart(2, '0');
+        let nowMonth = tahun + '-' + bulan;
 	
         $("#search").val("");
         $("#filterWarehouse").val("");
@@ -140,24 +165,28 @@ $(document).ready(function() {
             warehouse: $("#filterWarehouse").val() || ""
         };
 
-        downloadExcelAjax(this, window.location.href, payload, 'Laporan_Stok');
+        if (typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, 'Laporan_Stok');
+        }
     });
 	
-	$("#closeMonth").on("keydown", function(e) {
-		if (e.key === "Backspace" || e.key === "Delete") {
-			e.preventDefault();
-		}
-	});
+    $("#closeMonth").on("keydown", function(e) {
+        if (e.key === "Backspace" || e.key === "Delete") {
+            e.preventDefault();
+        }
+    });
 
-	$("#closeMonth").on("blur", function() {
-		if ($(this).val() === "") {
-			let today = new Date();
-			let year = today.getFullYear();
-			let month = String(today.getMonth() + 1).padStart(2, '0');
+    $("#closeMonth").on("blur", function() {
+        if ($(this).val() === "") {
+            let today = new Date();
+            let year = today.getFullYear();
+            let month = String(today.getMonth() + 1).padStart(2, '0');
 			
-			$(this).val(`${year}-${month}`);
-			showNotification("Periode tidak boleh kosong. Dikembalikan ke bulan berjalan.", "warning");
-		}
-	});
+            $(this).val(`${year}-${month}`);
+            if (typeof showNotification === "function") {
+                showNotification("Periode tidak boleh kosong. Dikembalikan ke bulan berjalan.", "warning");
+            }
+        }
+    });
 
 });

@@ -6,8 +6,8 @@ class BuyerModel extends DatabaseHelper {
     public function __construct() {
         parent::__construct();
     }
-
-    public function getFiltered($search = '') {
+	
+	private function buildFilterQuery($search) {
         $sql = "SELECT * FROM buyer WHERE is_active = 0";
         $params = [];
 
@@ -16,9 +16,22 @@ class BuyerModel extends DatabaseHelper {
             $params['search'] = "%{$search}%";
         }
 
-        $sql .= " ORDER BY buyer_name ASC";
+        return [
+            'sql'    => $sql,
+            'params' => $params
+        ];
+    }
 
-        return $this->query_all($sql, $params);
+    public function getFiltered($search = '') {
+        $query = $this->buildFilterQuery($search);        
+        $sql = $query['sql'] . " ORDER BY buyer_name ASC";         
+        return $this->query_all($sql, $query['params']);
+    }
+	
+	public function getFilteredPaginated($search = '', $limit = 10, $offset = 0) {
+        $query = $this->buildFilterQuery($search);
+        $sql = $query['sql'] . " ORDER BY id DESC";
+        return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
 }

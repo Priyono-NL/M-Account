@@ -71,7 +71,19 @@ class ItemsView {
                                 </td>
                             </tr>
                         </tbody>
+					</table>
                 </div>
+				
+				<div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                    <div class="small text-muted" id="paginationInfo">
+                        Menampilkan 0 data
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                            </ul>
+                    </nav>
+                </div>
+				
             </div>
         </div>
 

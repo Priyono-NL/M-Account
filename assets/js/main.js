@@ -145,6 +145,60 @@ const addBulk = (btnElement, url, fileInputId, additionalData = {}, onSuccess = 
     });
 };
 
+const renderPagination = (paging, controlsId = '#paginationControls', infoId = '#paginationInfo') => {
+    let total = parseInt(paging.total) || 0;
+    let totalPages = parseInt(paging.totalPages) || 0;
+    let page = parseInt(paging.page) || 1;
+    let limit = parseInt(paging.limit) || 25; // Otomatis membaca limit dari server response
+
+    // 1. Render Teks Info
+    let start = total === 0 ? 0 : ((page - 1) * limit) + 1;
+    let end = Math.min(page * limit, total);
+    $(infoId).text(`Menampilkan ${start} - ${end} dari total ${total} data`);
+
+    let pgHtml = '';
+
+    // 2. Tombol Prev («)
+    pgHtml += `<li class="page-item ${page === 1 || totalPages === 0 ? 'disabled' : ''}">
+                  <a class="page-link px-3" href="#" data-page="${page - 1}">&laquo;</a>
+               </li>`;
+
+    // 3. Logika Titik-titik (Smart Elipsis)
+    if (totalPages > 0) {
+        let pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (page <= 3) {
+                pages = [1, 2, 3, '...', totalPages];
+            } else if (page >= totalPages - 2) {
+                pages = [1, '...', totalPages - 2, totalPages - 1, totalPages];
+            } else {
+                pages = [1, '...', page - 1, page, page + 1, '...', totalPages];
+            }
+        }
+
+        pages.forEach(p => {
+            if (p === '...') {
+                pgHtml += `<li class="page-item disabled">
+                              <span class="page-link bg-light text-muted border-0">...</span>
+                           </li>`;
+            } else {
+                pgHtml += `<li class="page-item ${p === page ? 'active' : ''}">
+                              <a class="page-link px-3" href="#" data-page="${p}">${p}</a>
+                           </li>`;
+            }
+        });
+    }
+
+    // 4. Tombol Next (»)
+    pgHtml += `<li class="page-item ${page === totalPages || totalPages === 0 ? 'disabled' : ''}">
+                  <a class="page-link px-3" href="#" data-page="${page + 1}">&raquo;</a>
+               </li>`;
+
+    $(controlsId).html(pgHtml);
+};
+
 $(document).ready(function() {
     
     $('#sidebarToggle').click(function() {
