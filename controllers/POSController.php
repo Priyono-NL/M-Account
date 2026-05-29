@@ -94,6 +94,7 @@ class POSController extends BaseController {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
+        $this->salesModel->incrementPrintCount($sales_id);
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 

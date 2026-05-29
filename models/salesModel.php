@@ -178,5 +178,10 @@ class SalesModel extends DatabaseHelper {
                 
         return $this->query_all($sql, ['sale_id' => (int)$sale_id]);
     }
+
+    public function incrementPrintCount($sales_id) {
+        $sql = "UPDATE sales SET print_count = print_count + 1 WHERE id = :id";
+        return $this->query_one($sql, ['id' => $sales_id]);
+    }
 }
 ?>
