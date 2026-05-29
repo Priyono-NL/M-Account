@@ -78,13 +78,29 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
                 <span class="link-text">Stock Item</span>
             </a>
         </li>
-		
-		<li class="nav-item">
-            <a href="index.php?page=stockClosing" class="nav-link <?= ($uri_page == 'stockClosing') ? 'active' : '' ?>">
-                <i class="fa-solid fa-boxes-packing"></i>
-                <span class="link-text">Closing Stok</span>
+
+        <li class="nav-item">
+            <a href="index.php?page=stockOpname" class="nav-link <?= ($uri_page == 'stockOpname') ? 'active' : '' ?>">
+                <i class="fa-solid fa-box-open"></i>
+                <span class="link-text">Stock Opname</span>
             </a>
         </li>
+
+        <?php if($isAdmin) : ?>
+            <li class="nav-item">
+                <a href="index.php?page=stockAdjustment" class="nav-link <?= ($uri_page == 'stockAdjustment') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-check-to-slot"></i>
+                    <span class="link-text">Stok Adjustment</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="index.php?page=stockClosing" class="nav-link <?= ($uri_page == 'stockClosing') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span class="link-text">Closing Stok</span>
+                </a>
+            </li>
+        <?php endif; ?>
 		
 		<hr class="mx-3 my-2 text-secondary opacity-25">
 

@@ -24,9 +24,11 @@ class SuratView {
         
         // Judul otomatis rata tengah - ganti region
 		$rawText .= $ESC . "R" . chr(5);
+		$rawText .= $ESC . "E" . chr(1);
 		$simbol = "$$"; 
 		$judul = $simbol . " FAKTUR PENJUALAN " . $simbol;
 		$rawText .= str_pad($judul, 113, " ", STR_PAD_BOTH) . $LN . $LN;
+		$rawText .= $ESC . "E" . chr(0);
         
         // Header Info
         $tgl    = "Tanggal : " . ($header['sales_date'] ?? '-');
@@ -92,30 +94,33 @@ class SuratView {
         // --- 3. PELATUK FORM FEED ---
         $rawText .= "\x0C";
         
-        // Encode ke Hex
+        // Encode ke Hex agar aman dikirim ke JavaScript browser
         $hexData = bin2hex($rawText);
         ?>
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Mencetak <?= $header['invoice_no'] ?? 'INV' ?>...</title>
+            <title>Chromebook USB Print - <?= $header['invoice_no'] ?? 'INV' ?></title>
             <style>
                 body { font-family: sans-serif; padding: 40px; text-align: center; background: #eef2f7; }
-                .box { background: white; padding: 40px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 500px;}
-                button { padding: 12px 30px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; background: #198754; color: white; margin-top: 20px;}
-                button:hover { background: #157347; }
-                #status { font-size: 18px; color: #333; margin-bottom: 10px; font-weight: bold;}
-                #manual-print-area { display: none; } /* Disembunyikan secara default */
+                .box { background: white; padding: 30px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+                button { padding: 12px 30px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
+                button:hover { background: #0056b3; }
+                .note { margin-top: 15px; font-size: 12px; color: #6c757d; }
             </style>
         </head>
         <body>
+
             <div class="box">
-                <div id="status">Memeriksa koneksi printer...</div>
+                <h2>Cetak Dot Matrix via Chromebook USB</h2>
+                <p>Tekan tombol di bawah untuk mengirim perintah RAW langsung ke printer.</p>
+				<div style="text-align: left; margin-bottom: 20px;">
+					<p style="font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #333;">Verifikasi Kode Hex (Trik Swedia):</p>
+					<textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; background-color: #f8f9fa; resize: vertical; box-sizing: border-box;"><?= $hexData ?></textarea>
+				</div>
                 
-                <div id="manual-print-area">
-                    <p style="color: #6c757d; font-size: 14px;">Browser membutuhkan izin Anda untuk terhubung ke printer Epson LQ-310 pada sesi ini.</p>
-                    <button onclick="printManual()">IZINKAN & CETAK SEKARANG</button>
-                </div>
+                <button onclick="printDariChromebook()">MULAI CETAK</button>
+                <button onclick="window.close()" style="background:#6c757d;">TUTUP</button>
             </div>
 
             <script>
@@ -129,67 +134,27 @@ class SuratView {
                     return bytes;
                 }
 
-                // Fungsi inti eksekusi printer
-                async function eksekusiCetak(device) {
-                    try {
-                        document.getElementById('status').innerText = "Sedang mengirim data ke printer...";
-                        document.getElementById('manual-print-area').style.display = 'none';
+                async function printDariChromebook() {
+					if (!("usb" in navigator)) {
+						alert("Browser Chrome di Chromebook Anda tidak mendukung WebUSB API!");
+						return;
+					}
 
-                        await device.open();
-                        await device.selectConfiguration(1);
-                        await device.claimInterface(0); 
-                        
-                        const dataBytes = hexToBytes(dataHex);
-                        await device.transferOut(1, dataBytes);
-                        
-                        await device.releaseInterface(0);
-                        await device.close();
-                        
-                        // Sukses! Langsung tutup tab ini
-                        window.close();
-                    } catch (error) {
-                        console.error(error);
-                        document.getElementById('status').innerText = "Gagal mencetak: " + error.message;
-                    }
-                }
-
-                // Fungsi saat tab baru dibuka (Auto-Print)
-                async function autoPrint() {
-                    if (!("usb" in navigator)) {
-                        document.getElementById('status').innerText = "Browser tidak mendukung WebUSB.";
-                        return;
-                    }
-
-                    try {
-                        const devices = await navigator.usb.getDevices();
-                        const epsonDevice = devices.find(d => d.vendorId === 0x04b8);
-
-                        if (epsonDevice) {
-                            // Izin sudah ada, langsung cetak dan tutup!
-                            await eksekusiCetak(epsonDevice);
-                        } else {
-                            // Belum ada izin, tampilkan tombol untuk klik manual
-                            document.getElementById('status').innerText = "Menunggu Izin Printer";
-                            document.getElementById('manual-print-area').style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error("Auto-print error:", error);
-                    }
-                }
-
-                // Fungsi jika user harus klik (Manual Print)
-                async function printManual() {
-                    try {
-                        const device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x04b8 }] });
-                        await eksekusiCetak(device);
-                    } catch (error) {
-                        console.error(error);
-                        alert("Gagal mendapatkan izin printer.");
-                    }
-                }
-
-                // Jalankan otomatis saat tab selesai di-load
-                window.onload = autoPrint;
+					try {
+						const device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x04b8 }] });
+						await device.open();
+						await device.selectConfiguration(1);
+						await device.claimInterface(0); 
+						const dataBytes = hexToBytes(dataHex);
+						await device.transferOut(1, dataBytes);
+						await device.releaseInterface(0);
+						await device.close();
+						alert("Faktur berhasil dikirim langsung ke Epson LQ-310!");
+					} catch (error) {
+						console.error(error);
+						alert("Gagal koneksi ke LQ-310: " + error.message);
+					}
+				}
             </script>
         </body>
         </html>

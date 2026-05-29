@@ -15,6 +15,8 @@ require_once 'models/SalesModel.php';
 require_once 'models/reportModel.php';
 require_once 'models/stocksModel.php';
 require_once 'models/stockInModel.php';
+require_once 'models/stockOpnameModel.php';
+require_once 'models/stockAdjustmentModel.php';
 
 // Load Semua Views
 require_once 'views/changeLogin_view.php';
@@ -30,9 +32,10 @@ require_once 'views/buyer_view.php';
 require_once 'views/report_view.php';
 require_once 'views/stocks_view.php';
 require_once 'views/stock_close_view.php';
+require_once 'views/stock_opname_view.php';
+require_once 'views/stock_adjustment_view.php';
 require_once 'views/stockIn_view.php';
 require_once 'views/receive_view.php';
-
 require_once 'views/salesPivot_view.php';
 
 // =======================================================
@@ -66,6 +69,8 @@ $controllers = [
     'history' => 'ReportsController',
     'stockClosing' => 'StocksController',
     'stockClose' => 'StockCloseController',
+    'stockOpname' => 'StockOpnameController',
+    'stockAdjustment' => 'StockAdjustmentController',
     'sales' => 'SalesPivotController',
     'changeLogin' => 'ChangeLoginController',
 ];
