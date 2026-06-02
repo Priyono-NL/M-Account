@@ -94,7 +94,7 @@ class POSController extends BaseController {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
-        $this->salesModel->incrementPrintCount($sales_id);
+        // $this->salesModel->incrementPrintCount($sales_id);
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
@@ -114,6 +114,7 @@ class POSController extends BaseController {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
+        // $this->salesModel->incrementPrintCount($sales_id);
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
@@ -128,19 +129,20 @@ class POSController extends BaseController {
         $dompdf = new \Dompdf\Dompdf($options);
 
         ob_start();
+        $cm_to_pt = 28.3465;
         if ($header['warehouse'] == 1) {
-            $width  = 8.5 * 28.3465;
-            $height = 9.7 * 28.3465;
+            $width  = 11.43 * $cm_to_pt;
+            $height = 13.97 * $cm_to_pt;
             InvoiceViewPdf::render($header, $items);
         } else {
-            $width  = 17 * 28.3465;
-            $height = 24 * 28.3465;
+            $width  = 21.59 * $cm_to_pt;
+            $height = 13.97 * $cm_to_pt;
             SuratViewPdf::render($header, $items);
         }
         $html = ob_get_clean();
 
         $dompdf->loadHtml($html);
-        $dompdf->setPaper([0, 0, $width, $height], 'landscape');
+        $dompdf->setPaper([0, 0, $width, $height], 'portrait');
         
         $dompdf->render();
         $dompdf->stream("Invoice-" . $header['invoice_no'] . ".pdf", [

@@ -30,10 +30,11 @@ class InvoiceView {
         // Header Info
         $valDate  = $header['sales_date'] ?? '-';
         $valDoc   = $header['invoice_no'] ?? '-';
+        $valPrint = $header['print_count'] ?? '';
         $valBuyer = trim(($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-'));
         
 		$kiriDate = "Date      " . $valDate;
-        $kananPrint = "Print#";
+        $kananPrint = "Print#" . $valPrint;
         $dateLine   = str_pad($kiriDate, 38) . str_pad($kananPrint, 15, " ", STR_PAD_LEFT);
         
         $rawText .= $dateLine . $LN;

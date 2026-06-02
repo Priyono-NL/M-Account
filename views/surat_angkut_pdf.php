@@ -40,7 +40,7 @@ class SuratViewPdf {
                 <tr>
                     <td style="width: 55%">Tanggal : <?= $header['sales_date'] ?></tdstyle>
                     <td stlye="width: 35%">Nomor Faktur : <?= $header['invoice_no'] ?></td>
-                    <td class="text-right">Print#</td>
+                    <td class="text-right">Print#<?= $header['print_count'] ?></td>
                 </tr>
                 <tr>
                     <td>Kepada : <?= $header['buyer_code'] ?> <?= $header['buyer_name'] ?></td>
@@ -72,7 +72,15 @@ class SuratViewPdf {
                 </tbody>
             </table>
 
-            <div style="margin-top: 10px;" class="line"></div>
+            <table style="width: 100%; margin-top: 10px; margin-bottom: 5px;" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="width: 1%; white-space: nowrap;">¤¤¤¤¤</td>
+                    
+                    <td style="width: 99%; vertical-align: middle;">
+                        <div style="border-bottom: 1px dashed #000; width: 100%;"></div>
+                    </td>
+                </tr>
+            </table>
 
             <table>
                 <tr class="text-bold">

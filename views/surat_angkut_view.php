@@ -31,7 +31,7 @@ class SuratView {
         // Header Info
         $tgl    = "Tanggal : " . ($header['sales_date'] ?? '-');
         $kepada = "Kepada  : " . ($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-');
-		$print  = "Print# : "; 
+		$print  = "Print#" . ($header['print_count']);
 		$no_inv = "Nomor Faktur : " . ($header['invoice_no'] ?? '-');
         $gudang = "Kode Gudang  : " . ($header['warehouse'] ?? '-');                
 
@@ -66,11 +66,10 @@ class SuratView {
                 
                 $rawText .= $nama . $qty . $harga . $total . $LN;
             }
-        }		
-        $CR = "\x0D";
+        }
 		$simbol = "$$$$$";
-		$garis  = str_repeat("-", 113);
-        $rawText .= $simbol . $CR . $garis . $LN;
+		$garis  = str_repeat("-", 108);
+        $rawText .= $simbol . $garis . $LN;
         
         $grandTotal = $isExp ? '-' : number_format($header['total'] ?? 0, 0, ',', '.');
         $rawText .= str_pad("Grand Total:", 97, " ", STR_PAD_LEFT) . str_pad($grandTotal, 16, " ", STR_PAD_LEFT) . $LN . $LN;

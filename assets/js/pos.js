@@ -5,7 +5,8 @@ function printReceipt(id) {
         alert("ID Transaksi tidak ditemukan.");
         return;
     }
-    const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
+    // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
+    const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
