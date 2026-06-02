@@ -150,5 +150,14 @@ class StockInModel extends DatabaseHelper {
                 
         return $this->query_all($sql, ['receive_id' => (int)$receive_id]);
     }
+
+    /**
+     * CEK NOMOR DOKUMEN DUPLIKAT
+     */
+    public function getByDocNumber($doc_number) {
+        $sql = "SELECT * FROM receivement WHERE doc_number = :doc_number LIMIT 1";
+        $result = $this->query_one($sql, ['doc_number' => $doc_number]);        
+        return $result ? true : false;
+    }
 }
 ?>

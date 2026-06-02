@@ -6,7 +6,7 @@ $(document).ready(function() {
     const jedaMengetik = 500;
     
     // ==========================================
-    // 1. VALIDASI TANGGAL TRANSAKSI
+    // VALIDASI TANGGAL TRANSAKSI
     // ==========================================
     $('#date_receive').on('input change', function() {
         clearTimeout(dateTimeout);
@@ -43,7 +43,54 @@ $(document).ready(function() {
     const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 
     // ==========================================
-    // 2. MODE VIEW (Melihat histori)
+    // VALIDASI AUTO-CHECK NOMOR DOKUMEN (UX FRIENDLY)
+    // ==========================================
+    $('#docNumber').on('blur', function() {
+        let docNumber = $(this).val().trim();
+        let docInput = $('#docNumber');
+        let btnCheckout = $('#btnCheckout');
+
+        $('#docErrorText').remove();
+
+        if (docNumber === '') {
+            docInput.removeClass('is-invalid is-valid');
+            btnCheckout.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+            return;
+        }
+
+        $.ajax({
+            url: 'index.php?page=receive',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'check_doc',
+                doc_number: docNumber
+            },
+            success: function(response) {
+                if (response.data.status === 'exists') {
+                    docInput.removeClass('is-valid').addClass('is-invalid');                    
+                    docInput.after(`<small id="docErrorText" class="text-danger mt-1 d-block"><i class="fa-solid fa-circle-exclamation"></i> Nomor dokumen <b>${docNumber}</b> sudah terpakai! Harap gunakan nomor lain.</small>`);
+                    btnCheckout.prop('disabled', true).html('<i class="fa-solid fa-ban me-2"></i> Nomor Dokumen Duplikat');
+
+                } else {
+                    docInput.removeClass('is-invalid').addClass('is-valid');
+                    btnCheckout.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+                }
+            },
+            error: function() {
+                console.error("Gagal melakukan pengecekan dokumen.");
+            }
+        });
+    });
+
+    $('#docNumber').on('input', function() {
+        $(this).removeClass('is-invalid is-valid');
+        $('#docErrorText').remove();
+        $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+    });
+
+    // ==========================================
+    // MODE VIEW (Melihat histori)
     // ==========================================
     if (isViewOnly) {
         if (typeof VIEW_DATA_ITEMS !== 'undefined') {
@@ -62,7 +109,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. FUNGSI RENDER KERANJANG & REKAP UTAMA
+    // FUNGSI RENDER KERANJANG & REKAP UTAMA
     // ==========================================
     function renderCart() {
         let tbody = $('#cartTableBody');
@@ -157,7 +204,7 @@ $(document).ready(function() {
 
 
     // ==========================================
-    // 4. INTERAKSI INPUT & MODAL (MODE AKTIF)
+    // INTERAKSI INPUT & MODAL (MODE AKTIF)
     // ==========================================
     if (!isViewOnly) {
         
@@ -211,6 +258,9 @@ $(document).ready(function() {
             $('#notes').val('');
             $('#warehouseSelect').val('1');
             $('#date_receive').val(new Date().toISOString().split('T')[0]);
+            $('#docNumber').removeClass('is-invalid is-valid');
+            $('#docErrorText').remove();
+            $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
             renderCart();
         });
 
@@ -442,6 +492,6 @@ $(document).ready(function() {
                 }
             });
         });
-    }
+    }    
 
 });

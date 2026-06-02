@@ -125,6 +125,18 @@ class StockInController extends BaseController {
     }
 
     /**
+     * API ENDPOINT: Cek ketersediaan Nomor Dokumen
+     */
+    public function check_doc() {
+        $doc_number = $this->getPost('doc_number', '');        
+        if (empty($doc_number)) return $this->jsonError("Nomor dokumen kosong.");
+
+        $isExists = $this->stockInModel->getByDocNumber($doc_number);                
+        if ($isExists) return $this->jsonSuccess("Dokumen sudah ada", ['status' => 'exists']);
+        else return $this->jsonSuccess("Dokumen tersedia", ['status' => 'available']);
+    }
+
+    /**
      * EXPORT EXCEL: Mendownload seluruh riwayat penerimaan tanpa batas halaman
      */
     public function export_xls() {
