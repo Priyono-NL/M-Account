@@ -131,21 +131,42 @@ class SuratView {
                 // Fungsi inti eksekusi printer
                 async function eksekusiCetak(device) {
                     try {
-                        document.getElementById('status').innerText = "Sedang mengirim data ke printer...";
+                        document.getElementById('status').innerText = "Mencetak struk Pass Keluar...";
                         document.getElementById('manual-print-area').style.display = 'none';
 
                         await device.open();
                         await device.selectConfiguration(1);
                         await device.claimInterface(0); 
                         
-                        const dataBytes = hexToBytes(dataHex);
-                        await device.transferOut(1, dataBytes);
+                        // --- PERBAIKAN 1: Cari Endpoint OUT secara otomatis ---
+                        const interfaceObj = device.configuration.interfaces[0];
+                        const alternate = interfaceObj.alternates[0];
+                        const endpoint = alternate.endpoints.find(e => e.direction === 'out');
                         
+                        if (!endpoint) {
+                            throw new Error("Endpoint OUT tidak ditemukan pada printer ini.");
+                        }
+                        const endpointNumber = endpoint.endpointNumber;
+
+                        // Konversi data hex dari PHP
+                        const dataBytes = hexToBytes(dataHex);
+                        
+                        // --- PERBAIKAN 2: Kirim data per 64 byte (Chunking) agar buffer tidak meluap ---
+                        const chunkSize = 64;
+                        for (let i = 0; i < dataBytes.length; i += chunkSize) {
+                            const chunk = dataBytes.subarray(i, i + chunkSize);
+                            await device.transferOut(endpointNumber, chunk);
+                        }
+                        
+                        // Lepas interface secara bersih
                         await device.releaseInterface(0);
                         await device.close();
                         
-                        // Sukses! Langsung tutup tab ini
-                        window.close();
+                        // Beri jeda sebentar sebelum menutup window agar proses transfer selesai sempurna
+                        setTimeout(() => {
+                            window.close();
+                        }, 500);
+
                     } catch (error) {
                         console.error(error);
                         document.getElementById('status').innerText = "Gagal mencetak: " + error.message;

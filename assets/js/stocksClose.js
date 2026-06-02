@@ -34,6 +34,32 @@ $(document).ready(function() {
 
     function loadFilteredHistory(page = 1) {
         currentPage = page;
+        let closeMonthInput = $("#closeMonth").val();
+        let warehouseInput = $("#filterWarehouse").val();
+
+        // Validasi jika Periode/Bulan Kosong
+        if (!closeMonthInput) {
+            if (typeof showNotification === "function") showNotification("Gagal memuat data! Periode bulan tidak boleh kosong.", "danger");
+            clearTable("Periode bulan wajib diisi.", true);
+            return;
+        }
+
+        // Validasi jika Periode Melebihi Bulan Berjalan (Juni 2026)
+        let parts = closeMonthInput.split('-');
+        let inputYear = parseInt(parts[0], 10);
+        let inputMonth = parseInt(parts[1], 10);
+        let today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth() + 1;
+
+        let inputTotalMonths = (inputYear * 12) + inputMonth;
+        let currentTotalMonths = (currentYear * 12) + currentMonth;
+
+        if (inputTotalMonths > currentTotalMonths) {
+            if (typeof showNotification === "function") showNotification("Gagal memuat data! Periode tidak boleh melewati bulan berjalan saat ini.", "danger");
+            clearTable("Periode tidak valid (Melebihi bulan berjalan).", true);
+            return;
+        }
 
         tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data informasi stok...</td></tr>');
 
@@ -118,17 +144,28 @@ $(document).ready(function() {
         loadFilteredHistory(targetPage);
     });
 
-    function clearTable() {
+    function clearTable(pesan = "Pencarian dibersihkan", isValidationError = false) {
         $('#statusBannerContainer').empty();
         tbody.empty();
+        
+        let iconHtml = isValidationError 
+            ? `<i class="fa-solid fa-triangle-exclamation fs-2 mb-3 d-block text-danger opacity-50"></i>`
+            : `<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>`;
+            
+        let subPesanHtml = isValidationError
+            ? `<br><small class="text-secondary">Silakan perbaiki filter Anda lalu klik Apply Filter kembali.</small>`
+            : ``;
+
         tbody.append(`
             <tr>
                 <td colspan="7" class="text-center py-5 text-muted">
-                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-                    Pencarian dibersihkan
+                    ${iconHtml}
+                    ${pesan}
+                    ${subPesanHtml}
                 </td>
             </tr>
         `);
+        
         renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
     }
 	
@@ -173,19 +210,6 @@ $(document).ready(function() {
     $("#closeMonth").on("keydown", function(e) {
         if (e.key === "Backspace" || e.key === "Delete") {
             e.preventDefault();
-        }
-    });
-
-    $("#closeMonth").on("blur", function() {
-        if ($(this).val() === "") {
-            let today = new Date();
-            let year = today.getFullYear();
-            let month = String(today.getMonth() + 1).padStart(2, '0');
-			
-            $(this).val(`${year}-${month}`);
-            if (typeof showNotification === "function") {
-                showNotification("Periode tidak boleh kosong. Dikembalikan ke bulan berjalan.", "warning");
-            }
         }
     });
 

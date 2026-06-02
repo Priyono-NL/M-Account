@@ -6,12 +6,30 @@ $(document).ready(function() {
 
     function loadFilteredHistory(page = 1) {
         currentPage = page;
-        let periodMonth = $("#periodMonth").val();        
+        let periodMonth = $("#periodMonth").val();
+        // Validasi jika Periode Bulan Kosong
         if (!periodMonth) {
-            showNotification("Harap tentukan Periode Bulan terlebih dahulu!", "warning");
+            if (typeof showNotification === "function") showNotification("Gagal memuat data! Periode Bulan tidak boleh kosong.", "danger");
+            clearTable("Periode bulan wajib diisi.", true);
             return;
         }
-		
+        
+        // Validasi jika Periode Melebihi Bulan Berjalan
+        let parts = periodMonth.split("-");
+        let inputYear = parseInt(parts[0], 10);
+        let inputMonth = parseInt(parts[1], 10);
+
+        let today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth() + 1;
+        let inputTotalMonths = (inputYear * 12) + inputMonth;
+        let currentTotalMonths = (currentYear * 12) + currentMonth;
+
+        if (inputTotalMonths > currentTotalMonths) {
+            if (typeof showNotification === "function")showNotification("Gagal memuat data! Periode tidak boleh melewati bulan berjalan saat ini.", "danger");
+            clearTable("Periode tidak valid (Melebihi bulan berjalan).", true);
+            return;
+        }
         tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data mutasi stok ...</td></tr>');
 
         $.ajax({
@@ -37,11 +55,14 @@ $(document).ready(function() {
                     }
 
                     res.data.forEach(function(t) {
-                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
-                        let dateObj = new Date(t.date || t.transaction_date); 
-                        let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);                        
                         let qtyInStr = t.qty_in > 0 ? `<span class="text-success">+${t.qty_in}</span>` : '0';
                         let qtyOutStr = t.qty_out > 0 ? `<span class="text-danger">-${t.qty_out}</span>` : '0';
+                        let rawDate = t.date || t.transaction_date; 
+                        let dateObj = rawDate ? new Date(rawDate) : null;
+                        let formattedDate = (dateObj && !isNaN(dateObj.getTime())) 
+                            ? dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
+                            : '-';
 
                         let tr = `
                             <tr>                                
@@ -77,17 +98,28 @@ $(document).ready(function() {
         loadFilteredHistory(targetPage);
     });
 
-    function clearTable() {
-        $("#btnMulaiClosing").prop('disabled', true);
+    function clearTable(pesan = "Pencarian dibersihkan", isValidationError = false) {
+        $('#statusBannerContainer').empty();
         tbody.empty();
+        
+        let iconHtml = isValidationError 
+            ? `<i class="fa-solid fa-triangle-exclamation fs-2 mb-3 d-block text-danger opacity-50"></i>`
+            : `<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>`;
+            
+        let subPesanHtml = isValidationError
+            ? `<br><small class="text-secondary">Silakan perbaiki filter Anda lalu klik Apply Filter kembali.</small>`
+            : ``;
+
         tbody.append(`
             <tr>
                 <td colspan="7" class="text-center py-5 text-muted">
-                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-                    Pencarian dibersihkan
+                    ${iconHtml}
+                    ${pesan}
+                    ${subPesanHtml}
                 </td>
             </tr>
         `);
+        $("#btnMulaiClosing").prop('disabled', true);
         renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
     }
 	
@@ -122,17 +154,6 @@ $(document).ready(function() {
 	$("#periodMonth").on("keydown", function(e) {
 		if (e.key === "Backspace" || e.key === "Delete") {
 			e.preventDefault();
-		}
-	});
-
-	$("#periodMonth").on("blur", function() {
-		if ($(this).val() === "") {
-			let today = new Date();
-			let year = today.getFullYear();
-			let month = String(today.getMonth() + 1).padStart(2, '0');
-			
-			$(this).val(`${year}-${month}`);
-			showNotification("Periode tidak boleh kosong. Dikembalikan ke bulan berjalan.", "warning");
 		}
 	});
 
