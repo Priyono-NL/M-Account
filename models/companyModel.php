@@ -8,7 +8,7 @@ class CompanyModel extends DatabaseHelper {
     }
     
     private function buildFilterQuery($search) {
-        $sql = "SELECT * FROM company WHERE status = 0";
+        $sql = "SELECT * FROM company WHERE is_active = 0";
         $params = [];
 
         if (!empty($search)) {
@@ -30,7 +30,7 @@ class CompanyModel extends DatabaseHelper {
 
     // Fungsi untuk mengambil daftar gudang milik sebuah company
     public function getWarehousesByCompanyId($company_id) {
-        $sql = "SELECT * FROM warehouse WHERE company_id = :cid AND status = 0";
+        $sql = "SELECT * FROM warehouse WHERE company_id = :cid AND is_active = 0";
         return $this->query_all($sql, ['cid' => $company_id]);
     }
 }

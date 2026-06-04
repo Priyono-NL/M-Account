@@ -95,9 +95,10 @@ $(document).ready(function() {
     });
 
     // === Fungsi Form Dinamis & Modal di Bawah Ini Tetap Sama ===
-    function createWarehouseRow(value = "") {
+    function createWarehouseRow(id = "", value = ""){
         return `
             <div class="input-group input-group-sm mb-2 wh-row">
+                <input type="hidden" name="warehouse_ids[]" value="${id}">
                 <input type="text" name="warehouses[]" class="form-control bg-light border-end-0" placeholder="Nama Gudang..." value="${value}" required>
                 <button type="button" class="btn border btn-light text-danger btn-remove-wh">
                     <i class="fa-solid fa-times"></i>
@@ -139,7 +140,7 @@ $(document).ready(function() {
         $("#warehouseContainer").empty();
         if (item.warehouses && item.warehouses.length > 0) {
             item.warehouses.forEach(function(wh) {
-                $("#warehouseContainer").append(createWarehouseRow(wh.warehouse_name));
+                $("#warehouseContainer").append(createWarehouseRow(wh.id, wh.warehouse_name));
             });
         } else {
             $("#warehouseContainer").append(createWarehouseRow());

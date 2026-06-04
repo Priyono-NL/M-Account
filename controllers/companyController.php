@@ -75,31 +75,53 @@ class CompanyController extends BaseController {
         $id = (int)$this->getPost('id');
         if ($id <= 0) return $this->jsonError("ID Company tidak valid.");
 
-        $company_name  = $this->getPost('company_name');
+        $company_name = $this->getPost('company_name');
         $company_short = $this->getPost('company_short');
-        $warehouses    = isset($_POST['warehouses']) ? $_POST['warehouses'] : [];
+        $warehouse_ids = isset($_POST['warehouse_ids']) ? $_POST['warehouse_ids'] : [];
+        $warehouse_names = isset($_POST['warehouses']) ? $_POST['warehouses'] : [];
 
         try {
             $this->model->beginTransaction();
 
             $dataCompany = $this->sanitize([
-                'company_name'  => $company_name,
-                'company_short' => $company_short
+                'company_name' => $company_name,
+                'company_short' => $company_short,
             ]);
 
             $this->model->update('company', $dataCompany, "id = $id");
 
-            $this->model->delete('warehouse', "company_id = $id");
+            $processed_wh_ids = [];
 
-            if (is_array($warehouses)) {
-                foreach ($warehouses as $wh_name) {
-                    if (!empty(trim($wh_name))) {
-                        $this->model->insert('warehouses', [
-                            'company_id'     => $id,
-                            'warehouse_name' => trim($wh_name),
-                            'status'      => 0
-                        ]);
+            // Looping data gudang yang dikirim dari form
+            foreach ($warehouse_names as $index => $wh_name) {
+                $wh_name = trim($wh_name);
+                if (empty($wh_name)) continue;
+
+                $wh_id = isset($warehouse_ids[$index]) ? (int)$warehouse_ids[$index] : 0;
+                if ($wh_id > 0) {
+                    $this->model->update('warehouse', [
+                        'warehouse_name' => $wh_name,
+                        'is_active'         => 0 
+                    ], "id = $wh_id");
+                    
+                    $processed_wh_ids[] = $wh_id;
+                } else {
+                    $new_wh_id = $this->model->insert('warehouse', [
+                        'company_id'     => $id,
+                        'warehouse_name' => $wh_name,
+                        'is_active'         => 0
+                    ]);
+                    if ($new_wh_id) {
+                        $processed_wh_ids[] = $new_wh_id;
                     }
+                }
+            }
+
+            // Bersihkan Gudang yang Dihapus oleh User
+            $current_db_warehouses = $this->model->getWarehousesByCompanyId($id);            
+            foreach ($current_db_warehouses as $db_wh) {
+                if (!in_array($db_wh['id'], $processed_wh_ids)) {
+                    $this->model->delete('warehouse', "id = {$db_wh['id']}");
                 }
             }
 
