@@ -70,6 +70,13 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
             </a>
         </li>
 
+        <li class="nav-item">
+            <a href="index.php?page=company" class="nav-link <?= ($uri_page == 'company') ? 'active' : '' ?>">
+                <i class="fa-solid fa-warehouse"></i>
+                <span class="link-text">Data Company</span>
+            </a>
+        </li>
+
         <hr class="mx-3 my-2 text-secondary opacity-25">
 
         <li class="nav-item">

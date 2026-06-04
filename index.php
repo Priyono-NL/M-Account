@@ -17,6 +17,7 @@ require_once 'models/stocksModel.php';
 require_once 'models/stockInModel.php';
 require_once 'models/stockOpnameModel.php';
 require_once 'models/stockAdjustmentModel.php';
+require_once 'models/companyModel.php';
 
 // Load Semua Views
 require_once 'views/changeLogin_view.php';
@@ -37,6 +38,7 @@ require_once 'views/stock_adjustment_view.php';
 require_once 'views/stockIn_view.php';
 require_once 'views/receive_view.php';
 require_once 'views/salesPivot_view.php';
+require_once 'views/company_view.php';
 
 // =======================================================
 // PARSING ROUTING TANPA .HTACCESS
@@ -73,6 +75,7 @@ $controllers = [
     'stockAdjustment' => 'StockAdjustmentController',
     'sales' => 'SalesPivotController',
     'changeLogin' => 'ChangeLoginController',
+    'company' => 'CompanyController',
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

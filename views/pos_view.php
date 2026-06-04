@@ -36,7 +36,7 @@ class POSView {
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NO INVOICE</label>
                                 <input type="text" class="form-control form-control-sm bg-light fw-bold text-muted" id="invoiceNo" 
-                                        placeholder="[ AUTO GENERATE ]" readonly 
+                                        placeholder="SLS - [ AUTO INCREMENT ]" readonly 
                                         value="<?= $isViewMode ? $transactionData['header']['invoice_no'] : '' ?>">
                             </div>
                             <div class="col-md-4">
