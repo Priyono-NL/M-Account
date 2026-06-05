@@ -5,8 +5,8 @@ require_once './vendors/SimpleXLSX/SimpleXLSXGen.php';
 class BaseController {
 
     public function __construct() {
-        if (get_class($this) === 'AuthController') {
-            return; 
+        if (in_array(get_class($this), ['AuthController', 'ApiController'])) {
+            return;
         }
 
         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {

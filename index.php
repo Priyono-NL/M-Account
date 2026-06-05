@@ -76,6 +76,7 @@ $controllers = [
     'sales' => 'SalesPivotController',
     'changeLogin' => 'ChangeLoginController',
     'company' => 'CompanyController',
+    'api-modules' => 'ApiController',
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

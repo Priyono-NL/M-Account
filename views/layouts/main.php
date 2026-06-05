@@ -39,11 +39,9 @@
 <script src="/maccount/assets/js/main.js"></script>
 
 <script>
-    const currentUser = {
-        username: "<?= $_SESSION['user']['username'] ?? '' ?>",
-        role: "<?= $_SESSION['user']['role_name'] ?? '' ?>"
-    };
-    console.log("M-Account User Active:", currentUser);
+    var sessionActive = <?php echo json_encode($_SESSION); ?>;
+    
+    console.log("sessionActive:", sessionActive);
 </script>
 
 <?= $extra_js ?? '' ?>

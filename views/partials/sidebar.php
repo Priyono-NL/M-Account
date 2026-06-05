@@ -1,4 +1,6 @@
 <?php
+// M-Account - sidebar.php
+
 $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
@@ -8,12 +10,20 @@ $uri_action = $segments[1] ?? ($_GET['action'] ?? 'index');
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view') || (isset($_GET['mode']) && $_GET['mode'] == 'view');
 
+// Informasi Akun User dari Session
 $role         = $_SESSION['user']['role_name'] ?? '';
 $extra_config = $_SESSION['user']['extra_config'] ?? [];
 $isAdmin      = in_array($role, ['superadmin', 'admin']);
 
+// Ambil data paths hasil centang SSO
+$my_paths     = $_SESSION['user']['paths'] ?? []; 
+
 $can_sell = $isAdmin || ($extra_config['can_sell'] ?? false);
 $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
+
+// Muat data source dari config module tunggal
+$config_source = require_once dirname(__DIR__, 2) . '/config/config_module.php';
+$menu_items    = $config_source['modules'] ?? [];
 ?>
 
 <nav id="sidebar">
@@ -23,141 +33,73 @@ $can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
     </div>
 
     <ul class="nav flex-column mt-3">
+        <?php foreach ($menu_items as $item) : ?>
+            <?php
+            // =======================================================
+            // 1. RENDERING TYPE: DIVIDER (GARIS PEMBATAS)
+            // =======================================================
+            // Dipindah ke urutan pertama agar langsung di-skip dan tidak memicu error "key" kosong
+            if (isset($item['type']) && $item['type'] === 'divider') {
+                echo '<hr class="mx-3 my-2 text-secondary opacity-25">';
+                continue;
+            }
 
-        <li class="nav-item">
-            <a href="index.php?page=dashboard" class="nav-link <?= ($uri_page == 'dashboard' || $uri_page == '') ? 'active' : '' ?>">
-                <i class="fa-solid fa-house"></i>
-                <span class="link-text">Dashboard</span>
-            </a>
-        </li>
-
-        <hr class="mx-3 my-2 text-secondary opacity-25">
-        
-        <?php if($can_sell) : ?>
-        <li class="nav-item">
-            <?php 
-                $activePOS = ($uri_page == 'pos' && $uri_action != 'history' && !$isView) ? 'active' : ''; 
-            ?>
-            <a href="index.php?page=pos" class="nav-link <?= $activePOS ?>">
-                <i class="fa-solid fa-cash-register"></i>
-                <span class="link-text">Kasir (POS)</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if($can_buy) : ?>
-        <li class="nav-item">
-            <a href="index.php?page=receive" class="nav-link <?= ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '' ?>">
-                <i class="fa-solid fa-truck-ramp-box"></i>
-                <span class="link-text">Receivement</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <hr class="mx-3 my-2 text-secondary opacity-25">
-
-        <li class="nav-item">
-            <a href="index.php?page=items" class="nav-link <?= ($uri_page == 'items') ? 'active' : '' ?>">
-                <i class="fa-solid fa-box"></i>
-                <span class="link-text">Data Barang</span>
-            </a>
-        </li>
-        
-        <li class="nav-item">
-            <a href="index.php?page=buyers" class="nav-link <?= ($uri_page == 'buyers') ? 'active' : '' ?>">
-                <i class="fa-solid fa-users"></i>
-                <span class="link-text">Data Buyer</span>
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a href="index.php?page=company" class="nav-link <?= ($uri_page == 'company') ? 'active' : '' ?>">
-                <i class="fa-solid fa-warehouse"></i>
-                <span class="link-text">Data Company</span>
-            </a>
-        </li>
-
-        <hr class="mx-3 my-2 text-secondary opacity-25">
-
-        <li class="nav-item">
-            <a href="index.php?page=stockClose" class="nav-link <?= ($uri_page == 'stockClose') ? 'active' : '' ?>">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <span class="link-text">Stock Item</span>
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a href="index.php?page=stockOpname" class="nav-link <?= ($uri_page == 'stockOpname') ? 'active' : '' ?>">
-                <i class="fa-solid fa-box-open"></i>
-                <span class="link-text">Stock Opname</span>
-            </a>
-        </li>
-
-        <?php if($isAdmin) : ?>
-            <li class="nav-item">
-                <a href="index.php?page=stockAdjustment" class="nav-link <?= ($uri_page == 'stockAdjustment') ? 'active' : '' ?>">
-                    <i class="fa-solid fa-check-to-slot"></i>
-                    <span class="link-text">Stok Adjustment</span>
-                </a>
-            </li>
+            // =======================================================
+            // 2. VALIDASI HAK AKSES (GATEKEEPER)
+            // =======================================================
+            $is_visible = false;
+            $rule = $item['rule'] ?? 'public';
             
+            // Ambil key dengan aman, beri nilai string kosong jika tidak ada
+            $item_key = $item['key'] ?? ''; 
+            $module_path = '/' . $item_key; 
+            
+            $has_path_access = in_array($module_path, $my_paths);
+            $is_visible = $has_path_access;
+
+            // Khusus role 'superadmin' otomatis bypass semua hak akses
+            if ($role === 'superadmin') {
+                $is_visible = true;
+            }
+
+            // Jika user tidak memiliki hak akses, lewati menu ini
+            if (!$is_visible) continue;
+
+            // =======================================================
+            // 3. LOGIKA AKURASI STATE ACTIVE MENU
+            // =======================================================
+            $active_class = '';
+            $active_rule  = $item['active_rule'] ?? 'default';
+
+            switch ($active_rule) {
+                case 'dashboard':
+                    $active_class = ($uri_page == 'dashboard' || $uri_page == '') ? 'active' : '';
+                    break;
+                case 'pos_main':
+                    $active_class = ($uri_page == 'pos' && $uri_action != 'history' && !$isView) ? 'active' : '';
+                    break;
+                case 'receive_main':
+                    $active_class = ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '';
+                    break;
+                case 'sales_history':
+                    $active_class = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : '';
+                    break;
+                case 'receive_history':
+                    $active_class = ($uri_page == 'receive' && ($uri_action == 'history' || $isView)) ? 'active' : '';
+                    break;
+                default:
+                    $active_class = ($uri_page == $item_key) ? 'active' : '';
+                    break;
+            }
+            ?>
+
             <li class="nav-item">
-                <a href="index.php?page=stockClosing" class="nav-link <?= ($uri_page == 'stockClosing') ? 'active' : '' ?>">
-                    <i class="fa-solid fa-boxes-packing"></i>
-                    <span class="link-text">Closing Stok</span>
+                <a href="<?= htmlspecialchars($item['url']) ?>" class="nav-link <?= $active_class ?>">
+                    <i class="<?= htmlspecialchars($item['icon']) ?>"></i>
+                    <span class="link-text"><?= htmlspecialchars($item['name']) ?></span>
                 </a>
             </li>
-        <?php endif; ?>
-		
-		<hr class="mx-3 my-2 text-secondary opacity-25">
 
-        <?php if($can_sell) : ?>
-        <li class="nav-item">
-            <a href="index.php?page=sales" class="nav-link <?= ($uri_page == 'sales') ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-                <span class="link-text">Laporan Penjualan</span>
-            </a>
-        </li>
-        
-        <li class="nav-item">
-            <?php 
-                $activeSalesHistory = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
-            ?> 
-            <a href="index.php?page=pos&action=history" class="nav-link <?= $activeSalesHistory ?>">
-                <i class="fa-solid fa-file-invoice"></i>
-                <span class="link-text">Laporan Penjualan Detail</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if($can_buy) : ?>
-        <li class="nav-item">
-            <?php 
-                $activeReceiveHistory = ($uri_page == 'receive' && ($uri_action == 'history' || $isView)) ? 'active' : ''; 
-            ?>
-            <a href="index.php?page=receive&action=history" class="nav-link <?= $activeReceiveHistory ?>">
-                <i class="fa-solid fa-clipboard-check"></i>
-                <span class="link-text">Laporan Penerimaan</span>
-            </a>
-        </li>
-        <?php endif; ?>
-		
-		<li class="nav-item">
-            <a href="index.php?page=history" class="nav-link <?= ($uri_page == 'history') ? 'active' : '' ?>">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span class="link-text">Item Log</span>
-            </a>
-        </li>
-
-        <hr class="mx-3 my-2 text-secondary opacity-25">
-        
-        <?php if($role == 'superadmin') :?>
-        <li class="nav-item">
-            <a href="index.php?page=changeLogin" class="nav-link <?= ($uri_page == 'changeLogin') ? 'active' : '' ?>">
-                <i class="fa-solid fa-user-gear"></i>
-                <span class="link-text">Change Login</span>
-            </a>
-        </li>
-        <?php endif; ?>
+        <?php endforeach; ?>
     </ul>
 </nav>
