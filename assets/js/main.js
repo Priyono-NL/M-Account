@@ -199,6 +199,30 @@ const renderPagination = (paging, controlsId = '#paginationControls', infoId = '
     $(controlsId).html(pgHtml);
 };
 
+function changeActiveCompany(companyId) {
+    if (!companyId) return;
+
+    $.ajax({
+        url: 'index.php?page=company',
+        type: 'POST',
+        data: {
+            action: 'switchActiveCompany',
+            company_id: companyId
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                window.location.reload(); 
+            } else {
+                alert('Gagal mengganti perusahaan: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Terjadi kesalahan komunikasi dengan server.');
+        }
+    });
+}
+
 $(document).ready(function() {
     
     $('#sidebarToggle').click(function() {

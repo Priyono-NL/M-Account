@@ -1,3 +1,9 @@
+<?php
+$my_companies   = BaseController::$my_companies;
+$company_count  = BaseController::$company_count;
+$active_comp_id = BaseController::$active_comp_id;
+?>s
+
 <?php if (isset($_SESSION['user']['is_impersonating']) && $_SESSION['user']['is_impersonating'] === true): ?>
     <div class="alert alert-warning d-flex justify-content-between align-items-center m-0 rounded-0 py-2 px-3 border-0 border-bottom border-warning w-100" style="z-index: 1050;">
         <span style="font-size: 13px;">
@@ -30,7 +36,32 @@
         </div>
 
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-            <li>
+
+            <li class="px-3 py-2">
+                <label class="form-label text-muted mb-1 fw-bold" style="font-size: 10.5px; letter-spacing: .5px; text-transform: uppercase;">
+                    <i class="fa-solid fa-building me-1 text-primary"></i> Perusahaan
+                </label>
+                
+                <select class="form-select form-select-sm text-dark fw-semibold" 
+                        name="company" 
+                        id="companySelect" 
+                        onchange="changeActiveCompany(this.value)"
+                        <?= ($company_count <= 1) ? 'disabled' : ''; ?> 
+                        style="font-size: 12.5px; cursor: pointer;">
+                    
+                    <?php foreach ($my_companies as $comp): ?>
+                        <option value="<?= $comp['id'] ?>" <?= ($comp['id'] == $active_comp_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($comp['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+
+                    <?php if (empty($my_companies)): ?>
+                        <option value="">Tidak ada data diplot</option>
+                    <?php endif; ?>
+                </select>
+            </li>
+
+            <li>                
                 <a class="dropdown-item text-danger" href="index.php?page=auth&action=logout">
                     <i class="fa-solid fa-right-from-bracket me-2"></i> Keluar
                 </a>

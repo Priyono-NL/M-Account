@@ -117,8 +117,7 @@ class CompanyController extends BaseController {
                 }
             }
 
-            // Bersihkan Gudang yang Dihapus oleh User
-            $current_db_warehouses = $this->model->getWarehousesByCompanyId($id);            
+            $current_db_warehouses = $this->model->getWarehousesByCompanyId($id);
             foreach ($current_db_warehouses as $db_wh) {
                 if (!in_array($db_wh['id'], $processed_wh_ids)) {
                     $this->model->delete('warehouse', "id = {$db_wh['id']}");
@@ -150,6 +149,17 @@ class CompanyController extends BaseController {
             $this->model->rollBack();
             return $this->jsonError("Gagal menghapus company.");
         }
+    }
+
+    public function switchActiveCompany() {
+        $companyId = $this->getPost('company_id');
+
+        if (empty($companyId) || !is_numeric($companyId)) $this->jsonError("ID Perusahaan tidak valid atau tidak ditemukan.", 400);
+        $_SESSION['user']['active_company_id'] = (int) $companyId;
+        
+        $this->jsonSuccess("Berhasil mengubah perusahaan aktif.", [
+            'active_company_id' => $_SESSION['user']['active_company_id']
+        ]);
     }
 }
 ?>

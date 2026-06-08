@@ -1,8 +1,13 @@
 <?php
 require_once './vendors/SimpleXLSX/SimpleXLSX.php';
 require_once './vendors/SimpleXLSX/SimpleXLSXGen.php';
+require_once './models/companyModel.php';
 
 class BaseController {
+
+    public static $my_companies = [];
+    public static $company_count = 0;
+    public static $active_comp_id = null;
 
     public function __construct() {
         if (in_array(get_class($this), ['AuthController', 'ApiController'])) {
@@ -36,6 +41,16 @@ class BaseController {
             
             exit;
         }
+
+        $companyModel = new CompanyModel();
+        self::$my_companies  = $companyModel->getAllCompanies();
+        self::$company_count = count(self::$my_companies);
+
+        if (!isset($_SESSION['user']['active_company_id']) && self::$company_count > 0) {
+            $_SESSION['user']['active_company_id'] = self::$my_companies[0]['id'];
+        }
+
+        self::$active_comp_id = $_SESSION['user']['active_company_id'] ?? null;
     }
     
     protected function jsonSuccess($message = "Success", $data = [], $extra = []) {

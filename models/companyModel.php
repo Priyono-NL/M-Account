@@ -33,5 +33,10 @@ class CompanyModel extends DatabaseHelper {
         $sql = "SELECT * FROM warehouse WHERE company_id = :cid AND is_active = 0";
         return $this->query_all($sql, ['cid' => $company_id]);
     }
+
+    public function getAllCompanies() {
+        $sql = "SELECT id, company_name AS name FROM company WHERE is_active = 0 ORDER BY company_name ASC";
+        return $this->query_all($sql);
+    }
 }
 ?>
