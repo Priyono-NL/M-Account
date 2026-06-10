@@ -14,8 +14,12 @@ class StockCloseController extends BaseController {
      * HALAMAN UTAMA: Menampilkan layout kerangka laporan stok bulanan
      */
     public function index() {
-        // REVISI: Mengirim array kosong karena pemuatan data dikendalikan penuh oleh tombol cari via AJAX
-        StockCloseView::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        StockCloseView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

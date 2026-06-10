@@ -1,9 +1,7 @@
 <?php
 class StocksView {
     public static function render($stocks) {
-        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
-        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
-        $is_locked = ($sso_warehouse !== null);
+        extract($stocks);
 
         ob_start();
         ?>
@@ -41,11 +39,15 @@ class StocksView {
                     <div class="col-md-5">
                         <div class="row g-1">
                             <div class="col-4">
-                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>>
-                                    <option value="">Semua Gudang</option>
-                                    <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
-                                    <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
-                                </select>
+                                <?php 
+                                Component::warehouseSelect(
+                                    $warehouses, 
+                                    $current_warehouse, 
+                                    $is_locked, 
+                                    'filterWarehouse',
+                                    true
+                                ); 
+                                ?>
                             </div>
 							<div class="col-2">
 								<button type="button" id="btnFilter" class="btn btn-primary border btn-sm w-100" title="Data Filter">

@@ -1,6 +1,7 @@
 <?php
 class StockAdjustmentView {
-    public static function render() {
+    public static function render($data) {
+        extract($data);
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -23,11 +24,15 @@ class StockAdjustmentView {
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <select class="form-select form-select-sm shadow-none fw-medium" id="filterWarehouse">
-                            <option value="">Semua Gudang</option>
-                            <option value="1">Gudang BS</option>
-                            <option value="2">Gudang Sampah</option>
-                        </select>
+                        <?php 
+                            Component::warehouseSelect(
+                                $warehouses, 
+                                $current_warehouse, 
+                                $is_locked, 
+                                'filterWarehouse',
+                                true
+                            ); 
+                        ?>
                     </div>
                     <div class="col-md-3">
                         <button type="button" id="btnFilter" class="btn btn-primary btn-sm w-100 fw-medium"><i class="fa-solid fa-filter me-1"></i> Cari Pending</button>

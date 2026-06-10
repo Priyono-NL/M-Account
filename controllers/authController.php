@@ -40,6 +40,8 @@ class AuthController extends BaseController {
             $_SESSION['user'] = $result['user'];
             $_SESSION['token'] = $token;
             $_SESSION['expires_at'] = $result['token_info']['expires_at'];
+
+            if (!isset($_SESSION['user']['active_company_id'])) $_SESSION['user']['active_company_id'] = 1;
             
             header("Location: index.php?page=dashboard");
             exit;

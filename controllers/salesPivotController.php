@@ -11,8 +11,12 @@ class SalesPivotController extends BaseController {
     }
 
     public function index() {
-        $data = $this->model->getFiltered();
-        SalesPivotView::render($data);
+        $warehouseContext = $this->getWarehouseContext();
+        SalesPivotView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     public function filter_api() {

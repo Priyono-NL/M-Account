@@ -7,11 +7,18 @@ class DashboardController extends BaseController {
     public function __construct() {
         parent::__construct();        
         $this->model = new DashboardModel();
+        $this->company = new CompanyModel();
     }
 
     public function index() {
-        $warehouse = isset($_GET['warehouse']) ? (int)$_GET['warehouse'] : 1;
-		$dashboardData = $this->model->getData($warehouse);
-        DashboardView::render($dashboardData);
+        $warehouseContext = $this->getWarehouseContext();
+        $dashboardData = $this->model->getData($warehouseContext['current_warehouse']);
+
+        DashboardView::render([
+            'dashboardData' => $dashboardData,
+            'warehouses' => $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 }

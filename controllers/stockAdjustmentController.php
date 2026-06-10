@@ -11,8 +11,12 @@ class StockAdjustmentController extends BaseController {
     }
 
     public function index() {
-        // Render view utama panel admin adjustment
-        StockAdjustmentView::render();
+        $warehouseContext = $this->getWarehouseContext();
+        StockAdjustmentView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

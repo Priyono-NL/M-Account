@@ -1,10 +1,12 @@
 <?php
 class StockIn_view {
-    public static function render($transactionData = null) {
+    public static function render($data) {
+        extract($data);
+
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
-        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
         $is_locked = ($sso_warehouse !== null);
         $isViewMode = ($transactionData !== null);
+        $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
 
         ob_start();
         ?>
@@ -30,18 +32,15 @@ class StockIn_view {
                 <div class="row g-3">
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="warehouseSelect" <?= ($isViewMode || $is_locked) ? 'disabled' : '' ?> >
-                            <?php $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : $current_warehouse; ?>
-                            <?php if (!$sso_warehouse || $sso_warehouse == '1' || ($isViewMode && $selected_id == '1')): ?>
-                                <option value="1" <?= ($selected_id == '1') ? 'selected' : '' ?>>Gudang BS</option>
-                            <?php endif; ?>
-                            <?php if (!$sso_warehouse || $sso_warehouse == '2' || ($isViewMode && $selected_id == '2')): ?>
-                                <option value="2" <?= ($selected_id == '2') ? 'selected' : '' ?>>Gudang Sampah</option>
-                            <?php endif; ?>
-                        </select>
-                        <?php if ($is_locked || $isViewMode): ?>
-                            <input type="hidden" name="warehouse" value="<?= $selected_id ?>">
-                        <?php endif; ?>
+                        <?php 
+                            Component::warehouseFormSelect(
+                                $warehouses, 
+                                $selected_id, 
+                                $is_locked, 
+                                $isViewMode, 
+                                $sso_warehouse
+                            ); 
+                        ?>
                     </div>
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
@@ -54,7 +53,7 @@ class StockIn_view {
                         <input type="text" class="form-control form-control-sm" id="docNumber" 
                                 placeholder="W-001" 
                                 value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
-                                <?= $isViewMode ? 'readonly' : '' ?>>
+                                <?= $isViewMode ? 'disabled' : '' ?>>
                     </div> 
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NAMA PENERIMA <span class="text-danger">*</span></label>
@@ -62,7 +61,7 @@ class StockIn_view {
                                 placeholder="Nama Penerima ..."
                                 value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
                                 <?= $isViewMode ? 'disabled' : '' ?>>
-                    </div>                                                              
+                    </div>                                                                            
                     <div class="col-md-3 col-sm-12">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">CATATAN (OPSIONAL)</label>
                         <input type="text" class="form-control form-control-sm" id="notes" 
@@ -75,7 +74,6 @@ class StockIn_view {
         </div>
 
         <div class="row g-4 mb-5">
-            
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm bg-white h-100">
                     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
@@ -117,14 +115,12 @@ class StockIn_view {
 
             <div class="col-lg-4">
                 <div class="position-sticky" style="top: 20px;">
-                    
                     <div class="card border-0 shadow-sm bg-white mb-3" id="mainCartSummaryWrapper" style="display: none;">
                         <div class="card-header bg-white border-bottom py-3">
                             <h6 class="fw-bold text-dark m-0"><i class="fa-solid fa-layer-group text-primary me-2"></i>Rekap Total Barang</h6>
                         </div>
                         <div class="card-body p-3 bg-light">
-                            <div class="d-flex flex-column gap-2" id="mainCartSummaryCards">
-                                </div>
+                            <div class="d-flex flex-column gap-2" id="mainCartSummaryCards"></div>
                         </div>
                     </div>
 
@@ -147,24 +143,19 @@ class StockIn_view {
                             <?php endif; ?>
                         </div>
                     </div>
-
                 </div>
             </div>
-
         </div>
         
         <div class="modal fade" id="itemModal" tabindex="-1" aria-labelledby="itemModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-scrollable"> 
                 <div class="modal-content border-0 shadow">
-                    
                     <div class="modal-header bg-light">
                         <h5 class="modal-title fw-bold" id="itemModalLabel"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i> Pilih Barang</h5>
                         <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#itemModal" aria-label="Close"></button>
                     </div>
-                    
                     <div class="modal-body p-0">
                         <div class="row g-0 h-100">
-                            
                             <div class="col-lg-8 d-flex flex-column border-end">
                                 <div class="p-3 bg-white border-bottom">
                                     <div class="input-group input-group-sm">
@@ -175,45 +166,38 @@ class StockIn_view {
                                         </button>
                                     </div>
                                 </div>
-                                
                                 <div class="table-responsive flex-grow-1" style="min-height: 400px;">
                                     <table class="table table-hover align-middle m-0" id="modalItemTable" style="font-size: 13px;">
-										<thead class="table-light text-muted sticky-top" style="z-index: 1;">
-											<tr>													
-												<th width="20%" class="ps-3">Kode</th>
-												<th width="70%">Nama Barang</th>
-												<th width="10%" class="text-center pe-3">Pilih</th>
-											</tr>
-										</thead>
-										<tbody id="modalItemTableBody">
-											</tbody>
-									</table>
+                                        <thead class="table-light text-muted sticky-top" style="z-index: 1;">
+                                            <tr>                                                    
+                                                <th width="20%" class="ps-3">Kode</th>
+                                                <th width="70%">Nama Barang</th>
+                                                <th width="10%" class="text-center pe-3">Pilih</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="modalItemTableBody"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            
                             <div class="col-lg-4 bg-light d-flex flex-column" style="height: 100%;">
                                 <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
                                     <span class="fw-bold text-dark"><i class="fa-solid fa-clipboard-check text-success me-2"></i>Ringkasan Pilihan</span>
                                     <span class="badge bg-primary rounded-pill" id="selectedCountBadge">0</span>
                                 </div>
-                                
                                 <div class="flex-grow-1 p-2 overflow-auto" id="modalSummaryList" style="max-height: 400px;">
                                     <div class="text-center text-muted mt-5 opacity-50 empty-summary">
                                         <i class="fa-solid fa-cart-arrow-down fs-1 mb-2"></i><br>
                                         <small>Belum ada barang dipilih</small>
                                     </div>
                                 </div>
-                                
                                 <div class="p-3 border-top bg-white">
                                     <button type="button" id="btnSubmitModalItems" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm">
                                         <i class="fa-solid fa-plus me-1"></i> Masukkan ke Keranjang Utama
                                     </button>
                                 </div>
                             </div>
-                            
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

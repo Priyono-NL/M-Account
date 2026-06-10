@@ -5,11 +5,15 @@ require_once './models/companyModel.php';
 
 class BaseController {
 
+    protected $companyModel;
+
     public static $my_companies = [];
     public static $company_count = 0;
     public static $active_comp_id = null;
 
     public function __construct() {
+        $this->companyModel = new CompanyModel();
+
         if (in_array(get_class($this), ['AuthController', 'ApiController'])) {
             return;
         }
@@ -116,6 +120,21 @@ class BaseController {
             'totalPages' => ceil($totalRecords / $limit),
             'page'       => (int) $page,
             'limit'      => (int) $limit
+        ];
+    }
+
+    /** Helper untuk mengambil data context warehouse yang seragam di semua controller **/
+    protected function getWarehouseContext() {
+        $companyId = $_SESSION['user']['active_company_id'] ?? null;
+        $warehouses = $companyId ? $this->companyModel->getWarehousesByCompanyId($companyId) : [];
+        
+        $defaultWarehouseId = !empty($warehouses) ? $warehouses[0]['id'] : '';
+        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        
+        return [
+            'warehouses'        => $warehouses,
+            'current_warehouse' => $sso_warehouse ?? ($_GET['warehouse'] ?? $defaultWarehouseId),
+            'is_locked'         => ($sso_warehouse !== null)
         ];
     }
 

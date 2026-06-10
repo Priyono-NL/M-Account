@@ -16,7 +16,12 @@ class StockOpnameController extends BaseController {
      * TAMPILAN UTAMA FORM OPNAME
      */
     public function index() {
-        StockOpnameView::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        StockOpnameView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

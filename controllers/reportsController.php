@@ -11,7 +11,12 @@ class ReportsController extends BaseController {
     }
 
     public function index() {
-        ReportsHistoryView::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        ReportsHistoryView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     public function filter_api() {

@@ -1,9 +1,7 @@
 <?php
 class StockCloseView {
     public static function render($result) {
-        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
-        $current_warehouse = $sso_warehouse ?? ($_GET['warehouse'] ?? '');
-        $is_locked = ($sso_warehouse !== null);
+        extract($result);
         $summaryStatus = $result['status'] ?? 'ONGOING';
 
         ob_start();
@@ -15,11 +13,11 @@ class StockCloseView {
                 </h5>
                 <p class="text-muted small mb-0">Pantau stok awal, pergerakan, dan stok akhir barang.</p>
             </div>
-            <div>
+            <!-- <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
                     <i class="fa-solid fa-file-excel me-2"></i> Export Excel
                 </button>
-            </div>
+            </div> -->
         </div>
 
         <div id="statusBannerContainer"></div>
@@ -50,11 +48,15 @@ class StockCloseView {
                     <div class="col-md-4">
                         <div class="row g-1">
                             <div class="col-6">
-                                <select class="form-select form-select-sm shadow-none" id="filterWarehouse" <?= $is_locked ? 'disabled' : '' ?>>
-                                    <option value="">Semua Gudang</option>
-                                    <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
-                                    <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
-                                </select>
+                                <?php 
+                                Component::warehouseSelect(
+                                    $warehouses, 
+                                    $current_warehouse, 
+                                    $is_locked, 
+                                    'filterWarehouse',
+                                    true
+                                ); 
+                                ?>
                             </div>
 							<div class="col-3">
 								<button type="button" id="btnFilter" class="btn btn-primary border btn-sm w-100" title="Data Filter">

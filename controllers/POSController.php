@@ -18,9 +18,9 @@ class POSController extends BaseController {
      * HALAMAN UTAMA POS: Transaksi Baru & Lihat Detail Transaksi Terkunci
      */
     public function index() {
-        $mode = $this->getPost('mode', 'create');
-        
+        $mode = $this->getPost('mode', 'create');        
         $sales_id = isset($_POST['id']) ? (int)$_POST['id'] : null;
+
         $transactionData = null;
 
         if ($mode === 'view' && $sales_id > 0) {
@@ -35,8 +35,14 @@ class POSController extends BaseController {
                 ];
             }
         }
+
+        $warehouseContext = $this->getWarehouseContext();
         
-        POSView::render($transactionData);
+        POSView::render([
+            'transactionData' => $transactionData,
+            'warehouses' => $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse']
+        ]);
     }    
 
     /**
@@ -155,7 +161,12 @@ class POSController extends BaseController {
      * HALAMAN LIST RIWAYAT: Menampilkan Tabel Riwayat Transaksi Penjualan
      */
     public function history() {
-        Sales_view::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        Sales_view::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

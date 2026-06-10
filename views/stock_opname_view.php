@@ -1,10 +1,7 @@
 <?php
 class StockOpnameView {
     public static function render($data = null) {
-        // Proteksi Hak Akses Gudang (Sinkron dengan modul lainnya)
-        $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
-        $is_locked = ($sso_warehouse !== null);
-        $current_warehouse = $sso_warehouse ?? '';
+        extract($data);
 
         ob_start();
         ?>
@@ -35,10 +32,15 @@ class StockOpnameView {
                     
                     <div class="col-md-3">
                         <label class="form-label text-muted mb-1 small fw-bold">LOKASI GUDANG <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm shadow-none fw-medium" id="opnameWarehouse" <?= $is_locked ? 'disabled' : '' ?>>
-                            <option value="1" <?= $current_warehouse == '1' ? 'selected' : '' ?>>Gudang BS</option>
-                            <option value="2" <?= $current_warehouse == '2' ? 'selected' : '' ?>>Gudang Sampah</option>
-                        </select>
+                        <?php 
+                            Component::warehouseSelect(
+                                $warehouses, 
+                                $current_warehouse, 
+                                $is_locked, 
+                                'filterWarehouse',
+                                false
+                            ); 
+                        ?>
                     </div>
 
                     <div class="col-md-6">

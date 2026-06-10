@@ -14,7 +14,12 @@ class StocksController extends BaseController {
      * HALAMAN UTAMA: Menampilkan halaman stok/stok opname bulanan
      */
     public function index() {
-        StocksView::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        StocksView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

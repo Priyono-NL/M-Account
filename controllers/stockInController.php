@@ -36,7 +36,13 @@ class StockInController extends BaseController {
             }
         }
         
-        StockIn_view::render($transactionData);
+        $warehouseContext = $this->getWarehouseContext();
+        
+        StockIn_view::render([
+            'transactionData'   => $transactionData,
+            'warehouses'        => $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse']
+        ]);
     }
 	
 	/**
@@ -92,7 +98,12 @@ class StockInController extends BaseController {
      * HALAMAN LIST RIWAYAT: Menampilkan Tabel Riwayat Transaksi Penerimaan
      */
     public function history() {
-        Receive_view::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        Receive_view::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => $warehouseContext['current_warehouse'],
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     /**

@@ -2,7 +2,7 @@
 $my_companies   = BaseController::$my_companies;
 $company_count  = BaseController::$company_count;
 $active_comp_id = BaseController::$active_comp_id;
-?>s
+?>
 
 <?php if (isset($_SESSION['user']['is_impersonating']) && $_SESSION['user']['is_impersonating'] === true): ?>
     <div class="alert alert-warning d-flex justify-content-between align-items-center m-0 rounded-0 py-2 px-3 border-0 border-bottom border-warning w-100" style="z-index: 1050;">
