@@ -1,16 +1,16 @@
 $(document).ready(function() {
-    let tbody = $("#buyerTable tbody");
+    let tbody = $("#UserTable tbody");
 
     let currentPage = 1;
     let limit = 10;
 
-    function loadFilteredBuyers(page = 1) {
+    function loadFiltered(page = 1) {
         currentPage = page;
 
         tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data pelanggan...</td></tr>');
 
         $.ajax({
-            url: "index.php?page=buyers",
+            url: "index.php?page=users",
             type: "POST",
             dataType: "json",
             data: {
@@ -25,26 +25,25 @@ $(document).ready(function() {
                     tbody.empty();
 
                     if (res.data.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center py-5 text-muted fst-italic">Tidak ada data pelanggan yang ditemukan.</td></tr>');
+                        tbody.append('<tr><td colspan="4" class="text-center py-5 text-muted fst-italic">Tidak ada data pelanggan yang ditemukan.</td></tr>');
                         renderPagination({ total: 0, totalPages: 0, page: 1 });
                         return;
                     }
 
                     res.data.forEach(function(b) {
-                        let buyerJson = JSON.stringify(b).replace(/'/g, "&#39;");
+                        let userJSON = JSON.stringify(b).replace(/'/g, "&#39;");
 
                         let tr = `
                             <tr>
-                                <td class="ps-4 fw-medium text-primary">${b.buyer_code}</td>
-                                <td class="fw-bold">${b.buyer_name}</td>
-                                <td>${b.buyer_status}</td>
-                                <td>${b.buyer_address}</td>
+                                <td class="ps-4 fw-medium text-primary">${b.username}</td>
+                                <td class="fw-bold">${b.buyer_name} (${b.buyer_code})</td>
+                                <td>${b.rolename}</td>
                                 <td class="text-center pe-4">
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${buyerJson}'>
+                                        <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${userJSON}'>
                                             <i class="fa-solid fa-pen-to-square text-primary"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-light border btn-action delete-btn" data-id="${b.id}" data-name="${b.buyer_name}">
+                                        <button class="btn btn-sm btn-light border btn-action delete-btn" data-id="${b.id}" data-name="${b.username}">
                                             <i class="fa-solid fa-trash text-danger"></i>
                                         </button>
                                     </div>
@@ -68,69 +67,77 @@ $(document).ready(function() {
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
         let $parent = $(this).parent();
-        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
-        
+        if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;        
         let targetPage = $(this).data('page');
-        loadFilteredBuyers(targetPage);
+        loadFiltered(targetPage);
     });
 
     let searchTimer;
     $("#search").on("keyup", function() {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => { loadFilteredBuyers(1); }, 300);
+        searchTimer = setTimeout(() => { loadFiltered(1); }, 300);
     });
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
         $("#filterStatus").val("");
-        loadFilteredBuyers(1);
+        loadFiltered(1);
     });
 
-    loadFilteredBuyers(1);
+    loadFiltered(1);
 
     // ==========================================
-    // ACTION HANDLERS (ADD, EDIT, DELETE, EXCEL)
+    // ACTION HANDLERS (ADD, EDIT, DELETE)
     // ==========================================
 
-    $("#btnAddBuyer").click(function() {
-        $("#formBuyer")[0].reset();
-        $("#buyerId").val("");
-        $("#buyerCode").val("").prop("readonly", false);
-        $("#modalTitle").text("Tambah Buyer Baru");
-        $("#modalBuyer").modal("show");
+    $("#btnAddUser").click(function() {
+        $("#formUser")[0].reset();
+        $("#userId").val("");
+        $("#password").attr("required", true);
+        $("#person_id").val(null).trigger('change');
+        $("#modalTitle").text("Tambah User Baru");
+        $("#modalUser").modal("show");
     });
 
     $(document).on("click", ".edit-btn", function() {
         const data = $(this).data("item");
+        console.log(data);
+        $("#userId").val(data.id);
+        $("#username").val(data.username);
+        $("#role_id").val(data.role_id);
+
+        $("#person_id").empty();
+        if (data.person_id) {
+            let optionText = (data.buyer_code ? data.buyer_code + " | " : "") + data.buyer_name;
+            var newOption = new Option(optionText, data.person_id, true, true);            
+            $("#person_id").append(newOption).trigger('change');
+        } else {
+            $("#person_id").val(null).trigger('change');
+        }
         
-        $("#buyerId").val(data.id);
-        $("#buyerCode").val(data.buyer_code).prop("readonly", true);
-        $("#buyerName").val(data.buyer_name);
-        $("#buyerStatus").val(data.buyer_status);
-        $("#buyerAddress").val(data.buyer_address);
-        
-        $("#modalTitle").text("Edit Data Buyer");
-        $("#modalBuyer").modal("show");
+        $("#password").val("").removeAttr("required");
+        $("#modalTitle").text("Edit Data User");
+        $("#modalUser").modal("show");
     });
 
-    $("#formBuyer").submit(function(e) {
+    $("#formUser").submit(function(e) {
         e.preventDefault();
 
-        const action = $("#buyerId").val() ? "update" : "add";
+        const action = $("#userId").val() ? "update" : "add";
         const btn = $("#btnSave");
         const originalText = btn.text();
 
         btn.prop('disabled', true).text('Menyimpan...');
 
         $.ajax({
-            url: "index.php?page=buyers",
+            url: "index.php?page=users",
             type: "POST",
             dataType: "json",
             data: $(this).serialize() + "&action=" + action,
             success: function(res) {
                 if(res.status === "success") {
-                    $("#modalBuyer").modal("hide");
-                    loadFilteredBuyers(currentPage);
+                    $("#modalUser").modal("hide");
+                    loadFiltered(currentPage);
                     if(typeof showNotification === "function") showNotification("Data berhasil disimpan!", "success");
                 } else {
                     if(typeof showNotification === "function") showNotification(res.message || "Gagal menyimpan data", "danger");
@@ -149,15 +156,15 @@ $(document).ready(function() {
         const id = $(this).data("id");
         const name = $(this).data("name");
         
-        if(confirm(`Apakah Anda yakin ingin menghapus pelanggan "${name}"?`)) {
+        if(confirm(`Apakah Anda yakin ingin menghapus user login "${name}"?`)) {
             $.ajax({
-                url: "index.php?page=buyers",
+                url: "index.php?page=users",
                 type: "POST",
                 dataType: "json",
                 data: { action: "delete", id: id },
                 success: function(res) {
                     if(res.status === "success") {
-                        loadFilteredBuyers(currentPage); // Positional reload setelah hapus
+                        loadFiltered(currentPage);
                         if(typeof showNotification === "function") showNotification("Data berhasil dihapus!", "success");
                     } else {
                         if(typeof showNotification === "function") showNotification(res.message || "Gagal menghapus data", "danger");
@@ -170,22 +177,37 @@ $(document).ready(function() {
         }
     });
 
-    $("#btnTemplate").click(function() {
-        let payload = { action: 'download_template' };
-        if(typeof downloadExcelAjax === "function") {
-            downloadExcelAjax(this, window.location.href, payload, 'Format Buyer');
+    // ==========================================
+    // MODAL PERSON
+    // ==========================================
+    $('#person_id').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#modalUser'),
+        placeholder: '-- Ketik nama person --',
+        allowClear: true,
+        minimumInputLength: 1,
+        ajax: {
+            url: 'index.php?page=users',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    action: 'get_person',
+                    keyword: params.term
+                };
+            },
+            processResults: function (response) {
+                return {
+                    results: response.data 
+                };
+            },
+            cache: true
         }
     });
 
-    $("#btnUpload").click(function() {
-        $("#fileCari").click();
+    $('#modalUser').on('hidden.bs.modal', function () {
+        $('#person_id').val(null).trigger('change');
     });
 
-    $("#fileCari").change(function() {
-        if(typeof addBulk === "function") {
-            addBulk("#btnUpload", window.location.href, "fileCari", { action: 'upload' }, function() {
-                loadFilteredBuyers(1);
-            });
-        }
-    });
 });

@@ -15,13 +15,9 @@ return [
             'active_rule' => 'dashboard'
         ],
         [
-            'type'        => 'divider',
-            'rule'        => 'public'
-        ],
-        [
             'type'        => 'link',
             'key'         => 'pos',
-            'name'        => 'Kasir (POS)',
+            'name'        => 'Penjualan (POS)',
             'desc'        => 'Akses penuh ke halaman transaksi penjualan kasir.',
             'icon'        => 'fa-solid fa-cash-register',
             'url'         => 'index.php?page=pos',
@@ -31,16 +27,12 @@ return [
         [
             'type'        => 'link',
             'key'         => 'receive',
-            'name'        => 'Receivement',
+            'name'        => 'Receivement (Form)',
             'desc'        => 'Mengelola dan mencatat penerimaan barang masuk dari supplier.',
             'icon'        => 'fa-solid fa-truck-ramp-box',
             'url'         => 'index.php?page=receive',
             'rule'        => 'public',
             'active_rule' => 'receive_main'
-        ],
-        [
-            'type'        => 'divider',
-            'rule'        => 'admin'
         ],
         [
             'type'        => 'link',
@@ -73,10 +65,6 @@ return [
             'active_rule' => 'default'
         ],
         [
-            'type'        => 'divider',
-            'rule'        => 'public'
-        ],
-        [
             'type'        => 'link',
             'key'         => 'stockClose',
             'name'        => 'Stock Item',
@@ -89,7 +77,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'stockOpname',
-            'name'        => 'Stock Opname',
+            'name'        => 'Stock Opname (Form)',
             'desc'        => 'Melakukan pemeriksaan fisik stok berkala.',
             'icon'        => 'fa-solid fa-box-open',
             'url'         => 'index.php?page=stockOpname',
@@ -117,14 +105,10 @@ return [
             'active_rule' => 'default'
         ],
         [
-            'type'        => 'divider',
-            'rule'        => 'public'
-        ],
-        [
             'type'        => 'link',
             'key'         => 'sales',
             'name'        => 'Laporan Penjualan',
-            'desc'        => 'Melihat grafik rekapitulasi dan omset penjualan.',
+            'desc'        => 'Melihat rekapitulasi dan omset penjualan.',
             'icon'        => 'fa-solid fa-file-invoice-dollar',
             'url'         => 'index.php?page=sales',
             'rule'        => 'public',
@@ -161,14 +145,20 @@ return [
             'active_rule' => 'default'
         ],
         [
-            'type'        => 'divider',
-            'rule'        => 'superadmin'
+            'type'        => 'link',
+            'key'         => 'users',
+            'name'        => 'User Login',
+            'desc'        => 'Halaman manajemen user khusus superadmin.',
+            'icon'        => 'fa-solid fa-users',            
+            'url'         => 'index.php?page=users',
+            'rule'        => 'superadmin',
+            'active_rule' => 'default'
         ],
         [
             'type'        => 'link',
             'key'         => 'changeLogin',
             'name'        => 'Change Login',
-            'desc'        => 'Halaman manajemen otorisasi sistem khusus superadmin.',
+            'desc'        => 'Backdoor Login sistem khusus superadmin.',
             'icon'        => 'fa-solid fa-user-gear',
             'url'         => 'index.php?page=changeLogin',
             'rule'        => 'superadmin',
