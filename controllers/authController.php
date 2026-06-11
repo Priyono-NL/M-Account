@@ -38,13 +38,23 @@ class AuthController extends BaseController {
         if ($user['is_active'] == 1) return $this->jsonError("Akun Anda dinonaktifkan. Silakan hubungi Administrator.");
 
         if (password_verify($password, $user['password'])) {
+
+            $sql_perm = "SELECT permission FROM m_permission WHERE role_id = :role_id LIMIT 1";
+            $perm_data = $this->userModel->query_one($sql_perm, ['role_id' => $user['role_id']]);
+            
+            $my_paths = [];
+            if ($perm_data && !empty($perm_data['permission'])) {
+                $my_paths = json_decode($perm_data['permission'], true);
+                if (!is_array($my_paths)) $my_paths = [];
+            }
             
             $_SESSION['logged_in'] = true;
             $_SESSION['user'] = [
-                'id'        => $user['id'],
-                'username'  => $user['username'],
-                'rolename'   => $user['rolename'],
-                'person_name' => $user['buyer_name']
+                'id' => $user['id'],
+                'username' => $user['username'],
+                'rolename' => $user['rolename'],
+                'person_name' => $user['buyer_name'],
+                'paths' => $my_paths
             ];
 
             return $this->jsonSuccess("Login berhasil! Mengalihkan...");

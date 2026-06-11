@@ -1,8 +1,6 @@
 <?php
 
 return [
-    'app_id'     => getenv('APP_ID'),
-    'secret_key' => getenv('APP_SECRET'),
     'modules'    => [
         [
             'type'        => 'link',
@@ -117,6 +115,10 @@ return [
             'active_rule' => 'default'
         ],
         [
+            'type'        => 'divider',
+            'rule'        => 'public'
+        ],
+        [
             'type'        => 'link',
             'key'         => 'sales',
             'name'        => 'Laporan Penjualan',
@@ -163,6 +165,20 @@ return [
             'desc'        => 'Halaman manajemen user khusus superadmin.',
             'icon'        => 'fa-solid fa-users',            
             'url'         => 'index.php?page=users',
+            'rule'        => 'superadmin',
+            'active_rule' => 'default'
+        ],
+        [
+            'type'        => 'divider',
+            'rule'        => 'superadmin'
+        ],
+        [
+            'type'        => 'link',
+            'key'         => 'permission',
+            'name'        => 'Permission',
+            'desc'        => 'Halaman manajemen permission khusus superadmin.',
+            'icon'        => 'fa-solid fa-user-lock',            
+            'url'         => 'index.php?page=permission',
             'rule'        => 'superadmin',
             'active_rule' => 'default'
         ],

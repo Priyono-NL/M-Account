@@ -54,7 +54,7 @@ class StockCloseView {
                                     $current_warehouse, 
                                     $is_locked, 
                                     'filterWarehouse',
-                                    true
+                                    false
                                 ); 
                                 ?>
                             </div>

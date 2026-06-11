@@ -48,7 +48,7 @@ class ChangeLoginController extends BaseController {
             return $this->jsonError("Anda sedang dalam mode impersonate. Silahkan kembali ke akun utama terlebih dahulu.");
         }
 
-        $sql = "SELECT u.*, r.name as rolename, b.buyer_name 
+        $sql = "SELECT u.*, r.name as rolename, b.buyer_name
                 FROM m_users u 
                 LEFT JOIN m_role r ON u.role_id = r.id 
                 LEFT JOIN buyer b ON u.person_id = b.id 
@@ -59,16 +59,23 @@ class ChangeLoginController extends BaseController {
 
         if ($target_user['is_active'] == 1) return $this->jsonError("Tidak dapat login. Akun target sedang dinonaktifkan.");
 
-        // ==========================================
-        // PROSES IMPERSONATE (LOKAL SESSION)
-        // ==========================================
+        $sql_perm = "SELECT permission FROM m_permission WHERE role_id = :role_id LIMIT 1";
+        $perm_data = $this->userModel->query_one($sql_perm, ['role_id' => $target_user['role_id']]);
+        
+        $my_paths = [];
+        if ($perm_data && !empty($perm_data['permission'])) {
+            $my_paths = json_decode($perm_data['permission'], true);
+            if (!is_array($my_paths)) $my_paths = [];
+        }
+
         if (!isset($_SESSION['impersonator_user'])) $_SESSION['impersonator_user'] = $_SESSION['user'];
 
         $_SESSION['user'] = [
-            'id'               => $target_user['id'],
-            'username'         => $target_user['username'],
-            'rolename'          => $target_user['rolename'],
-            'person_name'        => $target_user['buyer_name'],
+            'id' => $target_user['id'],
+            'username' => $target_user['username'],
+            'rolename' => $target_user['rolename'],
+            'person_name' => $target_user['buyer_name'],
+            'paths' => $my_paths,
             'is_impersonating' => true
         ];
 

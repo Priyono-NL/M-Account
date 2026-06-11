@@ -37,18 +37,6 @@ class DashboardView {
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3 position-relative overflow-hidden h-100">
-                    <div class="position-relative z-1">
-                        <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Total Penjualan (SLS)</small>
-                        <h3 class="fw-bold mb-1">Rp <?= number_format($data["dashboardData"]['total_sales'], 0, ',', '.') ?></h3>
-                        <small class="text-muted">Bulan ini</small>
-                    </div>
-                    <div class="bg-primary opacity-10 position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-4" style="border-radius: 50% 0 0 50%">
-                        <i class="fa-solid fa-dollar-sign fs-1 text-primary"></i>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="row g-3">
