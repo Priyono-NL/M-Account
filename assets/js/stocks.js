@@ -140,9 +140,10 @@ $(document).ready(function() {
 		let tahun = d.getFullYear();
 		let bulan = String(d.getMonth() + 1).padStart(2, '0');
 		let nowMonth = tahun + '-' + bulan;
+        let firstWarehouseVal = $("#filterWarehouse option:first").val();
 	
         $("#search").val("");
-        $("#filterWarehouse").val("");
+        $("#filterWarehouse").val(firstWarehouseVal);
         $("#periodMonth").val(nowMonth);
         
         clearTable();

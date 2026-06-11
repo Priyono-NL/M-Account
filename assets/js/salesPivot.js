@@ -29,7 +29,7 @@ $(document).ready(function() {
                         return {                            
                             "Tipe Penjualan": row.sale_type,
                             "No. Invoice": row.invoice_no,
-                            "Gudang": row.warehouse == '1' ? 'Gudang BS' : 'Gudang Sampah',
+                            "Gudang": row.warehouse,
                             "Tgl Penjualan": row.sales_date,
                             "Nama Pembeli": row.buyer_name,
                             "Kode Pembeli": row.buyer_code,
@@ -53,7 +53,7 @@ $(document).ready(function() {
 					
                     const tpl = $.pivotUtilities.aggregatorTemplates;
 
-                    $("#pivot_output").show().pivotUI(mappedData, {
+                    $("#pivot_output").removeData("pivotUIOptions").empty().show().pivotUI(mappedData, {
                         rows: ["Tgl Penjualan", "No. Invoice", "Nama Pembeli"], 
                         cols: [], 
                         vals: ["Total"],
@@ -83,8 +83,12 @@ $(document).ready(function() {
 									let totalCount = totalUniqueValues[attrName];
 									let selectedCount = totalCount;
 									
-									if (config.inclusions && config.inclusions[attrName]) selectedCount = Object.keys(config.inclusions[attrName]).length;
-									let newLabel = attrName + " (" + selectedCount + "/" + totalCount + ")";
+									if (config.exclusions && config.exclusions[attrName]) {
+                                        selectedCount = totalCount - Object.keys(config.exclusions[attrName]).length;
+                                    } else if (config.inclusions && config.inclusions[attrName]) {
+                                        selectedCount = Object.keys(config.inclusions[attrName]).length;
+                                    }
+                                    let newLabel = attrName + " (" + selectedCount + "/" + totalCount + ")";
 									
 									let textNode = $(this).contents().filter(function() { 
 										return this.nodeType === 3;
@@ -131,9 +135,10 @@ $(document).ready(function() {
 		now.setDate(now.getDate());
 		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
 		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+        let firstWarehouseVal = $("#filterWarehouse option:first").val();
 		
-        $("#search").val("");
-        $("#filterWarehouse").val("");
+        $("#search").val("");        
+        $("#filterWarehouse").val(firstWarehouseVal);
         $("#filterType").val("");
         $("#startDate").val(beforeLokal);
         $("#endDate").val(nowLokal);

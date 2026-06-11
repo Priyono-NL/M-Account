@@ -113,9 +113,10 @@ $(document).ready(function() {
         
         let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
         let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+        let firstWarehouseVal = $("#filterWarehouse option:first").val();
 		
         $("#search").val("");
-        $("#filterWarehouse").val("");
+        $("#filterWarehouse").val(firstWarehouseVal);
         $("#startDate").val(beforeLokal);
         $("#endDate").val(nowLokal);
         clearTable();
