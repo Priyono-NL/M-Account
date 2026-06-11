@@ -13,6 +13,16 @@ function printReceipt(id) {
 $(document).ready(function() {
     let dateTimeout = null;
     const jedaMengetik = 500;
+
+    function getQtyInCart(itemId, excludeIndex = -1) {
+        let total = 0;
+        cart.forEach((item, index) => {
+            if (item.id === itemId && index !== excludeIndex) {
+                total += item.qty;
+            }
+        });
+        return total;
+    }
     
     // ==========================================
     // 1. VALIDASI TANGGAL & GUDANG
@@ -383,17 +393,34 @@ $(document).ready(function() {
             if (itemDraft.length === 0) { showNotification('Pilih minimal satu barang!', 'warning'); return; }
             
             let currentSalesType = $('#salesType').val();
+            let addedCount = 0;
 
             itemDraft.forEach(draft => {
-                cart.push({
-                    ...draft,
-                    harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
-                });
+                let existingQty = getQtyInCart(draft.id);
+                
+                if (existingQty + draft.qty > draft.stok) {
+                    showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${draft.stok}).`, 'warning');
+                } else {
+                    cart.push({
+                        ...draft,
+                        harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
+                    });
+                    addedCount++;
+                }
             });
 
             $('#itemModal').modal('hide');
             renderCart();
-            showNotification(`${itemDraft.length} macam barang ditambahkan.`, 'success');
+            if (addedCount > 0) {
+                showNotification(`${addedCount} macam barang ditambahkan.`, 'success');
+            }
+        });
+
+        $('#salesType').on('change', function() {
+            let newType = $(this).val();
+            cart.forEach(item => { item.harga = (newType === 'EXP') ? 0 : item.harga_asli; });
+            renderCart();    
+            if (newType === 'EXP') showNotification('Tipe EXP dipilih: Harga barang diatur ke Rp 0', 'info');
         });
 		
 		$('#itemModal').on('hide.bs.modal', function () {
@@ -412,8 +439,15 @@ $(document).ready(function() {
 
         $(document).on('click', '.btn-plus', function() {
             let index = $(this).data('index');
-            if (cart[index].qty + 1 > cart[index].stok) showNotification(`Stok maksimal di gudang hanya ${cart[index].stok}!`, 'warning');
-            else { cart[index].qty += 1; renderCart(); }
+            let selectedItem = cart[index];            
+            let totalQtyAllRows = getQtyInCart(selectedItem.id);
+            
+            if (totalQtyAllRows + 1 > selectedItem.stok) {
+                showNotification(`Stok maksimal di gudang hanya ${selectedItem.stok}!`, 'warning');
+            } else { 
+                cart[index].qty += 1; 
+                renderCart(); 
+            }
         });
 
         $(document).on('click', '.btn-minus', function() {
@@ -423,11 +457,26 @@ $(document).ready(function() {
         });
 
         $(document).on('change', '.qty-input', function() {
-            let index = $(this).data('index'); let val = parseFloat($(this).val());
-            if (isNaN(val) || val <= 0) { cart[index].qty = 1; showNotification('Kuantitas tidak valid!', 'warning'); } 
-            else if (val > cart[index].stok) {
-                cart[index].qty = cart[index].stok; showNotification(`Stok maksimal hanya ${cart[index].stok}!`, 'warning');
-            } else cart[index].qty = val;
+            let index = $(this).data('index'); 
+            let val = parseFloat($(this).val());
+            let selectedItem = cart[index];
+
+            if (isNaN(val) || val <= 0) { 
+                cart[index].qty = 1; 
+                showNotification('Kuantitas tidak valid!', 'warning'); 
+                val = 1;
+            } 
+            
+            let otherRowsQty = getQtyInCart(selectedItem.id, index);
+            let sisaStokTersedia = selectedItem.stok - otherRowsQty;
+
+            if (val > sisaStokTersedia) {
+                cart[index].qty = sisaStokTersedia > 0 ? sisaStokTersedia : 1; 
+                showNotification(`Sisa stok yang bisa Anda input di baris ini hanya ${sisaStokTersedia} (Total Stok: ${selectedItem.stok})!`, 'warning');
+            } else {
+                cart[index].qty = val;
+            }
+            
             renderCart();
         });
 
@@ -488,7 +537,9 @@ $(document).ready(function() {
 		// ==========================================
 		$('#btnPrintInvoice').click(function() {
 			if (currentSaleId) {
-				window.open('index.php?page=pos&action=print_invoice&id=' + currentSaleId, '_blank');
+                // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
+                const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;
+				window.open(printUrl, '_blank');
 				modalCheckoutSuccess.hide();
 				currentSaleId = null;
 			}
