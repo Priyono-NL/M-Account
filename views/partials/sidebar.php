@@ -1,5 +1,4 @@
 <?php
-// M-Account - sidebar.php
 
 $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
@@ -10,18 +9,6 @@ $uri_action = $segments[1] ?? ($_GET['action'] ?? 'index');
 
 $isView = (isset($_POST['mode']) && $_POST['mode'] == 'view') || (isset($_GET['mode']) && $_GET['mode'] == 'view');
 
-// Informasi Akun User dari Session
-$role         = $_SESSION['user']['role_name'] ?? '';
-$extra_config = $_SESSION['user']['extra_config'] ?? [];
-$isAdmin      = in_array($role, ['superadmin', 'admin']);
-
-// Ambil data paths hasil centang SSO
-$my_paths     = $_SESSION['user']['paths'] ?? []; 
-
-$can_sell = $isAdmin || ($extra_config['can_sell'] ?? false);
-$can_buy  = $isAdmin || ($extra_config['can_buy'] ?? false);
-
-// Muat data source dari config module tunggal
 $config_source = require_once dirname(__DIR__, 2) . '/config/config_module.php';
 $menu_items    = $config_source['modules'] ?? [];
 ?>
@@ -38,7 +25,6 @@ $menu_items    = $config_source['modules'] ?? [];
             // =======================================================
             // 1. RENDERING TYPE: DIVIDER (GARIS PEMBATAS)
             // =======================================================
-            // Dipindah ke urutan pertama agar langsung di-skip dan tidak memicu error "key" kosong
             if (isset($item['type']) && $item['type'] === 'divider') {
                 echo '<hr class="mx-3 my-2 text-secondary opacity-25">';
                 continue;
@@ -47,23 +33,15 @@ $menu_items    = $config_source['modules'] ?? [];
             // =======================================================
             // 2. VALIDASI HAK AKSES (GATEKEEPER)
             // =======================================================
-            $is_visible = false;
-            $rule = $item['rule'] ?? 'public';
+            // SEMENTARA DIBYPASS: Semua menu di-set true agar tampil semua
+            $is_visible = true; 
             
-            // Ambil key dengan aman, beri nilai string kosong jika tidak ada
-            $item_key = $item['key'] ?? ''; 
-            $module_path = '/' . $item_key; 
-            
-            $has_path_access = in_array($module_path, $my_paths);
-            $is_visible = $has_path_access;
+            // NOTE: Nanti setelah tabel permission selesai dibuat, 
+            // kita akan masukkan logika validasi session di sini.
 
-            // Khusus role 'superadmin' otomatis bypass semua hak akses
-            if ($role === 'superadmin') {
-                $is_visible = true;
-            }
-
-            // Jika user tidak memiliki hak akses, lewati menu ini
             if (!$is_visible) continue;
+
+            $item_key = $item['key'] ?? ''; 
 
             // =======================================================
             // 3. LOGIKA AKURASI STATE ACTIVE MENU

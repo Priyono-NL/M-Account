@@ -27,7 +27,7 @@ $(document).ready(function() {
             let roleStyle = ROLE_BADGE[user.role] || ROLE_BADGE['user'];
             let badgeHtml = `<span style="background:${roleStyle.bg}; color:${roleStyle.text}; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: capitalize;">${user.role}</span>`;
 
-            let statusHtml = (user.is_active == 1) 
+            let statusHtml = (user.is_active == 0) 
                 ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill">Aktif</span>' 
                 : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill">Nonaktif</span>';
 
@@ -35,7 +35,7 @@ $(document).ready(function() {
             if (user.role === 'superadmin') {
                 actionBtn = `<span class="text-muted small"><i class="fa-solid fa-lock me-1"></i> Tidak bisa</span>`;
             } else {
-                let disabledAttr = (user.is_active != 1) ? 'disabled' : '';
+                let disabledAttr = (user.is_active != 0) ? 'disabled' : '';
                 actionBtn = `<button class="btn btn-sm btn-outline-primary rounded-pill px-3 btn-login-as" data-id="${user.id}" data-name="${user.username}" data-role="${user.role}" ${disabledAttr}><i class="fa-solid fa-right-to-bracket me-1"></i> Login As</button>`;
             }
 
@@ -115,7 +115,7 @@ $(document).ready(function() {
                     
                     setTimeout(function() {
                         window.location.href = '/maccount/index.php?page=dashboard';
-                    }, 1000); 
+                    }, 500); 
 
                 } else {
                     showNotification(res.message, 'danger');

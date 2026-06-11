@@ -227,32 +227,7 @@ $(document).ready(function() {
     
     $('#sidebarToggle').click(function() {
         $('#sidebar').toggleClass('expanded');
-    });
-
-    const checkSsoSession = () => {
-        $.ajax({
-            url: 'index.php?page=auth',
-            method: 'POST',
-            dataType: 'json',
-            data: { 
-                action: 'checkSession'
-            },
-            success: function(response) {
-                if (response.status === 'expired') {
-                    showNotification("Sesi SSO Anda telah berakhir. Mengalihkan...", "danger");                    
-                    setTimeout(function() {
-                        window.location.href = response.redirect_url;
-                    }, 2000);
-                }
-            },
-            error: function() {
-                console.warn("Pengecekan sesi SSO gagal berjalan.");
-            }
-        });
-    };
-    
-    checkSsoSession();
-    setInterval(checkSsoSession, 600000);
+    });    
 
     $(document).on('click', '#btnStopImpersonate', function(e) {
         e.preventDefault();
@@ -270,7 +245,7 @@ $(document).ready(function() {
                     showNotification(response.message, "success");
                     setTimeout(function() {
                         window.location.href = 'index.php?page=dashboard';
-                    }, 1500);
+                    }, 500);
                 } else {
                     alert(response.message);
                     $btn.prop('disabled', false).html('<i class="fa-solid fa-right-from-bracket me-1"></i> Kembali ke Admin');

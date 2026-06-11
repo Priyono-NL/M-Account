@@ -18,13 +18,13 @@ class BaseController {
             return;
         }
 
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-            $sso_login_url = getenv('SSO_LOGIN_URL');
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {            
+            $local_login_url = 'index.php?page=auth'; 
             
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 header('Content-Type: application/json');
                 http_response_code(401);
-                echo json_encode(['status' => 'expired', 'redirect_url' => $sso_login_url]);
+                echo json_encode(['status' => 'expired', 'redirect_url' => $local_login_url]);
                 exit;
             }
 
@@ -32,14 +32,14 @@ class BaseController {
             <html lang="id">
             <head>
                 <meta charset="UTF-8">
-                <meta http-equiv="refresh" content="0;url=' . $sso_login_url . '">
+                <meta http-equiv="refresh" content="0;url=' . $local_login_url . '">
                 <title>Mengalihkan...</title>
                 <script>
-                    window.location.href = "' . $sso_login_url . '";
+                    window.location.href = "' . $local_login_url . '";
                 </script>
             </head>
             <body style="background-color: #f4f4f4; text-align: center; padding-top: 50px; font-family: sans-serif;">
-                <p>Mengalihkan ke halaman SSO... Jika tidak dialihkan secara otomatis, <a href="' . $sso_login_url . '">klik di sini</a>.</p>
+                <p>Sesi telah berakhir atau Anda belum login. Mengalihkan ke halaman Login... Jika tidak dialihkan secara otomatis, <a href="' . $local_login_url . '">klik di sini</a>.</p>
             </body>
             </html>';
             

@@ -41,6 +41,7 @@ require_once 'views/receive_view.php';
 require_once 'views/salesPivot_view.php';
 require_once 'views/company_view.php';
 require_once 'views/user_view.php';
+require_once 'views/login_view.php';
 
 // =======================================================
 // PARSING ROUTING TANPA .HTACCESS
@@ -78,7 +79,6 @@ $controllers = [
     'sales' => 'SalesPivotController',
     'changeLogin' => 'ChangeLoginController',
     'company' => 'CompanyController',
-    'api-modules' => 'ApiController',
     'users' => 'UsersController'
 ];
 

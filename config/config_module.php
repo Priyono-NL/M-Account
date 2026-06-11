@@ -15,6 +15,10 @@ return [
             'active_rule' => 'dashboard'
         ],
         [
+            'type'        => 'divider',
+            'rule'        => 'public'
+        ],
+        [
             'type'        => 'link',
             'key'         => 'pos',
             'name'        => 'Penjualan (POS)',
@@ -33,6 +37,10 @@ return [
             'url'         => 'index.php?page=receive',
             'rule'        => 'public',
             'active_rule' => 'receive_main'
+        ],
+        [
+            'type'        => 'divider',
+            'rule'        => 'public'
         ],
         [
             'type'        => 'link',
@@ -63,6 +71,10 @@ return [
             'url'         => 'index.php?page=company',
             'rule'        => 'admin',
             'active_rule' => 'default'
+        ],
+        [
+            'type'        => 'divider',
+            'rule'        => 'public'
         ],
         [
             'type'        => 'link',

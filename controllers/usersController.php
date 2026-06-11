@@ -28,6 +28,19 @@ class UsersController extends BaseController {
         );
     }
 
+    public function get_person() {
+        $keyword = $this->getPost('keyword', '');  
+        $results = $this->buyer->getFiltered($keyword);
+        $select2Data = [];
+        foreach ($results as $row) {
+            $select2Data[] = [
+                'id'   => $row['id'],
+                'text' => $row['buyer_code'] . " | ". $row['buyer_name']
+            ];
+        }
+        return $this->jsonSuccess("Data person berhasil dimuat", $select2Data);
+    }
+
     public function add() {
         $data = $this->sanitize([
             'username' => $this->getPost('username'),
@@ -39,6 +52,10 @@ class UsersController extends BaseController {
         if (empty($data['username']) || empty($data['password'])) {
             return $this->jsonError("Username dan Password Wajib Diisi.");
         }
+
+        $isDuplicate = $this->model->checkExists('m_users', 'username', $data['username']);
+        if ($isDuplicate) return $this->jsonError("Gagal! Username '{$data['username']}' sudah terdaftar.");
+
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
 
         $res = $this->model->insert('m_users', $data);
@@ -62,17 +79,12 @@ class UsersController extends BaseController {
         return $res ? $this->jsonSuccess("Data User diperbarui") : $this->jsonError("Gagal memperbarui data");
     }
 
-    public function get_person() {
-        $keyword = $this->getPost('keyword', '');  
-        $results = $this->buyer->getFiltered($keyword);
-        $select2Data = [];
-        foreach ($results as $row) {
-            $select2Data[] = [
-                'id'   => $row['id'],
-                'text' => $row['buyer_code'] . " | ". $row['buyer_name']
-            ];
-        }
-        return $this->jsonSuccess("Data person berhasil dimuat", $select2Data);
+    public function delete() {
+        $id = (int)$this->getPost('id');
+        if ($id <= 0) return $this->jsonError("ID User tidak valid.");
+
+        $res = $this->model->delete('m_users', "id = $id");
+        return $res ? $this->jsonSuccess("User berhasil dihapus") : $this->jsonError("Gagal menghapus User");
     }
 
 }

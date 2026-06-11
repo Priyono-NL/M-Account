@@ -2,16 +2,16 @@
 require_once 'BaseController.php';
 
 class ChangeLoginController extends BaseController {
-    private $model;
+    private $userModel;
 
     public function __construct() {
         parent::__construct();
 
-        $this->model = new DatabaseHelper(); 
+        $this->userModel = new UsersModel(); 
 
-        $current_role = $_SESSION['user']['role_name'] ?? '';
+        $current_role_id = $_SESSION['user']['rolename'];
         
-        if ($current_role !== 'superadmin') {
+        if ($current_role_id != "superadmin") {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 return $this->jsonError("Akses ilegal. Anda bukan Superadmin.", 403);
             } else {
@@ -30,72 +30,50 @@ class ChangeLoginController extends BaseController {
 
     public function get_all_users() {
         $sql = "SELECT u.id, u.username, r.name AS role, u.is_active 
-                FROM users u 
-                JOIN roles r ON u.role_id = r.id 
-                ORDER BY u.role_id ASC, u.username ASC";
-                
-        $users = $this->model->query_all($sql);
+                FROM m_users u 
+                LEFT JOIN m_role r ON u.role_id = r.id 
+                WHERE u.is_active = 0
+                ORDER BY u.role_id ASC, u.username ASC";                
+        $users = $this->userModel->query_all($sql);
 
-        if ($users !== false) {
-            return $this->jsonSuccess("Data user berhasil dimuat", $users);
-        } else {
-            return $this->jsonError("Gagal mengambil data dari database.");
-        }
+        if ($users !== false) return $this->jsonSuccess("Data user berhasil dimuat", $users);
+        else return $this->jsonError("Gagal mengambil data dari database.");
     }
 
     public function switchAccount() {
-        $target_user_id = trim($this->getPost('target_user_id', ''));
-
-        if (empty($target_user_id)) {
-            return $this->jsonError("Pilih pengguna terlebih dahulu.");
-        }
+        $target_user_id = (int)$this->getPost('target_user_id', 0);
+        if ($target_user_id <= 0) return $this->jsonError("Pilih pengguna terlebih dahulu.");
 
         if (isset($_SESSION['user']['is_impersonating']) && $_SESSION['user']['is_impersonating'] === true) {
             return $this->jsonError("Anda sedang dalam mode impersonate. Silahkan kembali ke akun utama terlebih dahulu.");
         }
 
-        $app_id     = getenv('APP_ID');
-        $app_secret = getenv('APP_SECRET');
-        
-        $sso_impersonate_url = rtrim(getenv('SSO_BASE_URL'), '/') . '/impersonate'; 
+        $sql = "SELECT u.*, r.name as rolename, b.buyer_name 
+                FROM m_users u 
+                LEFT JOIN m_role r ON u.role_id = r.id 
+                LEFT JOIN buyer b ON u.person_id = b.id 
+                WHERE u.id = :id LIMIT 1";
+        $target_user = $this->userModel->query_one($sql, ['id' => $target_user_id]);
 
-        $data = json_encode(['target_user_id' => $target_user_id]);
+        if (!$target_user) return $this->jsonError("Gagal! User target tidak ditemukan di database.");
 
-        $ch = curl_init($sso_impersonate_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'X-App-ID: ' . $app_id,
-            'X-App-Secret: ' . $app_secret
-        ]);
+        if ($target_user['is_active'] == 1) return $this->jsonError("Tidak dapat login. Akun target sedang dinonaktifkan.");
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        // ==========================================
+        // PROSES IMPERSONATE (LOKAL SESSION)
+        // ==========================================
+        if (!isset($_SESSION['impersonator_user'])) $_SESSION['impersonator_user'] = $_SESSION['user'];
 
-        $result = json_decode($response, true);
+        $_SESSION['user'] = [
+            'id'               => $target_user['id'],
+            'username'         => $target_user['username'],
+            'rolename'          => $target_user['rolename'],
+            'person_name'        => $target_user['buyer_name'],
+            'is_impersonating' => true
+        ];
 
-        if ($httpCode === 200 && isset($result['access_token'])) {
-            if (!isset($_SESSION['impersonator_user'])) {
-                $_SESSION['impersonator_user']    = $_SESSION['user'];
-                $_SESSION['impersonator_token']   = $_SESSION['token'];
-                $_SESSION['impersonator_expires'] = $_SESSION['expires_at'];
-            }
-
-            $_SESSION['logged_in'] = true;
-            $_SESSION['user']      = $result['user']; 
-            $_SESSION['user']['is_impersonating'] = true;
-            $_SESSION['token']      = $result['access_token'];
-            $_SESSION['expires_at'] = $result['expires_at']; 
-
-            return $this->jsonSuccess("Berhasil login sebagai " . ($result['user']['full_name'] ?? $result['user']['username']));
-
-        } else {
-            $error_msg = $result['error'] ?? 'Gagal menghubungi server SSO atau User tidak ditemukan';
-            return $this->jsonError("SSO Error: " . $error_msg);
-        }
+        return $this->jsonSuccess("Berhasil login sebagai " . $target_user['username'], ['redirect' => 'index.php?page=dashboard']);
     }
+
 }
 ?>
