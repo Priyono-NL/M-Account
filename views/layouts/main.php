@@ -6,12 +6,12 @@
     
     <title><?= $title ?? 'M-Account' ?></title>
     
-    <link rel="stylesheet" href="/maccount/vendors/bootstrap-5.3.8-dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/maccount/vendors/fontawesome-free-6.4.2-web/css/all.min.css">
-    <link rel="stylesheet" href="/maccount/vendors/select2-4.1.0-rc.0/css/select2.min.css">
-    <link rel="stylesheet" href="/maccount/vendors/toastify-js-1.12.0/toastify.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/fontawesome-free-6.4.2-web/css/all.min.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/select2-4.1.0-rc.0/css/select2.min.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/toastify-js-1.12.0/toastify.css">
     
-    <link rel="stylesheet" href="/maccount/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     <?= $extra_css ?? '' ?>
 </head>
 <body>
@@ -31,16 +31,17 @@
     </div>
 </div>
 
-<script src="/maccount/vendors/jquery-3.7.1.min.js"></script>
-<script src="/maccount/vendors/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-<script src="/maccount/vendors/select2-4.1.0-rc.0/js/select2.min.js"></script>
-<script src="/maccount/vendors/toastify-js-1.12.0/toastify.js"></script>
+<script src="<?= BASE_URL ?>/vendors/jquery-3.7.1.min.js"></script>
+<script src="<?= BASE_URL ?>/vendors/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?= BASE_URL ?>/vendors/select2-4.1.0-rc.0/js/select2.min.js"></script>
+<script src="<?= BASE_URL ?>/vendors/toastify-js-1.12.0/toastify.js"></script>
 
-<script src="/maccount/assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
 
 <script>
-    var sessionActive = <?php echo json_encode($_SESSION); ?>;
-    
+    const BASE_URL = "<?= BASE_URL ?>";
+    //debug session
+    var sessionActive = <?php echo json_encode($_SESSION); ?>;    
     console.log("sessionActive:", sessionActive);
 </script>
 

@@ -114,7 +114,7 @@ $(document).ready(function() {
                     showNotification(`Berhasil login sebagai ${userName}`, 'success');
                     
                     setTimeout(function() {
-                        window.location.href = '/maccount/index.php?page=dashboard';
+                        window.location.href = BASE_URL +'/index.php?page=dashboard';
                     }, 500); 
 
                 } else {

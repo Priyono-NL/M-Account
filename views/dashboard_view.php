@@ -66,11 +66,11 @@ class DashboardView {
         $val_rec     = json_encode(array_column($data["dashboardData"]['in7'], 'total_transaksi'));
 
         $extra_js = "
-        <script src='/maccount/vendors/chart-js-4.5.1/chart.umd.min.js'></script>
+        <script src='' . BASE_URL . '/vendors/chart-js-4.5.1/chart.umd.min.js'></script>
         <script>
             // Fungsi untuk memfilter data berdasarkan Warehouse
             function filterByWarehouse(val) {
-                window.location.href = '/maccount/index.php?page=dashboard&warehouse=' + val;
+                window.location.href = '' . BASE_URL . '/index.php?page=dashboard&warehouse=' + val;
             }
 
             // Sales Chart

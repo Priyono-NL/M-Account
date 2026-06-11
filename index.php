@@ -1,5 +1,7 @@
 <?php
 session_start();
+//nama sesuai dengan folder yang ditaro
+define('BASE_URL', '/maccount');
 
 // load env
 require_once 'env_loader.php';

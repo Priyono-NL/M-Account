@@ -178,7 +178,7 @@ $(document).ready(function() {
         };
 
         if (typeof downloadExcelAjax === "function") {
-            downloadExcelAjax(this, '/maccount/index.php?page=pos', payload, 'Laporan_Penjualan');
+            downloadExcelAjax(this, BASE_URL +'/index.php?page=pos', payload, 'Laporan_Penjualan');
         }
     });
 });

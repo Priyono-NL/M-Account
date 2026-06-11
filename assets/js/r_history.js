@@ -166,7 +166,7 @@ $(document).ready(function() {
         };
 
         if (typeof downloadExcelAjax === "function") {
-            downloadExcelAjax(this, '/maccount/index.php?page=receive', payload, 'Laporan_Penerimaan');
+            downloadExcelAjax(this, BASE_URL +'/index.php?page=receive', payload, 'Laporan_Penerimaan');
         }
     });
 });

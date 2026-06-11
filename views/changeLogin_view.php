@@ -49,7 +49,7 @@ class ChangeLoginView {
         <?php
         $content = ob_get_clean();
         
-        $extra_js = '<script src="/maccount/assets/js/changeLogin.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/changeLogin.js"></script>';
         
         include __DIR__ . '/layouts/main.php';
     }

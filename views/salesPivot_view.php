@@ -97,15 +97,15 @@ class SalesPivotView {
         $content = ob_get_clean();
 
         $extra_css = "
-        <link rel='stylesheet' type='text/css' href='/maccount/vendors/jquery-ui/jquery-ui.min.css'>
-        <link rel='stylesheet' type='text/css' href='/maccount/vendors/pivottable/pivot.min.css'>
-        <link rel='stylesheet' type='text/css' href='/maccount/assets/css/salesPivot.css'>";
+        <link rel='stylesheet' type='text/css' href='' . BASE_URL . '/vendors/jquery-ui/jquery-ui.min.css'>
+        <link rel='stylesheet' type='text/css' href='' . BASE_URL . '/vendors/pivottable/pivot.min.css'>
+        <link rel='stylesheet' type='text/css' href='' . BASE_URL . '/assets/css/salesPivot.css'>";
 
         $extra_js = "
-        <script src='/maccount/vendors/jquery-ui/jquery-ui.min.js'></script>
-        <script src='/maccount/vendors/plotly/plotly-basic.min.js'></script>
-        <script src='/maccount/vendors/pivottable/pivot.min.js'></script>
-        <script src='/maccount/assets/js/salesPivot.js'></script>";
+        <script src='' . BASE_URL . '/vendors/jquery-ui/jquery-ui.min.js'></script>
+        <script src='' . BASE_URL . '/vendors/plotly/plotly-basic.min.js'></script>
+        <script src='' . BASE_URL . '/vendors/pivottable/pivot.min.js'></script>
+        <script src='' . BASE_URL . '/assets/js/salesPivot.js'></script>";
 
         include __DIR__ . '/layouts/main.php';
     }

@@ -74,7 +74,7 @@ class PermissionView {
         $content = ob_get_clean();
         
         // Panggil file JS eksternal
-        $extra_js = '<script src="/maccount/assets/js/permission.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/permission.js"></script>';
 
         include __DIR__ . '/layouts/main.php';
     }
