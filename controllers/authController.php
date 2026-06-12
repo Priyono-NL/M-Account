@@ -47,6 +47,8 @@ class AuthController extends BaseController {
                 $my_paths = json_decode($perm_data['permission'], true);
                 if (!is_array($my_paths)) $my_paths = [];
             }
+
+            $is_assigned = isset($user['company']) && is_numeric($user['company']);
             
             $_SESSION['logged_in'] = true;
             $_SESSION['user'] = [
@@ -54,6 +56,8 @@ class AuthController extends BaseController {
                 'username' => $user['username'],
                 'rolename' => $user['rolename'],
                 'person_name' => $user['buyer_name'],
+                'active_company_id' => $is_assigned ? (int)$user['company'] : 1,
+                'can_switch' => !$is_assigned,
                 'paths' => $my_paths
             ];
 

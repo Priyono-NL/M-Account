@@ -105,7 +105,7 @@ $(document).ready(function() {
         $("#userId").val(data.id);
         $("#username").val(data.username);
         $("#role_id").val(data.role_id);
-
+        $("#company").val(data.company);
         $("#person_id").empty();
         if (data.person_id) {
             let optionText = (data.buyer_code ? data.buyer_code + " | " : "") + data.buyer_name;

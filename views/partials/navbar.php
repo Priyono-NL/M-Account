@@ -1,6 +1,6 @@
 <?php
 $my_companies   = BaseController::$my_companies;
-$company_count  = BaseController::$company_count;
+$c_disabled  = BaseController::$c_disabled;
 $active_comp_id = BaseController::$active_comp_id;
 ?>
 
@@ -46,7 +46,7 @@ $active_comp_id = BaseController::$active_comp_id;
                         name="company" 
                         id="companySelect" 
                         onchange="changeActiveCompany(this.value)"
-                        <?= ($company_count <= 1) ? 'disabled' : ''; ?> 
+                        <?= $c_disabled; ?> 
                         style="font-size: 12.5px; cursor: pointer;">
                     
                     <?php foreach ($my_companies as $comp): ?>

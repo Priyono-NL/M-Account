@@ -1,7 +1,7 @@
 <?php
 class UserView {
     public static function render($users) {
-
+        extract($users);
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -105,11 +105,27 @@ class UserView {
 
                                 <div class="col-6">
                                     <label class="form-label text-muted small fw-bold">ROLE<span class="text-danger">*</span></label>
-                                    <select name="role_id" id="role_id" class="form-control form-control-sm">
-                                        <option value="1">Superadmin</option>
-                                        <option value="2">Admin</option>
-                                        <option value="3">User</option>
+                                    <select id="role_id" name="role_id" class="form-select form-select-sm">
+                                        <?php foreach ($roles as $r): ?>
+                                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
+                                    <div id="loadingIndicator" class="text-primary mt-2 small d-none">
+                                        <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data...
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <label class="form-label text-muted small fw-bold">COMPANY<span class="text-danger">*</span></label>
+                                    <select id="company" name="company" class="form-select form-select-sm">
+                                        <option value="all">All Company</option>
+                                        <?php foreach ($companies as $c): ?>
+                                            <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div id="loadingIndicator" class="text-primary mt-2 small d-none">
+                                        <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data...
+                                    </div>
                                 </div>
                             </div>
                             

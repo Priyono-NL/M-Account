@@ -4,15 +4,24 @@ require_once 'BaseController.php';
 class UsersController extends BaseController {
     private $model;
     private $buyer;
+    private $permission;
+    private $company;
 
     public function __construct() {
         parent::__construct();
         $this->model = new UsersModel();
         $this->buyer = new BuyerModel();
+        $this->permission = new PermissionModel();
+        $this->company = new CompanyModel();
     }
 
     public function index() {
-        UserView::render([]);
+        $roles = $this->permission->getAllRoles();
+        $companies = $this->company->getAllCompanies();
+        UserView::render([
+            'roles' => $roles,
+            'companies' => $companies
+        ]);
     }
 
     public function filter_api() {
@@ -46,7 +55,8 @@ class UsersController extends BaseController {
             'username' => $this->getPost('username'),
             'password' => $this->getPost('password'),
             'person_id' => $this->getPost('person_id'),
-            'role_id' => $this->getPost('role_id')
+            'role_id' => $this->getPost('role_id'),
+            'company' => $this->getPost('company')
         ]);
 
         if (empty($data['username']) || empty($data['password'])) {
@@ -69,8 +79,10 @@ class UsersController extends BaseController {
         $password = $this->getPost('password');
 
         $updateData = [
+            'username' => $this->getPost('username'),
             'person_id' => $this->getPost('person_id'),
-            'role_id'   => $this->getPost('role_id')
+            'role_id' => $this->getPost('role_id'),
+            'company' => $this->getPost('company')
         ];
         if (!empty($password)) $updateData['password'] = password_hash($password, PASSWORD_DEFAULT);
         $updateData = $this->sanitize($updateData);

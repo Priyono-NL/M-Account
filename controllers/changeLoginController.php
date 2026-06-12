@@ -70,11 +70,15 @@ class ChangeLoginController extends BaseController {
 
         if (!isset($_SESSION['impersonator_user'])) $_SESSION['impersonator_user'] = $_SESSION['user'];
 
+        $is_assigned = isset($target_user['company']) && is_numeric($target_user['company']);
+
         $_SESSION['user'] = [
             'id' => $target_user['id'],
             'username' => $target_user['username'],
             'rolename' => $target_user['rolename'],
             'person_name' => $target_user['buyer_name'],
+            'active_company_id' => $is_assigned ? (int)$target_user['company'] : 1,
+            'can_switch' => !$is_assigned,
             'paths' => $my_paths,
             'is_impersonating' => true
         ];

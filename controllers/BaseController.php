@@ -8,7 +8,7 @@ class BaseController {
     protected $companyModel;
 
     public static $my_companies = [];
-    public static $company_count = 0;
+    public static $c_disabled = 'disabled';
     public static $active_comp_id = null;
 
     public function __construct() {
@@ -46,15 +46,14 @@ class BaseController {
             exit;
         }
 
-        $companyModel = new CompanyModel();
-        self::$my_companies  = $companyModel->getAllCompanies();
-        self::$company_count = count(self::$my_companies);
+        self::$my_companies  = $this->companyModel->getAllCompanies();
+        if ($_SESSION['user']['can_switch']) self::$c_disabled = null;
 
         if (!isset($_SESSION['user']['active_company_id']) && self::$company_count > 0) {
             $_SESSION['user']['active_company_id'] = self::$my_companies[0]['id'];
         }
 
-        self::$active_comp_id = $_SESSION['user']['active_company_id'] ?? null;
+        self::$active_comp_id = $_SESSION['user']['active_company_id'] ?? 1;
     }
     
     protected function jsonSuccess($message = "Success", $data = [], $extra = []) {
