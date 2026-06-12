@@ -3,71 +3,88 @@ session_start();
 //nama sesuai dengan folder yang ditaro
 define('BASE_URL', '/maccount');
 
-// load env
+// load env + dbHelper (Wajib di-load di awal karena dipakai global)
 require_once 'env_loader.php';
-
-// Load Konfigurasi Database & Helper
 require_once 'models/_dbHelper.php';
 
-// Load Semua Models (Auto-load sederhana)
-require_once 'models/dashboardModel.php';
-require_once 'models/ItemsModel.php';
-require_once 'models/BuyerModel.php';
-require_once 'models/SalesModel.php';
-require_once 'models/reportModel.php';
-require_once 'models/stocksModel.php';
-require_once 'models/stockInModel.php';
-require_once 'models/stockOpnameModel.php';
-require_once 'models/stockAdjustmentModel.php';
-require_once 'models/companyModel.php';
-require_once 'models/usersModel.php';
-require_once 'models/permissionModel.php';
+// =======================================================
+// 1. SMART SPL AUTOLOADER (MENGGANTIKAN 34 REQUIRE_ONCE)
+// =======================================================
+spl_autoload_register(function ($class_name) {
+    
+    // A. Otomatis Load Controllers (Contoh: DashboardController -> controllers/dashboardController.php)
+    if (str_contains($class_name, 'Controller')) {
+        $files = [
+            "controllers/" . lcfirst($class_name) . ".php",
+            "controllers/{$class_name}.php"
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                require_once $file;
+                return;
+            }
+        }
+    }
 
-// Load Semua Views
-require_once 'views/changeLogin_view.php';
-require_once 'views/dashboard_view.php';
-require_once 'views/pos_view.php';
-require_once 'views/sales_view.php';
-require_once 'views/invoice_view.php';
-require_once 'views/invoice_pdf.php';
-require_once 'views/surat_angkut_view.php';
-require_once 'views/surat_angkut_pdf.php';
-require_once 'views/items_view.php';
-require_once 'views/buyer_view.php';
-require_once 'views/report_view.php';
-require_once 'views/stocks_view.php';
-require_once 'views/stock_close_view.php';
-require_once 'views/stock_opname_view.php';
-require_once 'views/stock_adjustment_view.php';
-require_once 'views/stockIn_view.php';
-require_once 'views/receive_view.php';
-require_once 'views/salesPivot_view.php';
-require_once 'views/company_view.php';
-require_once 'views/user_view.php';
-require_once 'views/login_view.php';
-require_once 'views/permission_view.php';
+    // B. Otomatis Load Models (Contoh: ItemsModel atau dashboardModel)
+    if (str_contains($class_name, 'Model')) {
+        $files = [
+            "models/" . lcfirst($class_name) . ".php",
+            "models/{$class_name}.php"
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                require_once $file;
+                return;
+            }
+        }
+    }
+
+    // C. Otomatis Load Views (Contoh: DashboardView -> views/dashboard_view.php)
+    if (str_contains($class_name, 'View')) {
+        $formatted_view = lcfirst(str_replace('View', '_view', $class_name));
+        $files = [
+            "views/{$formatted_view}.php",
+            "views/{$class_name}.php"
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                require_once $file;
+                return;
+            }
+        }
+    }
+
+    // D. Otomatis Load Partials/Component (Contoh: Component -> views/partials/component.php)
+    if ($class_name === 'Component' || str_contains($class_name, 'Helper')) {
+        $files = [
+            "views/partials/" . lcfirst($class_name) . ".php", // views/partials/component.php
+            "views/partials/{$class_name}.php"                 // views/partials/Component.php
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                require_once $file;
+                return;
+            }
+        }
+    }
+});
 
 // =======================================================
-// PARSING ROUTING TANPA .HTACCESS
+// 2. PARSING ROUTING TANPA .HTACCESS
 // =======================================================
 $url_path = $_GET['page'] ?? 'dashboard';
 $url_path = rtrim($url_path, '/');
 $segments = explode('/', $url_path);
 
-// Jaga-jaga jika kata 'maccount' tidak sengaja masuk ke dalam query string page
 if (isset($segments[0]) && $segments[0] === 'maccount') array_shift($segments); 
 
-// Tentukan Nama Page / Controller
 $page = $segments[0] ?? 'dashboard';
-
-// Ambil Action secara fleksibel:
-// 1. Dari segment URL setelah slash (misal: ?page=items/create)
-// 2. Dari parameter $_GET['action'] (misal: ?page=items&action=create)
-// 3. Default ke 'index'
 $action = $segments[1] ?? ($_GET['action'] ?? 'index');
-// =======================================================
 
-// Mapping Page ke Controller
+// =======================================================
+// 3. MAPPING PAGE KE CONTROLLER & FIX LINUX CASE SENSITIVE
+// =======================================================
 $controllers = [
     'auth' => 'AuthController',
     'dashboard' => 'DashboardController',
@@ -89,16 +106,23 @@ $controllers = [
 
 $controllerName = $controllers[$page] ?? 'DashboardController';
 
-if (file_exists("controllers/{$controllerName}.php")) {
-    require_once "controllers/{$controllerName}.php";
+// Cek keberadaan file secara fleksibel (mengantisipasi error Case-Sensitive di Linux Server)
+$controllerFile = "controllers/{$controllerName}.php";
+if (!file_exists($controllerFile)) {
+    $controllerFile = "controllers/" . lcfirst($controllerName) . ".php";
+}
+
+if (file_exists($controllerFile)) {
+    // Saat di-instansiasi, fungsi Autoloader di atas akan otomatis me-require filenya
     $app = new $controllerName();
 } else {
     die("Error: Controller file 'controllers/{$controllerName}.php' tidak ditemukan.");
 }
 
-// Jalankan Method Berdasarkan Request Method
+// =======================================================
+// 4. JALANKAN METHOD BERDASARKAN REQUEST METHOD
+// =======================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Di request POST, prioritaskan $_POST['action'], jika tidak ada gunakan $action dari URL
     $action = $_POST['action'] ?? $action;
 
     if (method_exists($app, $action)) {
@@ -111,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     }
     exit;
-    
 } else {    
     if (method_exists($app, $action)) {
         $app->$action();

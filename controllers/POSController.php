@@ -162,7 +162,7 @@ class POSController extends BaseController {
      */
     public function history() {
         $warehouseContext = $this->getWarehouseContext();
-        Sales_view::render([
+        SalesView::render([
             'warehouses'=> $warehouseContext['warehouses'],
             'current_warehouse' => $warehouseContext['current_warehouse'],
             'is_locked' => $warehouseContext['is_locked']

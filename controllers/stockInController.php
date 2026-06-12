@@ -38,7 +38,7 @@ class StockInController extends BaseController {
         
         $warehouseContext = $this->getWarehouseContext();
         
-        StockIn_view::render([
+        StockInView::render([
             'transactionData'   => $transactionData,
             'warehouses'        => $warehouseContext['warehouses'],
             'current_warehouse' => $warehouseContext['current_warehouse']
@@ -99,7 +99,7 @@ class StockInController extends BaseController {
      */
     public function history() {
         $warehouseContext = $this->getWarehouseContext();
-        Receive_view::render([
+        ReceiveView::render([
             'warehouses'=> $warehouseContext['warehouses'],
             'current_warehouse' => $warehouseContext['current_warehouse'],
             'is_locked' => $warehouseContext['is_locked']

@@ -1,5 +1,5 @@
 <?php
-class StockIn_view {
+class StockInView {
     public static function render($data) {
         extract($data);
 

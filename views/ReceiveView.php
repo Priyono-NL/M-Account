@@ -1,5 +1,5 @@
 <?php
-class Receive_view {
+class ReceiveView {
     public static function render($sales) {
         extract($sales);
 

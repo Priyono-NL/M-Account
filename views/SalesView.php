@@ -1,5 +1,5 @@
 <?php
-class Sales_view {
+class SalesView {
     public static function render($sales) {
         extract($sales);
 

@@ -1,6 +1,4 @@
 <?php
-require_once 'views/partials/component.php';
-
 class DashboardView {
     public static function render($data) {
         extract($data);
