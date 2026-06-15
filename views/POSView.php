@@ -297,7 +297,7 @@ class POSView {
 							<i class="fa-solid fa-plus me-2"></i>Transaksi Baru
 						</button>
 						<button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="btnPrintInvoice">
-							<i class="fa-solid fa-print me-2"></i>Cetak Invoice
+							<i class="fa-solid fa-print me-2"></i>Cetak Ke Printer
 						</button>
 					</div>
 				</div>
@@ -313,7 +313,7 @@ class POSView {
         $extra_js .= 'const VIEW_DATA_ITEMS = ' . ($isViewMode ? json_encode($transactionData['items']) : '[]') . ';';
         $extra_js .= '</script>';
         
-        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos.js"></script>';
+        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

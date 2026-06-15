@@ -113,7 +113,7 @@ class StockAdjustmentView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/stockAdjustment.js?v=' . time() . '"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/stockAdjustment-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

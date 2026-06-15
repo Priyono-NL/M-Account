@@ -99,13 +99,13 @@ class SalesPivotView {
         $extra_css = "
         <link rel='stylesheet' type='text/css' href='" . BASE_URL . "/vendors/jquery-ui/jquery-ui.min.css'>
         <link rel='stylesheet' type='text/css' href='" . BASE_URL . "/vendors/pivottable/pivot.min.css'>
-        <link rel='stylesheet' type='text/css' href='" . BASE_URL . "/assets/css/salesPivot.css'>";
+        <link rel='stylesheet' type='text/css' href='" . BASE_URL . "/assets/css/salesPivot-min.css'>";
 
         $extra_js = "
         <script src='" . BASE_URL . "/vendors/jquery-ui/jquery-ui.min.js'></script>
         <script src='" . BASE_URL . "/vendors/plotly/plotly-basic.min.js'></script>
         <script src='" . BASE_URL . "/vendors/pivottable/pivot.min.js'></script>
-        <script src='" . BASE_URL . "/assets/js/salesPivot.js'></script>";
+        <script src='" . BASE_URL . "/assets/js/salesPivot-min.js'></script>";
 
         include __DIR__ . '/layouts/main.php';
     }

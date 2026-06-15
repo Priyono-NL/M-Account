@@ -117,7 +117,7 @@ class StockCloseView {
         <?php
         $content = ob_get_clean();
         // Mempertahankan nama file asset script stocksClose.js asli milikmu dengan tambahan anti-cache otomatis
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocksClose.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocksClose-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/select2-4.1.0-rc.0/css/select2.min.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/toastify-js-1.12.0/toastify.css">
     
-    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style-min.css">
     <?= $extra_css ?? '' ?>
 </head>
 <body>
@@ -36,7 +36,7 @@
 <script src="<?= BASE_URL ?>/vendors/select2-4.1.0-rc.0/js/select2.min.js"></script>
 <script src="<?= BASE_URL ?>/vendors/toastify-js-1.12.0/toastify.js"></script>
 
-<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/main-min.js"></script>
 
 <script>
     const BASE_URL = "<?= BASE_URL ?>";

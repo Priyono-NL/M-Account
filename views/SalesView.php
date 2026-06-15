@@ -120,7 +120,7 @@ class SalesView {
         </div>
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/sales.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/sales-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

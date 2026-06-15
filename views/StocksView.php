@@ -172,7 +172,7 @@ class StocksView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocks.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocks-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

@@ -146,7 +146,7 @@ class ItemsView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/items.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/items-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

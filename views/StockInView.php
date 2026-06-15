@@ -210,7 +210,7 @@ class StockInView {
         $extra_js .= 'const VIEW_DATA_ITEMS = ' . ($isViewMode ? json_encode($transactionData['items']) : '[]') . ';';
         $extra_js .= '</script>';
         
-        $extra_js .= '<script src="' . BASE_URL . '/assets/js/receive.js"></script>';
+        $extra_js .= '<script src="' . BASE_URL . '/assets/js/receive-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }
