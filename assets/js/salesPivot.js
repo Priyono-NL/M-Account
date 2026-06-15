@@ -1,6 +1,60 @@
+// 1. Fungsi Loader Script Berbasis Promise
+function loadPivotScript(url) {
+    return new Promise((resolve, reject) => {
+        // Cek apakah script sudah pernah dimuat sebelumnya untuk menghindari duplikasi
+        if (document.querySelector(`script[src="${url}"]`)) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = url;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Gagal memuat: ${url}`));
+        document.head.appendChild(script);
+    });
+}
+
+// Global flag untuk menandakan status kesiapan library
+window.pivotLibrariesLoaded = false;
+
+window.addEventListener('load', () => {
+    Promise.all([
+        loadPivotScript(BASE_URL + "/vendors/jquery-ui/jquery-ui.min.js"),
+        loadPivotScript(BASE_URL + "/vendors/plotly/plotly-basic.min.js"),
+        loadPivotScript(BASE_URL + "/vendors/pivottable/pivot.min.js")
+    ]).then(() => {
+        console.log("Semua dependensi PivotTable & Plotly berhasil dimuat.");
+        window.pivotLibrariesLoaded = true;
+    }).catch(err => {
+        console.error("Gagal memuat library pivot di latar belakang:", err);
+    });
+});
+
+// 3. Logika Utama Aplikasi (Di dalam jQuery Ready)
 $(document).ready(function() {
 
+    let debounceTimer;
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
     function loadFilteredHistory() {
+        // PROTEKSI: Jika library belum selesai diunduh tapi user sudah klik filter
+        if (!window.pivotLibrariesLoaded) {
+            $("#pivot_loading").show();
+            $("#pivot_loading span").text("Menyiapkan komponen visualisasi (Mohon tunggu)...");
+            $("#pivot_output").hide();
+            
+            // Cek ulang setiap 300ms sampai library siap
+            setTimeout(loadFilteredHistory, 300);
+            return;
+        }
+
+        $("#pivot_loading span").text("Loading Data...");
         $("#pivot_loading").show();
         $("#pivot_output").hide();
 
@@ -20,85 +74,91 @@ $(document).ready(function() {
                 $("#pivot_loading").hide();
 
                 if (res.status === "success") {
-                    if (res.data.length === 0) {
+                    if (!res.data || res.data.length === 0) {
                         $("#pivot_output").show().html('<div class="text-center py-5 text-muted">Data tidak ditemukan untuk periode ini.</div>');
                         return;
                     }
 
+                    let totalUniqueValues = {};
+                    let sets = {}; 
+
                     let mappedData = res.data.map(function(row) {
-                        return {                            
+                        let totalVal = row.sale_type === 'EXP' ? 0 : parseFloat(row.total);
+                        
+                        let item = {                             
                             "Tipe Penjualan": row.sale_type,
                             "No. Invoice": row.invoice_no,
                             "Gudang": row.warehouse,
                             "Tgl Penjualan": row.sales_date,
                             "Nama Pembeli": row.buyer_name,
                             "Kode Pembeli": row.buyer_code,
-                            "Total": row.sale_type === 'EXP' ? 0 : parseFloat(row.total)
+                            "Total": totalVal
                         };
+
+                        for (let key in item) {
+                            if (!sets[key]) sets[key] = new Set();
+                            sets[key].add(item[key]);
+                        }
+
+                        return item;
                     });
-					
-					let totalUniqueValues = {};
-					if (mappedData.length > 0) {
-						let keys = Object.keys(mappedData[0]);
-						keys.forEach(function(key) {
-							let uniqueVals = new Set(mappedData.map(row => row[key]));
-							totalUniqueValues[key] = uniqueVals.size;
-						});
-					}
+
+                    for (let key in sets) {
+                        totalUniqueValues[key] = sets[key].size;
+                    }
+                    sets = null; 
 
                     const pivotRupiahFormatter = (number) => {
                         if (number === 0 || isNaN(number)) return "-";
                         return formatRupiah(number);
                     };
-					
+                    
                     const tpl = $.pivotUtilities.aggregatorTemplates;
+                    let $pivotOutput = $("#pivot_output");
 
-                    $("#pivot_output").removeData("pivotUIOptions").empty().show().pivotUI(mappedData, {
+                    $pivotOutput.removeData("pivotUIOptions").empty().show().pivotUI(mappedData, {
                         rows: ["Tgl Penjualan", "No. Invoice", "Nama Pembeli"], 
                         cols: [], 
                         vals: ["Total"],
-
                         aggregators: {
                             "Sum Total": function() { 
                                 return tpl.sum(pivotRupiahFormatter)(["Total"]) 
                             }
                         },
                         aggregatorName: "Sum Total",
-                        
-                        renderers: $.extend(
-                            $.pivotUtilities.renderers
-                        ),
-                        
+                        renderers: $.pivotUtilities.renderers,
                         rendererName: "Table", 
-						
+                        
                         onRefresh: function(config) {
-                            $(".pvtTable").addClass("table table-sm table-bordered mt-3");
+                            let $table = $(".pvtTable");
+                            $table.addClass("table table-sm table-bordered mt-3");
                             $(".pvtCols, .pvtVals").hide();
                             $(".pvtTotal, .pvtTotalLabel, .pvtGrandTotal").show();
-							
-							$(".pvtAttr").each(function() {
-								let attrName = $(this).data("attrName");
-								
-								if (attrName && totalUniqueValues[attrName] !== undefined) {
-									let totalCount = totalUniqueValues[attrName];
-									let selectedCount = totalCount;
-									
-									if (config.exclusions && config.exclusions[attrName]) {
+                            
+                            $(".pvtAttr").each(function() {
+                                let $this = $(this);
+                                let attrName = $this.data("attrName");
+                                
+                                if (attrName && totalUniqueValues[attrName] !== undefined) {
+                                    let totalCount = totalUniqueValues[attrName];
+                                    let selectedCount = totalCount;
+                                    
+                                    if (config.exclusions && config.exclusions[attrName]) {
                                         selectedCount = totalCount - Object.keys(config.exclusions[attrName]).length;
                                     } else if (config.inclusions && config.inclusions[attrName]) {
                                         selectedCount = Object.keys(config.inclusions[attrName]).length;
                                     }
-                                    let newLabel = attrName + " (" + selectedCount + "/" + totalCount + ")";
-									
-									let textNode = $(this).contents().filter(function() { 
-										return this.nodeType === 3;
-									})[0];
-									
-									if (textNode) {
-										textNode.nodeValue = newLabel + " ";
-									}
-								}
-							});
+                                    
+                                    let newLabel = attrName + " (" + selectedCount + "/" + totalCount + ") ";
+                                    let textNode = $this.contents().filter(function() { 
+                                        return this.nodeType === 3;
+                                    })[0];
+                                    
+                                    if (textNode) {
+                                        textNode.nodeValue = newLabel;
+                                    }
+                                }
+                            });
                         }
                     });
                 }
@@ -112,31 +172,33 @@ $(document).ready(function() {
     }
 
     function clearPivot() {
-		$("#pivot_loading").show();
-		$("#pivot_output").hide();
-	}
+        $("#pivot_loading").show();
+        $("#pivot_output").hide();
+    }
 
-    $("#search").on("keyup", clearPivot);
-    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", clearPivot);
-	
-	$("#btnFilter").click(function() {
-		loadFilteredHistory();
-	});
-	
-	$("#btnClearSearch").click(function() {
+    const debouncedClearPivot = debounce(clearPivot, 250);
+
+    $("#search").on("keyup", debouncedClearPivot);
+    $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", debouncedClearPivot);
+    
+    $("#btnFilter").click(function() {
+        loadFilteredHistory();
+    });
+    
+    $("#btnClearSearch").click(function() {
         $("#search").val("");
-		clearPivot();
+        clearPivot();
     });
 
     $("#btnResetAll").click(function() {
-		let before = new Date();
-		let now = new Date();
-		before.setDate(before.getDate() - 14);
-		now.setDate(now.getDate());
-		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
-		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+        let before = new Date();
+        let now = new Date();
+        before.setDate(before.getDate() - 14);
+        
+        let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+        let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
         let firstWarehouseVal = $("#filterWarehouse option:first").val();
-		
+        
         $("#search").val("");        
         $("#filterWarehouse").val(firstWarehouseVal);
         $("#filterType").val("");
@@ -147,21 +209,16 @@ $(document).ready(function() {
     });
 
     $("#btnExportExcel").on("click", function() {
-    let pivotTable = document.querySelector(".pvtTable");
-
-    if (!pivotTable) {
-        showNotification("Tabel pivot kosong! Silakan atur pivot terlebih dahulu.", "warning");
-        return;
-    }
-
-    let tableHTML = pivotTable.outerHTML;
-
-    let requestData = {
-        action: 'export_xls',
-        tabel_html: tableHTML
-    };
-
-    downloadExcelAjax(this, window.location.href, requestData, 'hasil_pivot');
-});
+        let pivotTable = document.querySelector(".pvtTable");
+        if (!pivotTable) {
+            showNotification("Tabel pivot kosong! Silakan atur pivot terlebih dahulu.", "warning");
+            return;
+        }
+        let requestData = {
+            action: 'export_xls',
+            tabel_html: pivotTable.outerHTML
+        };
+        downloadExcelAjax(this, window.location.href, requestData, 'hasil_pivot');
+    });
 
 });

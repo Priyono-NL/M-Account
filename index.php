@@ -1,4 +1,8 @@
 <?php
+if (!ob_start("ob_gzhandler")) {
+    ob_start();
+}
+
 session_start();
 //nama sesuai dengan folder yang ditaro
 define('BASE_URL', '/maccount');
