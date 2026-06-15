@@ -28,7 +28,7 @@ class InvoiceView {
         // Header Info
         $valDate  = $header['sales_date'] ?? '-';
         $valDoc   = $header['invoice_no'] ?? '-';
-        $valPrint = $header['print_count'] ?? '';
+        $valPrint = ($header['is_reprint'] == false) ? '' : $header['reprint'];
         $valBuyer = trim(($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-'));
         
 		$kiriDate = "Date      " . $valDate;

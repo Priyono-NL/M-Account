@@ -40,7 +40,7 @@ class SuratViewPdf {
                 <tr>
                     <td style="width: 55%">Tanggal : <?= $header['sales_date'] ?></tdstyle>
                     <td stlye="width: 35%">Nomor Faktur : <?= $header['invoice_no'] ?></td>
-                    <td class="text-right">Print#<?= $header['print_count'] ?></td>
+                    <td class="text-right">Print#<?= ($header['is_reprint'] == false) ? '' : $header['reprint'] ?></td>
                 </tr>
                 <tr>
                     <td>Kepada : <?= $header['buyer_code'] ?> <?= $header['buyer_name'] ?></td>

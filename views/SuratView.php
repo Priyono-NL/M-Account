@@ -31,7 +31,7 @@ class SuratView {
         // Header Info
         $tgl    = "Tanggal : " . ($header['sales_date'] ?? '-');
         $kepada = "Kepada  : " . ($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-');
-		$print  = "Print#" . ($header['print_count']);
+		$print  = "Print#" . (($header['is_reprint'] == false) ? '' : $header['reprint']);
 		$no_inv = "Nomor Faktur : " . ($header['invoice_no'] ?? '-');
         $gudang = "Kode Gudang  : " . ($header['warehouse'] ?? '-');                
 

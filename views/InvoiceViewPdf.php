@@ -35,7 +35,7 @@ class InvoiceViewPdf {
             <table style="margin-top: 10px;">
                 <tr>
                     <td>Date <?= $header['sales_date'] ?></td>
-                    <td class="text-right">Print#<?= $header['print_count'] ?></td>
+                    <td class="text-right">Print#<?= ($header['is_reprint'] == false) ? '' : $header['reprint'] ?></td>
                 </tr>
                 <tr>
                     <td colspan="2">Doc. No <?= $header['invoice_no'] ?></td>

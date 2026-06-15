@@ -120,11 +120,19 @@ class POSController extends BaseController {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
-        // $this->salesModel->incrementPrintCount($sales_id);
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
         if (!$header) die("Data transaksi tidak ditemukan.");
+
+        if ($header['print_count'] == 0 ) {
+            $header['is_reprint'] = false;
+            $header['reprint'] = 0;
+        } else {
+            $header['is_reprint'] = true;
+            $header['reprint'] = $header['print_count'];
+        }
+        $this->salesModel->incrementPrintCount($sales_id);
 
         require_once 'vendors/dompdf/autoload.inc.php'; 
     
