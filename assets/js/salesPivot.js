@@ -20,9 +20,9 @@ window.pivotLibrariesLoaded = false;
 
 window.addEventListener('load', () => {
     Promise.all([
-        loadPivotScript(BASE_URL + "/vendors/jquery-ui/jquery-ui.min.js"),
-        loadPivotScript(BASE_URL + "/vendors/plotly/plotly-basic.min.js"),
-        loadPivotScript(BASE_URL + "/vendors/pivottable/pivot.min.js")
+        loadPivotScript("https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/jquery-ui.min.js"),
+        loadPivotScript("https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly-basic.min.js"),
+        loadPivotScript("https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"),
     ]).then(() => {
         console.log("Semua dependensi PivotTable & Plotly berhasil dimuat.");
         window.pivotLibrariesLoaded = true;

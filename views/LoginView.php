@@ -9,8 +9,8 @@ class LoginView {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Login - M-Account</title>
             
-            <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/bootstrap-5.3.8-dist/css/bootstrap.min.css">
-            <link rel="stylesheet" href="<?= BASE_URL ?>/vendors/fontawesome-free-6.4.2-web/css/all.min.css">
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
             
             <style>
                 body {
@@ -64,8 +64,8 @@ class LoginView {
             </div>
         </div>
 
-        <script src="<?= BASE_URL ?>/vendors/jquery-3.7.1.min.js"></script>
-        <script src="<?= BASE_URL ?>/vendors/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         
         <script>
         $(document).ready(function() {
