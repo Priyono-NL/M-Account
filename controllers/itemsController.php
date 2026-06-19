@@ -41,6 +41,10 @@ class ItemsController extends BaseController {
         if (empty($data['item_code']) || empty($data['item_name'])) {
             return $this->jsonError("Kode Barang dan Nama Barang wajib diisi.");
         }
+		
+		$sql = "SELECT item_code FROM items WHERE is_active = 0 AND item_code LIKE :item_code";
+		$ext_itemCode = $this->model->query_one($sql, ['item_code' => $data['item_code']]);
+		if ($ext_itemCode) return $this->jsonError("Kode Barang sudah digunakan");
 
         $res = $this->model->insert('items', $data);
         return $res ? $this->jsonSuccess("Barang berhasil ditambah") : $this->jsonError("Gagal menambah barang");

@@ -141,13 +141,21 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.status === "success") {
                     $("#modalItem").modal("hide");
-                    loadFilteredItems(currentPage); // Muat ulang di Halaman Saat Ini
                     if(typeof showNotification === "function") showNotification("Data berhasil disimpan!", "success");
                 } else {
                     if(typeof showNotification === "function") showNotification(res.message || "Gagal menyimpan data", "danger");
                     originalValues.forEach(item => item.el.val(item.val));  
                 }
             },
+			error: function(xhr, status, error) {
+				let apiMessage = null;
+				try {
+					const response = JSON.parse(xhr.responseText);
+					apiMessage = response.message; 
+				} catch(e) { }
+				if(typeof showNotification === "function") showNotification(apiMessage ||"Terjadi kesalahan sistem.", "danger");
+				originalValues.forEach(item => item.el.val(item.val));
+			},
             complete: function() { 
                 btn.prop('disabled', false).text(originalText); 
                 if ($("#modalItem").is(":visible")) originalValues.forEach(item => item.el.val(item.val));
@@ -167,7 +175,7 @@ $(document).ready(function() {
                 data: { action: "delete", id: id },
                 success: function(res) {
                     if(res.status === "success") {
-                        loadFilteredItems(currentPage); // Muat ulang di Halaman Saat Ini
+                        loadFilteredItems(currentPage);
                     } else {
                         if(typeof showNotification === "function") showNotification(res.message, "danger");
                     }

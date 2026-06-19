@@ -95,8 +95,8 @@ class SalesPivotView {
 
         <?php
         $content = ob_get_clean();
-
-        $extra_css = '
+		
+		$extra_css = '
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.3/themes/base/jquery-ui.min.css">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
             <link rel="stylesheet" type="text/css" href="' . BASE_URL . '/assets/css/salesPivot-min.css">';
