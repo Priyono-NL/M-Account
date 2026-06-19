@@ -16,7 +16,7 @@ $(document).ready(function() {
             data: {
                 action: "filter_api",
                 search: $("#search").val(),
-                status: $("#filterStatus").val(),
+                filter_company: $("#filterCompany").val(),
                 page: currentPage,
                 limit: limit
             },
@@ -38,6 +38,7 @@ $(document).ready(function() {
                                 <td class="ps-4 fw-medium text-primary">${b.username}</td>
                                 <td class="fw-bold">${b.buyer_name} (${b.buyer_code})</td>
                                 <td>${b.rolename}</td>
+								<td>${b.company_name}</td>
                                 <td class="text-center pe-4">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-light border btn-action edit-btn" data-item='${userJSON}'>
@@ -80,9 +81,13 @@ $(document).ready(function() {
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-        $("#filterStatus").val("");
+        $("#filterCompany").val(1);
         loadFiltered(1);
     });
+	
+	$("#filterCompany").on("change", function() {
+		loadFiltered(1);
+	});
 
     loadFiltered(1);
 

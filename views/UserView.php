@@ -30,6 +30,23 @@ class UserView {
                         </div>
                     </div>
 					
+					<div class="col-md-2">
+						<select id="filterCompany" name="filterCompany" class="form-select form-select-sm" <?= $c_disabled; ?>>
+							
+							<?php if ($can_switch): ?>
+								<option value="all">All Company</option>
+							<?php endif; ?>
+
+							<?php foreach ($companies as $c): ?>
+								<option value="<?= $c['id'] ?>" <?= ($c['id'] == $active_comp_id && !$can_switch) ? 'selected' : '' ?>>
+									<?= htmlspecialchars($c['name']) ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+                    </div>
+					
+					
+					
                 </div>
             </div>
         </div>
@@ -44,6 +61,7 @@ class UserView {
                                 <th class="ps-4 py-3">Username</th>
                                 <th>Full Name</th>
                                 <th>User Role</th>
+								<th>Company</th>
                                 <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
