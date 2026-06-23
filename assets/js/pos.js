@@ -1,3 +1,6 @@
+// ==========================================
+// INISIALISASI & GLOBAL VARIABLE
+// ==========================================
 let cart = [];
 
 function printReceipt(id) {
@@ -12,7 +15,13 @@ function printReceipt(id) {
 
 $(document).ready(function() {
     let dateTimeout = null;
+    let invoiceTimeout = null;
     const jedaMengetik = 500;
+    
+    const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
+
+    let isEditMode = false;
+    let editingSaleId = null;
 
     function getQtyInCart(itemId, excludeIndex = -1) {
         let total = 0;
@@ -23,11 +32,169 @@ $(document).ready(function() {
         });
         return total;
     }
-    
+
+    function resetToNewTransaction() {
+        isEditMode = false;
+        editingSaleId = null;
+        cart = [];
+        
+        $('#buyerId').val('');
+        $('#buyerNameDisplay').val('');
+        $('#salesDate').prop('disabled', false).val(new Date().toISOString().split('T')[0]);
+        $('#warehouseSelect').prop('disabled', false).val('1');
+        $('#salesType').prop('disabled', false).val('SLS');
+        $('#invoiceNo').val('');
+        
+        $('#btnCancelEditInvoice').hide();
+        $('#btnClearBuyer').hide();
+        
+        renderCart();
+    }
+
+    // ==========================================
+    // 0. FITUR CARI & EDIT INVOICE (MODAL)
+    // ==========================================
+    const allowedRoles = ['all', 'superadmin'];
+    const isUserAllowed = typeof USER_ROLE !== 'undefined' && allowedRoles.includes(USER_ROLE.toLowerCase());
+
+    if (isUserAllowed && !isViewOnly) {
+        
+        function setInvoiceEmpty() {
+            $('#invoiceTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik nomor invoice atau nama pelanggan...</td></tr>`);
+        }
+
+        function loadModalInvoices(keyword = '') {
+            let tbody = $('#invoiceTableBody');
+            tbody.html('<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i> Mencari Invoice...</td></tr>');
+            
+            $.ajax({
+                url: 'index.php?page=pos',
+                type: "POST",
+                dataType: 'json',
+                data: { action: 'get_invoice_list', keyword: keyword }, 
+                success: function(response) {
+                    tbody.empty();
+                    let data = response.data || [];
+                    if (data.length === 0) {
+                        tbody.append('<tr><td colspan="4" class="text-center text-muted py-4">Invoice tidak ditemukan atau tidak dapat diedit.</td></tr>');
+                        return;
+                    }
+                    data.forEach(item => {
+                        let total = formatRupiah ? formatRupiah(parseFloat(item.grand_total || 0)) : item.grand_total;
+                        tbody.append(`
+                            <tr style="font-size: 13px;">
+                                <td class="ps-3">
+                                    <span class="fw-bold d-block text-dark">${item.invoice_no}</span>
+                                    <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${item.sales_date}</small>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="fw-semibold text-dark d-block">${item.buyer_name}</span>
+                                    <small class="text-muted">${item.buyer_code}</small>
+                                </td>
+                                <td class="text-end align-middle fw-bold text-primary">${total}</td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-sm btn-outline-warning btn-pilih-invoice" data-id="${item.id}">
+                                        <i class="fa-solid fa-pencil me-1"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                },
+                error: function() {
+                    tbody.html('<tr><td colspan="4" class="text-center text-danger py-4">Gagal memuat data dari server.</td></tr>');
+                }
+            });
+        }
+
+        $('#invoiceModal').on('show.bs.modal', function () {
+            $('#modalSearchInvoice').val(''); 
+            $('#btnClearInvoiceSearch').hide(); 
+            setInvoiceEmpty();
+        });
+
+        $('#modalSearchInvoice').on('input', function() {
+            clearTimeout(invoiceTimeout);
+            let keyword = $(this).val().trim();
+            if (keyword.length > 0) $('#btnClearInvoiceSearch').show(); else $('#btnClearInvoiceSearch').hide();
+            if (keyword === '') { setInvoiceEmpty(); return; }
+            
+            invoiceTimeout = setTimeout(() => loadModalInvoices(keyword), jedaMengetik);
+        });
+
+        $('#btnClearInvoiceSearch').click(function() {
+            $('#modalSearchInvoice').val('').focus(); 
+            $(this).hide(); 
+            setInvoiceEmpty();
+        });
+
+        $(document).on('click', '.btn-pilih-invoice', function() {
+            let saleId = $(this).data('id');
+
+            $.ajax({
+                url: 'index.php?page=pos',
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'search_invoice_detail', id: saleId },
+                success: function(res) {
+                    if (res.status === 'success' && res.data) {                        
+                        const header = res.data.header;
+                        const items = res.data.items;
+                        
+                        isEditMode = true;
+                        editingSaleId = header.id;
+                        
+                        // Set header (Disabled)
+                        $('#invoiceNo').val(header.invoice_no);
+                        $('#btnCancelEditInvoice').show(); 
+                        
+                        $('#buyerId').val(header.buyer);
+                        $('#buyerNameDisplay').val(header.buyer_name + ' - ' + header.buyer_code);
+                        $('#salesDate').val(header.sales_date).prop('disabled', true);
+                        $('#warehouseSelect').val(header.warehouse).prop('disabled', true);
+                        $('#salesType').val(header.sale_type).prop('disabled', true);
+                        $('#btnClearBuyer').hide(); 
+
+                        // Setup Cart (Dengan penyesuaian stok lama)
+                        cart = items.map(function(item) {
+                            let hargaAsli = parseFloat(item.unit_price || 0);
+                            let qtyLama = parseFloat(item.item_qty || 0);
+                            let stokGudangSaatIni = parseFloat(item.current_stock || 0);
+
+                            return {
+                                id: item.item_id,
+                                kode: item.item_code,
+                                nama: item.item_name,
+                                uom: item.item_uom,
+                                harga_asli: hargaAsli,
+                                harga: (header.sales_type === 'EXP') ? 0 : hargaAsli,
+                                qty: qtyLama, 
+                                stok: stokGudangSaatIni + qtyLama
+                            };
+                        });
+
+                        renderCart();
+                        $('#invoiceModal').modal('hide');
+                        if(typeof showNotification !== 'undefined') showNotification(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`, 'info');
+                    } else {
+                        if(typeof showNotification !== 'undefined') showNotification('Gagal memuat detail data invoice.', 'danger');
+                    }
+                }
+            });
+        });
+
+        $('#btnCancelEditInvoice').click(function() {
+            if (confirm("Apakah Anda ingin membatalkan pengeditan invoice ini dan kembali ke transaksi baru?")) {
+                resetToNewTransaction();
+            }
+        });
+    }
+
     // ==========================================
     // 1. VALIDASI TANGGAL & GUDANG
     // ==========================================
     $('#salesDate').on('input change', function() {
+        if (isEditMode) return; // Jika edit, abaikan validasi karena field disabled
         clearTimeout(dateTimeout);
         const selectedDateStr = $(this).val();
         if (!selectedDateStr) return; 
@@ -39,25 +206,21 @@ $(document).ready(function() {
             if (year < 2000) return;
 
             let selectedDate = new Date(year, month, day); selectedDate.setHours(0, 0, 0, 0);
-            let minDate = new Date(); minDate.setDate(minDate.getDate() - 14); minDate.setHours(0, 0, 0, 0);
+            let minDate = new Date(); minDate.setDate(minDate.getDate()); minDate.setHours(0, 0, 0, 0);
 
             if (selectedDate.getTime() < minDate.getTime()) {
-                showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
+                if(typeof showNotification !== 'undefined') showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
             }            
         }, jedaMengetik);
     });
 
-    // Kosongkan keranjang otomatis jika gudang asal diubah (karena stok barang tiap gudang berbeda)
     $('#warehouseSelect').on('change', function() {
         if (cart.length > 0) {
-            showNotification('Gudang diubah! Keranjang dikosongkan untuk menyesuaikan stok gudang baru.', 'warning');
+            if(typeof showNotification !== 'undefined') showNotification('Gudang diubah! Keranjang dikosongkan untuk menyesuaikan stok gudang baru.', 'warning');
             cart = [];
             renderCart();
         }
     });
-
-
-    const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
 
     // ==========================================
     // 2. RENDER KERANJANG UTAMA
@@ -73,13 +236,12 @@ $(document).ready(function() {
                 harga_asli: parseFloat(item.unit_price || 0),
                 harga: (currentSalesType === 'EXP') ? 0 : parseFloat(item.unit_price || 0),
                 qty: parseFloat(item.item_qty || 1), 
-                stok: 999999 // Saat view, abaikan batas stok
+                stok: 999999
             };
         });
         renderCart();
     }
 
-    // Fungsi Render Tampilan Item Keranjang Belanja & Ringkasan Kelompok (Diperbarui)
     function renderCart() {
         let tbody = $('#cartTableBody');
         let summaryCards = $('#mainCartSummaryCards');
@@ -102,12 +264,10 @@ $(document).ready(function() {
         } else {
             let groupedSummary = {};
 
-            // A. Looping untuk Menggambar Baris Tabel (Kiri)
             cart.forEach((item, index) => {
                 let totalHarga = item.harga * item.qty;
                 subtotal += totalHarga;
 
-                // Logika akumulasi pengelompokan barang untuk Ringkasan Kanan
                 if (!groupedSummary[item.id]) {
                     groupedSummary[item.id] = { 
                         nama: item.nama, 
@@ -138,44 +298,47 @@ $(document).ready(function() {
                         </td>
                     `;
 
+                let formattedHarga = typeof formatRupiah !== 'undefined' ? formatRupiah(item.harga) : item.harga;
+                let formattedTotal = typeof formatRupiah !== 'undefined' ? formatRupiah(totalHarga) : totalHarga;
+
                 tbody.append(`
                     <tr style="font-size: 13px;">
                         <td class="ps-4">
                             <div class="fw-bold text-dark">${item.nama}</div>
                             <small class="text-muted" style="font-size: 11px;">${item.kode}</small>
                         </td>
-                        <td class="text-center align-middle text-muted">${formatRupiah(item.harga)}</td>
+                        <td class="text-center align-middle text-muted">${formattedHarga}</td>
                         <td class="text-center align-middle">${qtyHTML}</td>
-                        <td class="text-end align-middle fw-bold text-dark pe-4">${formatRupiah(totalHarga)}</td>
+                        <td class="text-end align-middle fw-bold text-dark pe-4">${formattedTotal}</td>
                         ${actionHTML}
                     </tr>
                 `);
             });
 
-            // B. Looping untuk Menggambar Item Kelompok & Subtotalnya di Ringkasan (Kanan)
             Object.values(groupedSummary).forEach(group => {
+                let formattedGroupTotal = typeof formatRupiah !== 'undefined' ? formatRupiah(group.totalHargaGroup) : group.totalHargaGroup;
                 let cardHTML = `
                     <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center" style="font-size: 12px;">
                         <div class="text-truncate" style="max-width: 60%;">
                             <span class="fw-bold text-dark d-block text-truncate" title="${group.nama}">${group.nama}</span>
                             <small class="text-muted fw-semibold">${group.totalQty} ${group.uom}</small>
                         </div>
-                        <span class="fw-bold text-primary">${formatRupiah(group.totalHargaGroup)}</span>
+                        <span class="fw-bold text-primary">${formattedGroupTotal}</span>
                     </div>
                 `;
                 summaryCards.append(cardHTML);
             });
         }
 
-        // Set nilai Grand Total Akhir
-        $('#summarySubtotal').text(formatRupiah(subtotal));
-        $('#summaryTotal').text(formatRupiah(subtotal));
+        let formattedSubtotal = typeof formatRupiah !== 'undefined' ? formatRupiah(subtotal) : subtotal;
+        $('#summarySubtotal').text(formattedSubtotal);
+        $('#summaryTotal').text(formattedSubtotal);
     }
 
     if (!isViewOnly) {
 
         // ==========================================
-        // 3. MODAL PELANGGAN (BUYER) - SINGLE SELECT
+        // 3. MODAL PELANGGAN (BUYER)
         // ==========================================
         function setBuyerEmpty() {
             $('#buyerTableBody').html(`<tr><td colspan="2" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik nama pelanggan...</td></tr>`);
@@ -246,21 +409,20 @@ $(document).ready(function() {
             $('#buyerId').val(id);
             $('#buyerNameDisplay').val(nama + ' - ' + kode); 
             $('#btnClearBuyer').show();
-			
-            // Logika Dropdown Expense Sales
+            
             if (isExp === 'EXP') {
                 $('#salesType option[value="EXP"]').prop('disabled', false);
             } else {
                 if ($('#salesType').val() === 'EXP') {
                     $('#salesType').val('SLS').trigger('change');
-                    showNotification('Expense tidak tersedia untuk Pelanggan ini. Kembali ke Normal Sales.', 'warning');
+                    if(typeof showNotification !== 'undefined') showNotification('Expense tidak tersedia untuk Pelanggan ini. Kembali ke Normal Sales.', 'warning');
                 }
                 $('#salesType option[value="EXP"]').prop('disabled', true);
             }
             $('#buyerModal').modal('hide');
         });
 
-		$('#btnClearBuyer').click(function() {
+        $('#btnClearBuyer').click(function() {
             $('#buyerId').val('');
             $('#buyerNameDisplay').val('');
             $(this).hide();
@@ -268,13 +430,13 @@ $(document).ready(function() {
             $('#salesType').val('SLS').trigger('change');
             $('#salesType option[value="EXP"]').prop('disabled', true);
         });
-		
-		$('#buyerModal').on('hide.bs.modal', function () {
-			$('#buyerNameDisplay').focus(); 
-		});
+        
+        $('#buyerModal').on('hide.bs.modal', function () {
+            $('#buyerNameDisplay').focus(); 
+        });
 
         // ==========================================
-        // 4. MODAL BARANG (ITEM) - MULTI SELECT
+        // 4. MODAL BARANG (ITEM)
         // ==========================================
         let itemDraft = [];
 
@@ -331,13 +493,14 @@ $(document).ready(function() {
                         let isChecked = itemDraft.find(d => d.id == item.id) ? 'checked' : '';
                         let stok = parseFloat(item.current_stock);
                         let hargaAsli = parseFloat(item.unit_price || 0);
+                        let formattedHarga = typeof formatRupiah !== 'undefined' ? formatRupiah(hargaAsli) : hargaAsli;
 
                         tbody.append(`
                             <tr>
                                 <td class="text-muted fw-mono align-middle ps-3">${item.item_code}</td>
                                 <td class="align-middle">
                                     <span class="fw-bold text-dark d-block">${item.item_name}</span>
-                                    <small class="badge bg-light text-secondary border mt-1">${formatRupiah(hargaAsli)}</small>
+                                    <small class="badge bg-light text-secondary border mt-1">${formattedHarga}</small>
                                 </td>
                                 <td class="text-center align-middle fw-bold text-primary">${stok} ${item.item_uom || 'Pcs'}</td>
                                 <td class="text-center align-middle pe-3">
@@ -390,21 +553,29 @@ $(document).ready(function() {
         });
 
         $('#btnSubmitItems').click(function() {
-            if (itemDraft.length === 0) { showNotification('Pilih minimal satu barang!', 'warning'); return; }
+            if (itemDraft.length === 0) { if(typeof showNotification !== 'undefined') showNotification('Pilih minimal satu barang!', 'warning'); return; }
             
             let currentSalesType = $('#salesType').val();
             let addedCount = 0;
 
             itemDraft.forEach(draft => {
+                let existingItemInCart = cart.find(c => c.id == draft.id);
                 let existingQty = getQtyInCart(draft.id);
                 
-                if (existingQty + draft.qty > draft.stok) {
-                    showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${draft.stok}).`, 'warning');
+                // Jika sedang edit, ambil stok dari cart (yg sudah digabung stok lama), jika tidak, dari draft (stok real db)
+                let maxStok = existingItemInCart ? existingItemInCart.stok : draft.stok;
+
+                if (existingQty + draft.qty > maxStok) {
+                    if(typeof showNotification !== 'undefined') showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${maxStok}).`, 'warning');
                 } else {
-                    cart.push({
-                        ...draft,
-                        harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
-                    });
+                    if (existingItemInCart) {
+                        existingItemInCart.qty += draft.qty;
+                    } else {
+                        cart.push({
+                            ...draft,
+                            harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
+                        });
+                    }
                     addedCount++;
                 }
             });
@@ -412,20 +583,13 @@ $(document).ready(function() {
             $('#itemModal').modal('hide');
             renderCart();
             if (addedCount > 0) {
-                showNotification(`${addedCount} macam barang ditambahkan.`, 'success');
+                if(typeof showNotification !== 'undefined') showNotification(`${addedCount} macam barang disesuaikan.`, 'success');
             }
         });
 
-        $('#salesType').on('change', function() {
-            let newType = $(this).val();
-            cart.forEach(item => { item.harga = (newType === 'EXP') ? 0 : item.harga_asli; });
-            renderCart();    
-            if (newType === 'EXP') showNotification('Tipe EXP dipilih: Harga barang diatur ke Rp 0', 'info');
+        $('#itemModal').on('hide.bs.modal', function () {
+            $('#search').focus(); 
         });
-		
-		$('#itemModal').on('hide.bs.modal', function () {
-			$('#search').focus(); 
-		});
 
         // ==========================================
         // 5. INTERAKSI KERANJANG UTAMA & CHECKOUT
@@ -434,7 +598,7 @@ $(document).ready(function() {
             let newType = $(this).val();
             cart.forEach(item => { item.harga = (newType === 'EXP') ? 0 : item.harga_asli; });
             renderCart();    
-            if (newType === 'EXP') showNotification('Tipe EXP dipilih: Harga barang diatur ke Rp 0', 'info');
+            if (newType === 'EXP' && typeof showNotification !== 'undefined') showNotification('Tipe EXP dipilih: Harga barang diatur ke Rp 0', 'info');
         });
 
         $(document).on('click', '.btn-plus', function() {
@@ -443,7 +607,7 @@ $(document).ready(function() {
             let totalQtyAllRows = getQtyInCart(selectedItem.id);
             
             if (totalQtyAllRows + 1 > selectedItem.stok) {
-                showNotification(`Stok maksimal di gudang hanya ${selectedItem.stok}!`, 'warning');
+                if(typeof showNotification !== 'undefined') showNotification(`Stok maksimal di gudang hanya ${selectedItem.stok}!`, 'warning');
             } else { 
                 cart[index].qty += 1; 
                 renderCart(); 
@@ -463,7 +627,7 @@ $(document).ready(function() {
 
             if (isNaN(val) || val <= 0) { 
                 cart[index].qty = 1; 
-                showNotification('Kuantitas tidak valid!', 'warning'); 
+                if(typeof showNotification !== 'undefined') showNotification('Kuantitas tidak valid!', 'warning'); 
                 val = 1;
             } 
             
@@ -472,7 +636,7 @@ $(document).ready(function() {
 
             if (val > sisaStokTersedia) {
                 cart[index].qty = sisaStokTersedia > 0 ? sisaStokTersedia : 1; 
-                showNotification(`Sisa stok yang bisa Anda input di baris ini hanya ${sisaStokTersedia} (Total Stok: ${selectedItem.stok})!`, 'warning');
+                if(typeof showNotification !== 'undefined') showNotification(`Sisa stok yang bisa Anda input di baris ini hanya ${sisaStokTersedia} (Total Stok: ${selectedItem.stok})!`, 'warning');
             } else {
                 cart[index].qty = val;
             }
@@ -486,67 +650,67 @@ $(document).ready(function() {
 
         $('#btnClearCart').click(function() {
             if (cart.length > 0 && !confirm("Batalkan transaksi dan bersihkan form?")) return;
-            cart = [];
-            $('#buyerId').val(''); $('#buyerNameDisplay').val('');
-            $('#salesType').val('SLS'); $('#warehouseSelect').val('1');
-            $('#salesDate').val(new Date().toISOString().split('T')[0]);
-            renderCart();
+            resetToNewTransaction();
         });
-		
-		const modalCheckoutSuccess = new bootstrap.Modal(document.getElementById('modalCheckoutSuccess'));
-		let currentSaleId = null;
+        
+        let modalCheckoutEl = document.getElementById('modalCheckoutSuccess');
+        const modalCheckoutSuccess = modalCheckoutEl ? new bootstrap.Modal(modalCheckoutEl) : null;
+        let currentSaleId = null;
 
         $('#btnCheckout').click(function() {
-            if (cart.length === 0) { showNotification('Keranjang kosong!', 'danger'); return; }
+            if (cart.length === 0) { if(typeof showNotification !== 'undefined') showNotification('Keranjang kosong!', 'danger'); return; }
+
             let buyerId = $('#buyerId').val();
-            if (!buyerId) { showNotification('Harap pilih Pelanggan (Buyer)!', 'danger'); return; }
+            if (!buyerId) { if(typeof showNotification !== 'undefined') showNotification('Harap pilih Pelanggan (Buyer)!', 'danger'); return; }
+            console.log(buyerId);
 
             let btn = $(this);
-			let originalHtml = btn.html();
-			btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
+            btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
             $.ajax({
                 url: 'index.php?page=pos', type: 'POST', dataType: 'json',
                 data: {
-                    action: 'checkout', buyer_id: buyerId,
-                    warehouse: $('#warehouseSelect').val(), sales_date: $('#salesDate').val(),
-                    sales_type: $('#salesType').val(), cart: JSON.stringify(cart)
+                    action: 'checkout', 
+                    buyer_id: buyerId,
+                    warehouse: $('#warehouseSelect').val(), 
+                    sales_date: $('#salesDate').val(),
+                    sales_type: $('#salesType').val(), 
+                    cart: JSON.stringify(cart),
+                    is_edit_mode: isEditMode ? 1 : 0,
+                    sale_id: editingSaleId
                 },
                 success: function(res) {
                     if (res.status === 'success') {
-                        showNotification(res.message || 'Transaksi berhasil!', 'success');
-                        cart = [];
-						$('#buyerId').val(''); 
-						$('#buyerNameDisplay').val(''); 
-						renderCart();
+                        if(typeof showNotification !== 'undefined') showNotification(res.message || 'Transaksi berhasil!', 'success');
+                        resetToNewTransaction();
                         currentSaleId = res.data.sale_id;
-						modalCheckoutSuccess.show();
-                    } else showNotification(res.message || 'Gagal menyimpan', 'danger');
+                        if(modalCheckoutSuccess) modalCheckoutSuccess.show();
+                    } else {
+                        if(typeof showNotification !== 'undefined') showNotification(res.message || 'Gagal menyimpan', 'danger');
+                    }
                 },
                 error: function(xhr) {
                     let err = 'Terjadi kesalahan sistem.';
                     if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
-                    showNotification(err, 'danger');
+                    if(typeof showNotification !== 'undefined') showNotification(err, 'danger');
                 },
                 complete: function() { btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi'); }
             });
         });
-		
-		// ==========================================
-		// LOGIKA TOMBOL CETAK DI DALAM MODAL
-		// ==========================================
-		$('#btnPrintInvoice').click(function() {
-			if (currentSaleId) {
+        
+        $('#btnPrintInvoice').click(function() {
+            if (currentSaleId) {
                 const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
-                // const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;
-				window.open(printUrl, '_blank');
-				modalCheckoutSuccess.hide();
-				currentSaleId = null;
-			}
-		});
+                window.open(printUrl, '_blank');
+                if(modalCheckoutSuccess) modalCheckoutSuccess.hide();
+                currentSaleId = null;
+            }
+        });
 
-		$('#modalCheckoutSuccess').on('hidden.bs.modal', function () {
-			currentSaleId = null;
-		});
+        if(modalCheckoutEl) {
+            $(modalCheckoutEl).on('hidden.bs.modal', function () {
+                currentSaleId = null;
+            });
+        }
     }
 });

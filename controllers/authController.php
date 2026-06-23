@@ -47,7 +47,7 @@ class AuthController extends BaseController {
                 $my_paths = json_decode($perm_data['permission'], true);
                 if (!is_array($my_paths)) $my_paths = [];
             }
-
+			
             $is_assigned = isset($user['company']) && is_numeric($user['company']);
             
             $_SESSION['logged_in'] = true;

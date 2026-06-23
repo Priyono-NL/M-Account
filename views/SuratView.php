@@ -112,7 +112,7 @@ class SuratView {
                 <div id="status">Memeriksa koneksi printer...</div>
                 
                 <div id="manual-print-area">
-                    <p style="color: #6c757d; font-size: 14px;">Browser membutuhkan izin Anda untuk terhubung ke printer Epson LQ-310 pada sesi ini.</p>
+                    <p style="color: #6c757d; font-size: 14px;">Izin ke printer diperlukan untuk mencetak dokumen.</p>
                     <button onclick="printManual()">IZINKAN & CETAK SEKARANG</button>
                 </div>
             </div>

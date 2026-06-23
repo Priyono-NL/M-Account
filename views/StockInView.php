@@ -44,7 +44,7 @@ class StockInView {
                     </div>
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control form-control-sm" id="date_receive" 
+                        <input type="date" class="form-control form-control-sm" id="date_receive" readonly
                                 value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
                                 <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
                     </div>

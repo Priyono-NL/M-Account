@@ -91,7 +91,7 @@ class InvoiceView {
                     <div id="status">Memeriksa koneksi printer Epson...</div>
                     
                     <div id="manual-print-area">
-                        <p style="color: #6c757d; font-size: 14px;">Izin ke printer diperlukan untuk mencetak dokumen kecil ini.</p>
+                        <p style="color: #6c757d; font-size: 14px;">Izin ke printer diperlukan untuk mencetak dokumen.</p>
                         <button onclick="printManual()">IZINKAN & CETAK (40 Kolom)</button>
                     </div>
                 </div>

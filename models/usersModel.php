@@ -51,8 +51,9 @@ class UsersModel extends DatabaseHelper {
     }
 
     public function getByUsername($username) {
-        $sql = "SELECT u.*, r.name AS rolename 
+        $sql = "SELECT u.*,b.buyer_name, r.name AS rolename 
                 FROM m_users u
+				LEFT JOIN buyer b ON u.person_id = b.id
                 LEFT JOIN m_role r ON u.role_id = r.id 
                 WHERE u.username = :username AND u.is_active = 0";
         return $this->query_one($sql, ['username' => $username]);

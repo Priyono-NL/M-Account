@@ -8,7 +8,7 @@ class SalesView {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h5 class="fw-bold mb-0">Transaksi Keluar Detail</h5>
-                <p class="text-muted small mb-0">Laporan Penjualan Barang Details.</p>
+                <p class="text-muted small mb-0">Penjualan Barang Details.</p>
             </div>
             <!-- <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">

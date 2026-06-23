@@ -131,7 +131,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'sales_detail',
-            'name'        => 'Laporan Penjualan Detail',
+            'name'        => 'Penjualan Log',
             'desc'        => 'Melihat riwayat transaksi kasir secara terperinci.',
             'icon'        => 'fa-solid fa-file-invoice',
             'url'         => 'index.php?page=pos&action=history',
@@ -141,7 +141,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'receive_history',
-            'name'        => 'Laporan Penerimaan',
+            'name'        => 'Penerimaan Log',
             'desc'        => 'Melihat log riwayat penerimaan barang dari supplier.',
             'icon'        => 'fa-solid fa-clipboard-check',
             'url'         => 'index.php?page=receive&action=history',

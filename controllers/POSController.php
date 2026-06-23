@@ -66,6 +66,51 @@ class POSController extends BaseController {
         return $this->jsonSuccess("Data pelanggan berhasil dimuat", $results);
     }
 
+    public function get_invoice_list() {
+        $keyword = trim($_POST['keyword'] ?? '');
+        $invoices = $this->salesModel->searchInvoiceList($keyword);
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $invoices
+        ]);
+        exit;
+    }
+
+    public function search_invoice_detail() {
+        $sale_id = $_POST['id'] ?? 0;
+        $header = $this->salesModel->getSalesHeader($sale_id);
+        
+        if (!$header) {
+            echo json_encode(['status' => 'error', 'message' => 'Invoice tidak ditemukan.']);
+            exit;
+        }
+        
+        $warehouse_id = $header['warehouse']; 
+        $items = $this->salesModel->getTransactionItems($sale_id, $warehouse_id);
+        
+        $formattedItems = array_map(function($item) {
+            return [
+                'item_id'       => $item['item_id'],
+                'item_code'     => $item['item_code'],
+                'item_name'     => $item['item_name'],
+                'item_uom'      => $item['item_uom'],
+                'unit_price'    => $item['unit_price'],
+                'item_qty'      => $item['item_qty'],
+                'current_stock' => $item['current_stock'] ?? 0 
+            ];
+        }, $items);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => [
+                'header' => $header,
+                'items'  => $formattedItems
+            ]
+        ]);
+        exit;
+    }
+
     /**
      * PROSES CHECKOUT: Menyimpan seluruh entri transaksi penjualan POS ke Database
      */
@@ -76,6 +121,10 @@ class POSController extends BaseController {
         $sales_date = $this->getPost('sales_date');
         $sales_type = $this->getPost('sales_type');
 
+        $is_edit_mode = (int)$this->getPost('is_edit_mode');
+        $sale_id      = $this->getPost('sale_id');
+        if ($is_edit_mode === 1 && empty($sale_id)) return $this->jsonError("ID Transaksi tidak ditemukan untuk melakukan proses edit.");
+
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
         $cart = json_decode($cartRaw, true);
@@ -83,7 +132,7 @@ class POSController extends BaseController {
 
         if (empty($buyer_id)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
 
-        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type);
+        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode, $sale_id);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
@@ -100,11 +149,19 @@ class POSController extends BaseController {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         if (!$sales_id || $sales_id <= 0) die("ID Transaksi tidak valid.");
 
-        // $this->salesModel->incrementPrintCount($sales_id);
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
         if (!$header) die("Data transaksi tidak ditemukan.");
+		
+		if ($header['print_count'] == 0 ) {
+            $header['is_reprint'] = false;
+            $header['reprint'] = 0;
+        } else {
+            $header['is_reprint'] = true;
+            $header['reprint'] = $header['print_count'];
+        }
+        $this->salesModel->incrementPrintCount($sales_id);
 
         if ($header['warehouse'] == 1) {
             InvoiceView::render($header, $items);
@@ -232,7 +289,7 @@ class POSController extends BaseController {
         foreach ($data as $index => $item) {
             $namaGudang = $item['warehouse'];
             if ($item['warehouse'] == '1') $namaGudang = 'Gudang BS';
-            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang Sampah';
+            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang BS 2';
 
             $tipeTransaksi = ($item['sale_type'] === 'SLS') ? 'Normal Sales' : 'Expense Sales';
             $tanggal = date('d M Y', strtotime($item['sales_date']));

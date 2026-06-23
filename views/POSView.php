@@ -4,6 +4,7 @@ class POSView {
         extract($data);
 
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        $user_role = $_SESSION['user']['rolename'] ?? '';
         $is_locked = ($sso_warehouse !== null);
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
@@ -37,15 +38,29 @@ class POSView {
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NO INVOICE</label>
-                                <input type="text" class="form-control form-control-sm bg-light fw-bold text-muted" id="invoiceNo" 
-                                        placeholder="SLS - [ AUTO INCREMENT ]" readonly 
-                                        value="<?= $isViewMode ? $transactionData['header']['invoice_no'] : '' ?>">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control bg-light fw-bold text-muted" id="invoiceNo" 
+                                           placeholder="" readonly
+                                           value="<?= $isViewMode ? $transactionData['header']['invoice_no'] : '' ?>">
+                                    
+                                    <?php 
+                                    $allowed_roles = ['all', 'superadmin'];                                    
+                                    $is_allowed_search = in_array(strtolower($user_role), $allowed_roles);
+                                    if (!$isViewMode && $is_allowed_search): ?>
+                                        <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#invoiceModal">
+                                            <i class="fa-solid fa-search"></i> Cari
+                                        </button>
+                                        <button class="btn btn-danger px-3" type="button" id="btnCancelEditInvoice" style="display: none;" title="Batalkan Edit Invoice">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI</label>
-                                <input type="date" class="form-control form-control-sm" id="salesDate" 
+                                <input type="date" class="form-control form-control-sm" id="salesDate" readonly
                                         value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['sales_date'])) : date('Y-m-d') ?>" 
-                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
+                                        <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d')?>">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TIPE SALES</label>
@@ -58,23 +73,23 @@ class POSView {
 
                         <div class="row g-3">
                             <div class="col-md-6">
-								<label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
-								<div class="input-group input-group-sm">
-									<input type="text" class="form-control bg-white" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly 
-										    value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['buyer_name']) : '' ?>">
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control bg-white" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly 
+                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['buyer_name'] . ' - ' . $transactionData['header']['buyer_code']) : '' ?>">
                                             
-									<?php if (!$isViewMode): ?>
-									<button class="btn btn-light border text-muted" type="button" id="btnClearBuyer" title="Bersihkan Pelanggan" style="display: none;">
-										<i class="fa-solid fa-xmark"></i>
-									</button>
-									
-									<button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#buyerModal">
-										<i class="fa-solid fa-magnifying-glass"></i> Cari
-									</button>
-									<?php endif; ?>
-								</div>
-								<input type="hidden" id="buyerId" value="<?= $isViewMode ? $transactionData['header']['buyer'] : '' ?>">
-							</div>
+                                    <?php if (!$isViewMode): ?>
+                                    <button class="btn btn-light border text-muted" type="button" id="btnClearBuyer" title="Bersihkan Pelanggan" style="display: none;">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                    
+                                    <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#buyerModal">
+                                        <i class="fa-solid fa-magnifying-glass"></i> Cari
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                                <input type="hidden" id="buyerId" value="<?= $isViewMode ? $transactionData['header']['buyer'] : '' ?>">
+                            </div>
                             
                             <div class="col-md-6">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">GUDANG ASAL <span class="text-danger">*</span></label>
@@ -241,7 +256,7 @@ class POSView {
                                 <div class="table-responsive flex-grow-1" style="min-height: 400px;">
                                     <table class="table table-hover align-middle m-0" id="modalItemTable" style="font-size: 13px;">
                                         <thead class="table-light text-muted sticky-top">
-                                            <tr>													
+                                            <tr>                                                    
                                                 <th width="20%" class="ps-3">Kode</th>
                                                 <th width="50%">Nama Barang</th>
                                                 <th width="20%" class="text-center">Sisa Stok</th>
@@ -276,33 +291,70 @@ class POSView {
                 </div>
             </div>
         </div>
-		
-		<div class="modal fade" id="modalCheckoutSuccess" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content border-0 shadow-lg">
-					<div class="modal-header bg-success text-white">
-						<h5 class="modal-title fw-bold">
-							<i class="fa-solid fa-circle-check me-2"></i>Transaksi Berhasil!
-						</h5>
-						</div>
-					<div class="modal-body p-4 text-center">
-						<div class="mb-3">
-							<i class="fa-solid fa-receipt text-success opacity-75" style="font-size: 4rem;"></i>
-						</div>
-						<h5 class="fw-bold mb-2 text-dark">Data telah disimpan.</h5>
-						<p class="text-muted mb-0">Apakah Anda ingin mencetak untuk transaksi ini?</p>
-					</div>
-					<div class="modal-footer bg-light justify-content-center border-top-0 pt-0 pb-4">
-						<button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
-							<i class="fa-solid fa-plus me-2"></i>Transaksi Baru
-						</button>
-						<button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="btnPrintInvoice">
-							<i class="fa-solid fa-print me-2"></i>Cetak Ke Printer
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
+        
+        <div class="modal fade" id="modalCheckoutSuccess" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fa-solid fa-circle-check me-2"></i>Transaksi Berhasil!
+                        </h5>
+                        </div>
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3">
+                            <i class="fa-solid fa-receipt text-success opacity-75" style="font-size: 4rem;"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">Data telah disimpan.</h5>
+                        <p class="text-muted mb-0">Apakah Anda ingin mencetak untuk transaksi ini?</p>
+                    </div>
+                    <div class="modal-footer bg-light justify-content-center border-top-0 pt-0 pb-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-plus me-2"></i>Transaksi Baru
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="btnPrintInvoice">
+                            <i class="fa-solid fa-print me-2"></i>Cetak Ke Printer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="invoiceModalLabel"><i class="fa-solid fa-file-invoice me-2 text-primary"></i> Cari & Edit Invoice</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchInvoice" placeholder="Ketik No Invoice atau Nama Pelanggan...">
+                            <button class="btn btn-outline-secondary" type="button" id="btnClearInvoiceSearch" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light" style="font-size: 13px;"> <tr>
+                                        <th class="ps-3">No. Invoice & Tanggal</th>
+                                        <th>Pelanggan</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invoiceTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fa-solid fa-search fs-3 mb-2 d-block opacity-25"></i>Ketik nomor invoice untuk mencari...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <?php
         $content = ob_get_clean();
@@ -311,6 +363,7 @@ class POSView {
         $extra_js = '<script>';
         $extra_js .= 'const IS_VIEW_MODE = ' . ($isViewMode ? 'true' : 'false') . ';';
         $extra_js .= 'const VIEW_DATA_ITEMS = ' . ($isViewMode ? json_encode($transactionData['items']) : '[]') . ';';
+        $extra_js .= 'const USER_ROLE = "' . $user_role . '";';
         $extra_js .= '</script>';
         
         $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos-min.js"></script>';

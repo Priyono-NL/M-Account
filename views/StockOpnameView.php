@@ -27,7 +27,7 @@ class StockOpnameView {
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label text-muted mb-1 small fw-bold">TANGGAL OPNAME <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control form-control-sm shadow-none fw-medium" id="opnameDate" value="<?= date('Y-m-d') ?>">
+                        <input type="date" class="form-control form-control-sm shadow-none fw-medium" id="opnameDate" value="<?= date('Y-m-d') ?>" readonly >
                     </div>
                     
                     <div class="col-md-3">
