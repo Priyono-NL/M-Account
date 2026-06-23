@@ -37,6 +37,7 @@ $(document).ready(function() {
     function resetToNewTransaction() {
         isEditMode = false;
         editingSaleId = null;
+        lastUpdatedAt = '';
         cart = [];
         
         $('#buyerId').val('');
