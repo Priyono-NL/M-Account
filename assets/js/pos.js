@@ -22,6 +22,7 @@ $(document).ready(function() {
 
     let isEditMode = false;
     let editingSaleId = null;
+    let lastUpdatedAt = '';
 
     function getQtyInCart(itemId, excludeIndex = -1) {
         let total = 0;
@@ -143,6 +144,7 @@ $(document).ready(function() {
                         
                         isEditMode = true;
                         editingSaleId = header.id;
+                        lastUpdatedAt = header.updated_at || '';
                         
                         // Set header (Disabled)
                         $('#invoiceNo').val(header.invoice_no);
@@ -677,7 +679,8 @@ $(document).ready(function() {
                     sales_type: $('#salesType').val(), 
                     cart: JSON.stringify(cart),
                     is_edit_mode: isEditMode ? 1 : 0,
-                    sale_id: editingSaleId
+                    sale_id: editingSaleId,
+                    last_updated_at: lastUpdatedAt
                 },
                 success: function(res) {
                     if (res.status === 'success') {

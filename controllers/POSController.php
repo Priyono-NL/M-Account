@@ -120,6 +120,7 @@ class POSController extends BaseController {
         $warehouse  = $this->getPost('warehouse');
         $sales_date = $this->getPost('sales_date');
         $sales_type = $this->getPost('sales_type');
+        $last_updated_at = $this->getPost('last_updated_at');
 
         $is_edit_mode = (int)$this->getPost('is_edit_mode');
         $sale_id      = $this->getPost('sale_id');
@@ -132,7 +133,7 @@ class POSController extends BaseController {
 
         if (empty($buyer_id)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
 
-        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode, $sale_id);
+        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode, $sale_id, $last_updated_at);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);

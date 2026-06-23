@@ -10,7 +10,7 @@ class SalesModel extends DatabaseHelper {
     /**
      * TRANSACTION MUTATION: Menyimpan data POS Penjualan Baru & Memotong Stok Kartu
      */
-    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null) {
+    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null, $last_updated_at= null) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
             $this->beginTransaction();
@@ -22,8 +22,13 @@ class SalesModel extends DatabaseHelper {
                 // ==========================================
                 // EDIT INVOICE LAMA
                 // ==========================================
-                $oldHeader = $this->query_one("SELECT invoice_no FROM sales WHERE id = :id", ['id' => $sale_id]);
+                $oldHeader = $this->query_one("SELECT invoice_no, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);
+                
                 if (!$oldHeader) throw new Exception("Data transaksi lama tidak ditemukan.");
+
+                $js_updated_at = (string)($last_updated_at ?? '');
+                if ($oldHeader['updated_at'] !== $js_updated_at) throw new Exception("Gagal menyimpan! Invoice ini baru saja diedit oleh user lain. Silakan muat ulang (refresh) data.");
+
                 $invoice_no = $oldHeader['invoice_no'];
                 $current_sale_id = $sale_id;
 
