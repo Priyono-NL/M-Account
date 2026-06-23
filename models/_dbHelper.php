@@ -93,6 +93,11 @@ class DatabaseHelper {
         }
     }
 
+    public function query($sql, $params = []) {
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
     public function query_one($sql, $params = []) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

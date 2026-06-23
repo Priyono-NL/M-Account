@@ -27,13 +27,11 @@ class SalesModel extends DatabaseHelper {
                 $invoice_no = $oldHeader['invoice_no'];
                 $current_sale_id = $sale_id;
 
-                $oldItems = $this->query_all("SELECT item_id, item_qty FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
-                $oldItemsMap = [];
+                $oldItems = $this->query_all("SELECT item_id, SUM(item_qty) as total_qty FROM sales_detail WHERE sale_id = :id GROUP BY item_id", ['id' => $sale_id]);
                 foreach ($oldItems as $old) {
-                    $oldItemsMap[$old['item_id']] = (float)$old['item_qty'];
-                }
-                
-                foreach ($oldItemsMap as $old_item_id => $old_qty) {
+                    $old_item_id = $old['item_id'];
+                    $old_qty = (float)$old['total_qty'];
+
                     $lastStockRow = $this->query_one("SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE", [
                         'item_id' => $old_item_id, 'warehouse' => $warehouse
                     ]);
@@ -52,7 +50,20 @@ class SalesModel extends DatabaseHelper {
                     ]);
                 }
 
+                $this->query("DELETE FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
+                $this->query("DELETE FROM item_transactions WHERE reference_no = :inv AND type = 'OUT'", ['inv' => $invoice_no]);
+
+                $aggregatedCart = [];
                 foreach ($cart as $item) {
+                    $iid = $item['id'];
+                    if (!isset($aggregatedCart[$iid])) {
+                        $aggregatedCart[$iid] = $item;
+                    } else {
+                        $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
+                    }
+                }
+
+                foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
 
@@ -73,34 +84,13 @@ class SalesModel extends DatabaseHelper {
                         'qty_total' => $qty_total,
                     ]);
 
-                    if (isset($oldItemsMap[$item_id])) {
-                        $this->query_one("UPDATE sales_detail SET item_qty = :qty WHERE sale_id = :sale_id AND item_id = :item_id", [
-                            'qty' => $new_qty, 'sale_id' => $sale_id, 'item_id' => $item_id
-                        ]);
-
-                        $this->query_one("UPDATE item_transactions SET qty = :qty, transaction_date = :date WHERE reference_no = :inv AND item_id = :item_id AND type = 'OUT'", [
-                            'qty' => $new_qty, 'date' => $stockLogTimestamp, 'inv' => $invoice_no, 'item_id' => $item_id
-                        ]);
-                        
-                        unset($oldItemsMap[$item_id]);
-                    } else {
-                        $this->insert('sales_detail', [
-                            'sale_id' => $sale_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
-                        ]);
-
-                        $this->insert('item_transactions', [
-                            'item_id' => $item_id, 'warehouse' => $warehouse, 'transaction_date' => $stockLogTimestamp,
-                            'type' => 'OUT', 'qty' => $new_qty, 'reference_no' => $invoice_no, 'notes' => "Penjualan - $invoice_no (Edit)"
-                        ]);
-                    }
-                }
-
-                foreach ($oldItemsMap as $old_item_id => $old_qty) {
-                    $this->query_one("DELETE FROM sales_detail WHERE sale_id = :sale_id AND item_id = :item_id", [
-                        'sale_id' => $sale_id, 'item_id' => $old_item_id
+                    $this->insert('sales_detail', [
+                        'sale_id' => $sale_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
                     ]);
-                    $this->query_one("DELETE FROM item_transactions WHERE reference_no = :inv AND item_id = :item_id AND type = 'OUT'", [
-                        'inv' => $invoice_no, 'item_id' => $old_item_id
+
+                    $this->insert('item_transactions', [
+                        'item_id' => $item_id, 'warehouse' => $warehouse, 'transaction_date' => $stockLogTimestamp,
+                        'type' => 'OUT', 'qty' => $new_qty, 'reference_no' => $invoice_no, 'notes' => "Penjualan - $invoice_no (Edit)"
                     ]);
                 }
 
@@ -291,7 +281,7 @@ class SalesModel extends DatabaseHelper {
 
     public function incrementPrintCount($sales_id) {
         $sql = "UPDATE sales SET print_count = print_count + 1 WHERE id = :id";
-        return $this->query_one($sql, ['id' => $sales_id]);
+        return $this->query($sql, ['id' => $sales_id]);
     }
 }
 ?>
