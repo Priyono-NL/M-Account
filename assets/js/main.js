@@ -149,7 +149,7 @@ const renderPagination = (paging, controlsId = '#paginationControls', infoId = '
     let total = parseInt(paging.total) || 0;
     let totalPages = parseInt(paging.totalPages) || 0;
     let page = parseInt(paging.page) || 1;
-    let limit = parseInt(paging.limit) || 25; // Otomatis membaca limit dari server response
+    let limit = parseInt(paging.limit) || 25;
 
     // 1. Render Teks Info
     let start = total === 0 ? 0 : ((page - 1) * limit) + 1;
@@ -229,6 +229,9 @@ $(document).ready(function() {
         $('#sidebar').toggleClass('expanded');
     });    
 
+    // ==========================================
+    // STOP IMPERSONATE
+    // ==========================================
     $(document).on('click', '#btnStopImpersonate', function(e) {
         e.preventDefault();
         
@@ -257,4 +260,67 @@ $(document).ready(function() {
             }
         });
     });
+
+    // ==========================================
+    // GANTI PASSWORD DARI NAVBAR
+    // ==========================================
+    
+    // Reset isi modal setiap kali ditutup
+    $('#changePasswordModal').on('hidden.bs.modal', function () {
+        $('#formChangePassword')[0].reset();
+        $('#passwordError').addClass('d-none');
+    });
+
+    // Proses Submit Form Ganti Password
+    $('#formChangePassword').submit(function(e) {
+        e.preventDefault();
+
+        let old_pwd = $('#old_password').val();
+        let new_pwd = $('#new_password').val();
+        let conf_pwd = $('#confirm_password').val();
+
+        // Validasi Panjang
+        if (new_pwd.length < 6) {
+            showNotification('Password baru minimal 6 karakter!', 'warning');
+            return;
+        }
+
+        // Validasi Kecocokan
+        if (new_pwd !== conf_pwd) {
+            $('#passwordError').removeClass('d-none');
+            return;
+        } else {
+            $('#passwordError').addClass('d-none');
+        }
+
+        let btn = $('#btnSubmitPassword');
+        let originalText = btn.html();
+        btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...');
+
+        $.ajax({
+            url: 'index.php?page=users',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'change_password',
+                old_password: old_pwd,
+                new_password: new_pwd
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    showNotification(res.message || 'Password berhasil diubah!', 'success');
+                    $('#changePasswordModal').modal('hide');
+                } else {
+                    showNotification(res.message || 'Gagal mengubah password.', 'danger');
+                }
+            },
+            error: function() {
+                showNotification('Terjadi kesalahan server saat mencoba mengubah password.', 'danger');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
 });

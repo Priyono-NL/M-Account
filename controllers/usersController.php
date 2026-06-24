@@ -17,39 +17,39 @@ class UsersController extends BaseController {
 
     public function index() {
         $roles = $this->permission->getAllRoles();
-		$active_comp_id = BaseController::$active_comp_id;
-		$my_companies = BaseController::$my_companies;
-		$c_disabled  = BaseController::$c_disabled;
-		$can_switch = isset($_SESSION['user']['can_switch']) ? $_SESSION['user']['can_switch'] : false;
-		
-		if ($can_switch) $active_comp_id = 'all';
-		
-		if (!$can_switch && !empty($my_companies)) $companies = $my_companies;
-		else $companies = $this->company->getAllCompanies();
-		
+        $active_comp_id = BaseController::$active_comp_id;
+        $my_companies = BaseController::$my_companies;
+        $c_disabled  = BaseController::$c_disabled;
+        $can_switch = isset($_SESSION['user']['can_switch']) ? $_SESSION['user']['can_switch'] : false;
+        
+        if ($can_switch) $active_comp_id = 'all';
+        
+        if (!$can_switch && !empty($my_companies)) $companies = $my_companies;
+        else $companies = $this->company->getAllCompanies();
+        
         UserView::render([
             'roles' => $roles,
             'companies' => $companies,
-			'active_comp_id' => $active_comp_id,
-			'can_switch' => $can_switch,
-			'c_disabled' => $c_disabled
+            'active_comp_id' => $active_comp_id,
+            'can_switch' => $can_switch,
+            'c_disabled' => $c_disabled
         ]);
     }
 
     public function filter_api() {
-        $search   = $this->getPost('search', '');		
-		$paging = $this->getPaginationParams(10);
-		
-		$local_company = $this->getPost('filter_company', 'all');
-		$global_company = BaseController::$active_comp_id;
-		$can_switch = isset($_SESSION['user']['can_switch']) ? $_SESSION['user']['can_switch'] : false;
+        $search   = $this->getPost('search', '');       
+        $paging = $this->getPaginationParams(10);
+        
+        $local_company = $this->getPost('filter_company', 'all');
+        $global_company = BaseController::$active_comp_id;
+        $can_switch = isset($_SESSION['user']['can_switch']) ? $_SESSION['user']['can_switch'] : false;
 
-		if ($can_switch) $final_company = $local_company;
-		else $final_company = $global_company;
-		
-		$result = $this->model->getFilteredPaginated($search, $final_company, $paging['limit'], $paging['offset']);
-		$paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
-		
+        if ($can_switch) $final_company = $local_company;
+        else $final_company = $global_company;
+        
+        $result = $this->model->getFilteredPaginated($search, $final_company, $paging['limit'], $paging['offset']);
+        $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
+        
         return $this->jsonSuccess(
             "Data Filtered", 
             $result['data'], 
@@ -119,4 +119,50 @@ class UsersController extends BaseController {
         return $res ? $this->jsonSuccess("User berhasil dihapus") : $this->jsonError("Gagal menghapus User");
     }
 
+    // ==========================================
+    // UBAH PASSWORD DARI NAVBAR (CURRENT LOGGED IN USER)
+    // ==========================================
+    public function change_password() {
+        $old_password = $this->getPost('old_password');
+        $new_password = $this->getPost('new_password');
+
+        // Ambil ID user yang sedang login dari session
+        $user_id = $_SESSION['user']['id'] ?? null;
+
+        if (!$user_id) {
+            return $this->jsonError("Sesi login tidak valid atau telah berakhir. Silakan login ulang.");
+        }
+
+        if (empty($old_password) || empty($new_password)) {
+            return $this->jsonError("Password lama dan password baru wajib diisi.");
+        }
+
+        if (strlen($new_password) < 6) {
+            return $this->jsonError("Password baru minimal 6 karakter.");
+        }
+
+        // Ambil data user dari database untuk memverifikasi password lamanya
+        $user = $this->model->getById('m_users', $user_id);
+
+        if (!$user) {
+            return $this->jsonError("Data user tidak ditemukan di database.");
+        }
+
+        // Verifikasi kesesuaian password lama
+        if (!password_verify($old_password, $user['password'])) {
+            return $this->jsonError("Password lama yang Anda masukkan salah!");
+        }
+
+        // Enkripsi password baru
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+
+        // Update ke database
+        $res = $this->model->update('m_users', ['password' => $hashed_password], "id = :id", ['id' => $user_id]);
+
+        if ($res) {
+            return $this->jsonSuccess("Password berhasil diubah!");
+        } else {
+            return $this->jsonError("Terjadi kesalahan sistem saat mengubah password.");
+        }
+    }
 }
