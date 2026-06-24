@@ -83,7 +83,7 @@ class POSView {
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                     
-                                    <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#buyerModal">
+                                    <button class="btn btn-primary px-3" type="button" id="btnFindBuyer" data-bs-toggle="modal" data-bs-target="#buyerModal">
                                         <i class="fa-solid fa-magnifying-glass"></i> Cari
                                     </button>
                                     <?php endif; ?>

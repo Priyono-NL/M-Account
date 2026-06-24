@@ -2,7 +2,7 @@
 require_once 'BaseController.php';
 
 class StockOpnameController extends BaseController {
-    private $opnameModel;
+    private $stockOpnameModel;
     private $stocksModel;
 
     public function __construct() {

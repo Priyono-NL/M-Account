@@ -156,7 +156,8 @@ $(document).ready(function() {
                         $('#salesDate').val(header.sales_date).prop('disabled', true);
                         $('#warehouseSelect').val(header.warehouse).prop('disabled', true);
                         $('#salesType').val(header.sale_type).prop('disabled', true);
-                        $('#btnClearBuyer').hide(); 
+                        $('#btnClearBuyer').hide();
+                        $('#btnFindBuyer').hide();
 
                         // Setup Cart (Dengan penyesuaian stok lama)
                         cart = items.map(function(item) {

@@ -44,8 +44,8 @@ class StockInController extends BaseController {
             'current_warehouse' => $warehouseContext['current_warehouse']
         ]);
     }
-	
-	/**
+    
+    /**
      * API AUTOCOMPLETE: Mengambil list produk untuk input barang POS (Tanpa Paginasi)
      */
     public function get_products() {
@@ -65,8 +65,55 @@ class StockInController extends BaseController {
         return $this->jsonSuccess("Data pihak/pembeli berhasil dimuat", $results);
     }
 
+    // ==========================================
+    // TAMBAHAN: API UNTUK MODAL CARI & EDIT PENERIMAAN
+    // ==========================================
+
     /**
-     * PROSES CHECKOUT: Menyimpan seluruh inputan POS Penerimaan ke Database
+     * Mengambil daftar penerimaan untuk Modal Pencarian
+     */
+    public function get_receive_list() {
+        $keyword = trim($this->getPost('keyword', ''));
+        
+        // Pastikan Anda membuat method searchReceiveList di StockInModel
+        $receives = $this->stockInModel->searchReceiveList($keyword);
+        
+        echo json_encode([
+            'status' => 'success',
+            'data'   => $receives
+        ]);
+        exit;
+    }
+
+    /**
+     * Mengambil detail penerimaan untuk diedit
+     */
+    public function search_receive_detail() {
+        $receive_id = (int)$this->getPost('id', 0);
+        
+        $header = $this->stockInModel->getById('receivement', $receive_id);
+        
+        if (!$header) {
+            echo json_encode(['status' => 'error', 'message' => 'Dokumen tidak ditemukan.']);
+            exit;
+        }
+        
+        $items = $this->stockInModel->getTransactionItems($receive_id);
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => [
+                'header' => $header,
+                'items'  => $items
+            ]
+        ]);
+        exit;
+    }
+
+    // ==========================================
+
+    /**
+     * PROSES CHECKOUT: Menyimpan seluruh inputan Penerimaan ke Database
      */
     public function checkout() {
         $cartRaw      = $this->getPost('cart');
@@ -76,18 +123,39 @@ class StockInController extends BaseController {
         $date_receive = $this->getPost('date_receive');        
         $notes        = $this->getPost('notes');
 
+        // TANGKAP PAYLOAD EDIT MODE DARI JAVASCRIPT
+        $is_edit_mode    = (int)$this->getPost('is_edit_mode', 0);
+        $receive_id      = $this->getPost('receive_id');
+        $last_updated_at = $this->getPost('last_updated_at');
+
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
         $cart = json_decode($cartRaw, true);
         if (!$cart) return $this->jsonError("Data keranjang tidak valid.");
 
-        if (empty($received_by)) return $this->jsonError("Harap pilih penerima terlebih dahulu.");
+        if (empty($received_by)) return $this->jsonError("Harap isi penerima terlebih dahulu.");
 
-        $result = $this->stockInModel->saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes);
+        // Validasi edit
+        if ($is_edit_mode === 1 && empty($receive_id)) {
+            return $this->jsonError("ID Penerimaan tidak ditemukan untuk proses edit.");
+        }
+
+        // UPDATE PEMANGGILAN MODEL
+        $result = $this->stockInModel->saveReceivement(
+            $cart, 
+            $doc_number, 
+            $received_by, 
+            $warehouse, 
+            $date_receive, 
+            $notes, 
+            $is_edit_mode, 
+            $receive_id, 
+            $last_updated_at
+        );
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
-            $returnId = $result['sale_id'] ?? ($result['receive_id'] ?? null);
-            return $this->jsonSuccess($result['message'], ['sale_id' => $returnId]);
+            $returnId = $result['receive_id'] ?? null;
+            return $this->jsonSuccess($result['message'], ['receive_id' => $returnId]);
         } else {
             $errorMessage = $result['message'] ?? "Gagal menyimpan transaksi ke database.";
             return $this->jsonError($errorMessage);

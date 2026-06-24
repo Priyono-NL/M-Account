@@ -7,6 +7,32 @@ class StockAdjustmentModel extends DatabaseHelper {
         parent::__construct();
     }
 
+    /**
+     * FUNGSI SINKRONISASI STOK GLOBAL (Single Source of Truth)
+     */
+    private function syncCurrentStock($item_id, $warehouse) {
+        $sqlCalc = "SELECT SUM(CASE WHEN type = 'IN' THEN qty ELSE -qty END) as real_stock 
+                    FROM item_transactions 
+                    WHERE item_id = :item_id AND warehouse = :warehouse";
+                    
+        $result = $this->query_one($sqlCalc, ['item_id' => $item_id, 'warehouse' => $warehouse]);
+        $real_stock = $result ? (float)$result['real_stock'] : 0;
+
+        $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
+            'item_id' => $item_id, 'warehouse' => $warehouse
+        ]);
+
+        if ($cekStock) {
+            $this->query("UPDATE stocks SET qty_total = :qty_total WHERE id = :id", [
+                'qty_total' => $real_stock, 'id' => $cekStock['id']
+            ]);
+        } else {
+            $this->insert('stocks', [
+                'item_id'   => $item_id, 'warehouse' => $warehouse, 'qty_total' => $real_stock
+            ]);
+        }
+    }
+
     public function getPendingOpnamesPaginated($search = '', $warehouse = '', $limit = 10, $offset = 0) {
         $sql = "SELECT o.* FROM stock_opname o WHERE o.status = 0";
         $params = [];
@@ -40,6 +66,7 @@ class StockAdjustmentModel extends DatabaseHelper {
 
     /**
      * ACID TRANSACTION MUTATION: Proses mengubah stok digital agar klop dengan stok fisik
+     * Sudah menggunakan Snapshot Sync untuk memperbarui tabel `stocks`
      */
     public function executeAdjustment($opname_id, $adjustedItems, $adminUsername) {
         try {
@@ -49,11 +76,13 @@ class StockAdjustmentModel extends DatabaseHelper {
             $header = $this->query_one($sqlHeader, ['id' => $opname_id]);
 
             if (!$header) throw new Exception("Dokumen induk opname tidak ditemukan.");
-            if ($header['status'] === 'ADJUSTED') throw new Exception("Dokumen ini sudah pernah di-adjust sebelumnya!");
+            if ($header['status'] === 'ADJUSTED' || $header['status'] == 1) throw new Exception("Dokumen ini sudah pernah di-adjust sebelumnya!");
 
             $warehouse = $header['warehouse'];
             $docNumber = $header['opname_no'];
             $stockLogTimestamp = date('Y-m-d H:i:s');
+            
+            $affected_items = []; // Kumpulkan ID item yang butuh disinkronisasi
 
             $reasonsMap = [];
             foreach ($adjustedItems as $ai) {
@@ -61,7 +90,6 @@ class StockAdjustmentModel extends DatabaseHelper {
             }
 
             $details = $this->getOpnameDetails($opname_id);
-            $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE";
 
             foreach ($details as $row) {
                 $itemId = $row['item_id'];
@@ -72,25 +100,19 @@ class StockAdjustmentModel extends DatabaseHelper {
                 $selisih = $qtyPhysical - $qtySystem;
                 $reasonText = !empty($reasonsMap[$itemId]) ? $reasonsMap[$itemId] : 'Adjustment Opname';
 
-                if ($selisih == 0) continue;
+                if ($selisih == 0) continue; // Abaikan jika tidak ada selisih stok
 
-                $lastStockRow = $this->query_one($sqlLastStock, ['item_id' => $itemId, 'warehouse' => $warehouse]);
-                $qtyOpen = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
+                $affected_items[] = $itemId;
 
                 if ($selisih > 0) {
-                    $qtyIn = abs($selisih);
-                    $qtyOut = 0;
-                    $qtyTotal = $qtyOpen + $qtyIn;
                     $txType = 'IN';
                     $logNotes = "Adj Plus ({$docNumber}) - " . $reasonText;
                 } else {
-                    $qtyIn = 0;
-                    $qtyOut = abs($selisih);
-                    $qtyTotal = $qtyOpen - $qtyOut;
                     $txType = 'OUT';
                     $logNotes = "Adj Minus ({$docNumber}) - " . $reasonText;
                 }
 
+                // CUKUP INSERT LOG TRANSAKSI (Tabel stocks akan di-handle oleh fungsi sync)
                 $this->insert('item_transactions', [
                     'item_id'          => $itemId,
                     'warehouse'        => $warehouse,
@@ -100,23 +122,22 @@ class StockAdjustmentModel extends DatabaseHelper {
                     'reference_no'     => $docNumber,
                     'notes'            => $logNotes
                 ]);
-
-                $this->insert('stocks', [
-                    'item_id'   => $itemId,
-                    'warehouse' => $warehouse,
-                    'date'      => $stockLogTimestamp,
-                    'qty_open'  => $qtyOpen,
-                    'qty_in'    => $qtyIn,
-                    'qty_out'   => $qtyOut,
-                    'qty_total' => $qtyTotal,
-                ]);
-
             }
 
+            // ==========================================
+            // LANGKAH TERAKHIR: SINKRONISASI STOK FINAL
+            // ==========================================
+            $affected_items = array_unique($affected_items);
+            foreach ($affected_items as $item_id) {
+                $this->syncCurrentStock($item_id, $warehouse);
+            }
+
+            // Update status dokumen opname
             $this->db->prepare("UPDATE stock_opname SET status = 1, updated_by = ? WHERE id = ?")
-                    ->execute([$adminUsername, $opname_id]);
+                     ->execute([$adminUsername, $opname_id]);
 
             $this->commit();
+            
             return [
                 'status'  => 'success',
                 'message' => "Sukses! Angka selisih dokumen {$docNumber} resmi disesuaikan ke kartu stok digital."

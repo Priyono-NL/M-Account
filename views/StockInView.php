@@ -4,6 +4,7 @@ class StockInView {
         extract($data);
 
         $sso_warehouse = $_SESSION['user']['extra_config']['warehouse'] ?? null;
+        $user_role = $_SESSION['user']['rolename'] ?? '';
         $is_locked = ($sso_warehouse !== null);
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
@@ -46,22 +47,35 @@ class StockInView {
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">TANGGAL TRANSAKSI <span class="text-danger">*</span></label>
                         <input type="date" class="form-control form-control-sm" id="date_receive" readonly
                                 value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
-                                <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d', strtotime('-14 days')) ?>">
+                                <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d') ?>">
                     </div>
-                    <div class="col-md-2 col-sm-6">
-                        <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="docNumber" 
-                                placeholder="W-001" 
-                                value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
-                                <?= $isViewMode ? 'disabled' : '' ?>>
-                    </div> 
                     <div class="col-md-3 col-sm-6">
+                        <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm" id="docNumber" 
+                                    placeholder="W-001" 
+                                    value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
+                                    <?= $isViewMode ? 'disabled' : '' ?>>
+                            <?php 
+                                    $allowed_roles = ['all', 'superadmin'];                                    
+                                    $is_allowed_search = in_array(strtolower($user_role), $allowed_roles);
+                                    if (!$isViewMode && $is_allowed_search): ?>
+                                        <button class="btn btn-primary px-3" type="button" id="btnFindDoc" data-bs-toggle="modal" data-bs-target="#receiveModal">
+                                            <i class="fa-solid fa-search"></i> Cari
+                                        </button>
+                                        <button class="btn btn-danger px-3" type="button" id="btnCancelEditReceive" style="display: none;" title="Batalkan Edit Document Number">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    <?php endif; ?>
+                        </div>
+                    </div> 
+                    <div class="col-md-2 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NAMA PENERIMA <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm" id="received_by" 
                                 placeholder="Nama Penerima ..."
                                 value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
                                 <?= $isViewMode ? 'disabled' : '' ?>>
-                    </div>                                                                            
+                    </div>                                                                    
                     <div class="col-md-3 col-sm-12">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">CATATAN (OPSIONAL)</label>
                         <input type="text" class="form-control form-control-sm" id="notes" 
@@ -152,7 +166,7 @@ class StockInView {
                 <div class="modal-content border-0 shadow">
                     <div class="modal-header bg-light">
                         <h5 class="modal-title fw-bold" id="itemModalLabel"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i> Pilih Barang</h5>
-                        <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#itemModal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-0">
                         <div class="row g-0 h-100">
@@ -201,6 +215,44 @@ class StockInView {
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="receiveModal" tabindex="-1" aria-labelledby="receiveModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="receiveModalLabel"><i class="fa-solid fa-truck-ramp-box me-2 text-primary"></i> Cari & Edit Data Penerimaan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchReceive" placeholder="Ketik No Dokumen atau Nama Penerima...">
+                            <button class="btn btn-outline-secondary" type="button" id="btnClearReceiveSearch" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light" style="font-size: 13px;"> 
+                                    <tr>
+                                        <th class="ps-3">Doc No. & Tanggal</th>
+                                        <th>Penerima</th>
+                                        <th>Catatan</th>
+                                        <th class="text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receiveTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fa-solid fa-search fs-3 mb-2 d-block opacity-25"></i>Ketik nomor dokumen untuk mencari...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <?php
         $content = ob_get_clean();
@@ -208,6 +260,7 @@ class StockInView {
         $extra_js = '<script>';
         $extra_js .= 'const IS_VIEW_MODE = ' . ($isViewMode ? 'true' : 'false') . ';';
         $extra_js .= 'const VIEW_DATA_ITEMS = ' . ($isViewMode ? json_encode($transactionData['items']) : '[]') . ';';
+        $extra_js .= 'const USER_ROLE = "' . $user_role . '";';
         $extra_js .= '</script>';
         
         $extra_js .= '<script src="' . BASE_URL . '/assets/js/receive-min.js"></script>';

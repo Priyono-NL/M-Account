@@ -8,86 +8,90 @@ class SalesModel extends DatabaseHelper {
     }
 
     /**
-     * TRANSACTION MUTATION: Menyimpan data POS Penjualan Baru & Memotong Stok Kartu
+     * FUNGSI SINKRONISASI STOK GLOBAL (Single Source of Truth)
      */
-    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null, $last_updated_at= null) {
+    private function syncCurrentStock($item_id, $warehouse) {
+        $sqlCalc = "SELECT SUM(CASE WHEN type = 'IN' THEN qty ELSE -qty END) as real_stock 
+                    FROM item_transactions 
+                    WHERE item_id = :item_id AND warehouse = :warehouse";
+                    
+        $result = $this->query_one($sqlCalc, ['item_id' => $item_id, 'warehouse' => $warehouse]);
+        $real_stock = $result ? (float)$result['real_stock'] : 0;
+
+        $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
+            'item_id' => $item_id, 'warehouse' => $warehouse
+        ]);
+
+        if ($cekStock) {
+            $this->query("UPDATE stocks SET qty_total = :qty_total WHERE id = :id", [
+                'qty_total' => $real_stock, 'id' => $cekStock['id']
+            ]);
+        } else {
+            $this->insert('stocks', [
+                'item_id'   => $item_id, 'warehouse' => $warehouse, 'qty_total' => $real_stock
+            ]);
+        }
+    }
+
+    /**
+     * TRANSACTION MUTATION: Menyimpan data POS Penjualan & Memotong Stok
+     * Menggunakan Snapshot Sync & Wipe Replace untuk mode edit
+     */
+    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null, $last_updated_at = null) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
             $this->beginTransaction();
 
             $stockLogTimestamp = $sales_date . ' ' . date('H:i:s');
             $current_sale_id = null;
+            $affected_items = []; // Kumpulkan ID item yang butuh disinkronisasi
 
             if ($is_edit_mode == 1 && $sale_id) {
                 // ==========================================
-                // EDIT INVOICE LAMA
+                // EDIT INVOICE LAMA (WIPE & REPLACE)
                 // ==========================================
                 $oldHeader = $this->query_one("SELECT invoice_no, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);
                 
                 if (!$oldHeader) throw new Exception("Data transaksi lama tidak ditemukan.");
 
                 $js_updated_at = (string)($last_updated_at ?? '');
-                if ($oldHeader['updated_at'] !== $js_updated_at) throw new Exception("Gagal menyimpan! Invoice ini baru saja diedit oleh user lain. Silakan muat ulang (refresh) data.");
+                $db_updated_at = (string)($oldHeader['updated_at'] ?? '');
+                
+                if ($js_updated_at !== '' && $db_updated_at !== '' && $db_updated_at !== $js_updated_at) {
+                    throw new Exception("Gagal menyimpan! Invoice ini baru saja diedit oleh user lain. Silakan tutup dan buka ulang.");
+                }
 
                 $invoice_no = $oldHeader['invoice_no'];
                 $current_sale_id = $sale_id;
 
-                $oldItems = $this->query_all("SELECT item_id, SUM(item_qty) as total_qty FROM sales_detail WHERE sale_id = :id GROUP BY item_id", ['id' => $sale_id]);
+                // 1. Kumpulkan ID item lama untuk di-sync
+                $oldItems = $this->query_all("SELECT item_id FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
                 foreach ($oldItems as $old) {
-                    $old_item_id = $old['item_id'];
-                    $old_qty = (float)$old['total_qty'];
-
-                    $lastStockRow = $this->query_one("SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE", [
-                        'item_id' => $old_item_id, 'warehouse' => $warehouse
-                    ]);
-                    
-                    $qty_open = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
-                    $qty_total = $qty_open + $old_qty;
-
-                    $this->insert('stocks', [
-                        'item_id'   => $old_item_id,
-                        'warehouse' => $warehouse,
-                        'date'      => $stockLogTimestamp,
-                        'qty_open'  => $qty_open,
-                        'qty_in'    => $old_qty, 
-                        'qty_out'   => 0,
-                        'qty_total' => $qty_total,
-                    ]);
+                    $affected_items[] = $old['item_id'];
                 }
 
+                // 2. WIPE (HAPUS BERSIH DATA LAMA)
                 $this->query("DELETE FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
                 $this->query("DELETE FROM item_transactions WHERE reference_no = :inv AND type = 'OUT'", ['inv' => $invoice_no]);
 
+                // 3. UPDATE HEADER
+                $this->query("UPDATE sales SET buyer = :buyer, sales_date = :sales_date, warehouse = :warehouse, updated_at = NOW() WHERE id = :id", [
+                    'buyer' => $buyer_id, 'sales_date' => $sales_date, 'warehouse' => $warehouse, 'id' => $sale_id
+                ]);
+
+                // 4. GABUNGKAN ITEM KERANJANG BARU
                 $aggregatedCart = [];
                 foreach ($cart as $item) {
                     $iid = $item['id'];
-                    if (!isset($aggregatedCart[$iid])) {
-                        $aggregatedCart[$iid] = $item;
-                    } else {
-                        $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
-                    }
+                    if (!isset($aggregatedCart[$iid])) $aggregatedCart[$iid] = $item;
+                    else $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
                 }
 
+                // 5. MASUKKAN DATA BARU
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
-
-                    $lastStockRow = $this->query_one("SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE", [
-                        'item_id' => $item_id, 'warehouse' => $warehouse
-                    ]);
-                    
-                    $qty_open = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
-                    $qty_total = $qty_open - $new_qty; 
-
-                    $this->insert('stocks', [
-                        'item_id'   => $item_id,
-                        'warehouse' => $warehouse,
-                        'date'      => $stockLogTimestamp,
-                        'qty_open'  => $qty_open,
-                        'qty_in'    => 0, 
-                        'qty_out'   => $new_qty,     
-                        'qty_total' => $qty_total,
-                    ]);
+                    $affected_items[] = $item_id;
 
                     $this->insert('sales_detail', [
                         'sale_id' => $sale_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
@@ -130,44 +134,40 @@ class SalesModel extends DatabaseHelper {
                 
                 $current_sale_id = $sale_id;
 
-                $sqlLastStock = "SELECT qty_total FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse ORDER BY id DESC LIMIT 1 FOR UPDATE";
-
+                $aggregatedCart = [];
                 foreach ($cart as $item) {
-                    $lastStockRow = $this->query_one($sqlLastStock, [
-                        'item_id'   => $item['id'], 
-                        'warehouse' => $warehouse
-                    ]);
-                    
-                    $qty_open  = $lastStockRow ? (float)$lastStockRow['qty_total'] : 0;
-                    $qty_out   = (float)$item['qty'];
-                    $qty_total = $qty_open - $qty_out;
+                    $iid = $item['id'];
+                    if (!isset($aggregatedCart[$iid])) $aggregatedCart[$iid] = $item;
+                    else $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
+                }
+
+                foreach ($aggregatedCart as $item) {
+                    $item_id = $item['id'];
+                    $qty = (float)$item['qty'];
+                    $affected_items[] = $item_id;
 
                     $this->insert('sales_detail', [
-                        'sale_id'  => $sale_id,
-                        'item_id'  => $item['id'],
-                        'item_qty' => $item['qty'] 
+                        'sale_id'  => $sale_id, 'item_id'  => $item_id, 'item_qty' => $qty 
                     ]);
                     
                     $this->insert('item_transactions', [
-                        'item_id'          => $item['id'],
+                        'item_id'          => $item_id,
                         'warehouse'        => $warehouse,
                         'transaction_date' => $stockLogTimestamp,
                         'type'             => 'OUT',
-                        'qty'              => $item['qty'],
+                        'qty'              => $qty,
                         'reference_no'     => $invoice_no,
                         'notes'            => "Penjualan - $invoice_no"
                     ]);
-
-                    $this->insert('stocks', [
-                        'item_id'   => $item['id'],
-                        'warehouse' => $warehouse,
-                        'date'      => $stockLogTimestamp,
-                        'qty_open'  => $qty_open,
-                        'qty_in'    => 0,
-                        'qty_out'   => $qty_out,
-                        'qty_total' => $qty_total,
-                    ]);
                 }
+            }
+
+            // ==========================================
+            // LANGKAH TERAKHIR: SINKRONISASI STOK FINAL
+            // ==========================================
+            $affected_items = array_unique($affected_items);
+            foreach ($affected_items as $item_id) {
+                $this->syncCurrentStock($item_id, $warehouse);
             }
 
             $this->commit();
@@ -239,8 +239,8 @@ class SalesModel extends DatabaseHelper {
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
-	/**
-     * VIEW DETAIL: Mengambil produk-produk di dalam satu nomor transaksi keluar
+    /**
+     * VIEW DETAIL HEADER
      */
     public function getSalesHeader($sales_id) {
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
@@ -253,20 +253,20 @@ class SalesModel extends DatabaseHelper {
                 WHERE s.id = :id";
         
         return $this->query_one($sql, ['id' => (int)$sales_id]);
-    }	
-	
+    }   
+    
+    /**
+     * VIEW DETAIL ITEMS
+     * Subquery dihilangkan karena tabel stocks sudah berupa Snapshot / Saldo Akhir.
+     */
     public function getTransactionItems($sale_id, $warehouse_id = null) {
         $sql = "SELECT sd.*, i.item_code, i.item_name, i.unit_price, i.item_uom,
-                    COALESCE((
-                        SELECT s.qty_total 
-                        FROM stocks s 
-                        WHERE s.item_id = i.id AND s.warehouse = :warehouse_id
-                        ORDER BY s.id DESC 
-                        LIMIT 1
-                    ), 0) as current_stock
+                       COALESCE(s.qty_total, 0) as current_stock
                 FROM sales_detail sd 
                 LEFT JOIN items i ON sd.item_id = i.id
+                LEFT JOIN stocks s ON s.item_id = i.id AND s.warehouse = :warehouse_id
                 WHERE sd.sale_id = :sale_id";
+                
         return $this->query_all($sql, ['sale_id' => (int)$sale_id, 'warehouse_id' => (int)$warehouse_id]);
     }
 

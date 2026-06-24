@@ -1,14 +1,179 @@
 let cart = [];
 
 $(document).ready(function() {
-    
     let dateTimeout = null;
     const jedaMengetik = 500;
     
+    const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
+
     // ==========================================
-    // VALIDASI TANGGAL TRANSAKSI
+    // STATE UNTUK FITUR EDIT PENERIMAAN
+    // ==========================================
+    let isEditMode = false;
+    let editingReceiveId = null;
+    let lastUpdatedAt = '';
+    
+    // Pengecekan role (Pastikan USER_ROLE disuntikkan dari PHP seperti di POS)
+    const allowedRoles = ['ALL', 'SUPERADMIN'];
+    const isUserAllowed = typeof USER_ROLE !== 'undefined' && allowedRoles.includes(USER_ROLE.toUpperCase());
+
+    // Fungsi Reset Tampilan ke Transaksi Baru
+    function resetToNewReceivement() {        
+        isEditMode = false;
+        editingReceiveId = null;
+        lastUpdatedAt = '';
+        cart = [];
+        
+        $('#docNumber').val('').prop('readonly', false).removeClass('is-invalid is-valid');
+        $('#received_by').val('');
+        $('#notes').val('');
+        $('#warehouseSelect').prop('disabled', false).val('1');
+        $('#date_receive').prop('disabled', false).val(new Date().toISOString().split('T')[0]);
+        
+        $('#docErrorText').remove();
+        $('#btnCancelEditReceive').hide();
+        $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+        
+        renderCart();
+    }
+
+    // ==========================================
+    // 0. FITUR CARI & EDIT PENERIMAAN (MODAL)
+    // ==========================================
+    if (isUserAllowed && !isViewOnly) {
+        let receiveSearchTimeout = null;
+
+        function setReceiveModalEmpty() {
+            $('#receiveTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik Nomor Dokumen atau Nama Penerima...</td></tr>`);
+        }
+
+        function loadModalReceivement(keyword = '') {
+            let tbody = $('#receiveTableBody');
+            tbody.html('<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i> Mencari Dokumen...</td></tr>');
+            
+            $.ajax({
+                url: 'index.php?page=receive',
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'get_receive_list', keyword: keyword },
+                success: function(response) {
+                    tbody.empty();
+                    let data = response.data || [];
+                    if (data.length === 0) {
+                        tbody.append('<tr><td colspan="4" class="text-center text-muted py-4">Dokumen penerimaan tidak ditemukan.</td></tr>');
+                        return;
+                    }
+                    
+                    data.forEach(item => {
+                        tbody.append(`
+                            <tr style="font-size: 13px;">
+                                <td class="ps-3">
+                                    <span class="fw-bold d-block text-dark">${item.doc_number}</span>
+                                    <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${item.date_receive}</small>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="fw-semibold text-dark d-block">${item.received_by}</span>
+                                </td>
+                                <td class="align-middle text-muted text-truncate" style="max-width: 150px;">
+                                    ${item.notes || '-'}
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-sm btn-outline-warning btn-pilih-receive" data-id="${item.id}">
+                                        <i class="fa-solid fa-pencil me-1"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                },
+                error: function() {
+                    tbody.html('<tr><td colspan="4" class="text-center text-danger py-4">Gagal memuat data dari server.</td></tr>');
+                }
+            });
+        }
+
+        $('#receiveModal').on('show.bs.modal', function () {
+            $('#modalSearchReceive').val(''); 
+            $('#btnClearReceiveSearch').hide(); 
+            setReceiveModalEmpty();
+        });
+
+        $('#modalSearchReceive').on('input', function() {
+            clearTimeout(receiveSearchTimeout);
+            let keyword = $(this).val().trim();
+            if (keyword.length > 0) $('#btnClearReceiveSearch').show(); else $('#btnClearReceiveSearch').hide();
+            if (keyword === '') { setReceiveModalEmpty(); return; }
+            
+            receiveSearchTimeout = setTimeout(() => loadModalReceivement(keyword), jedaMengetik);
+        });
+
+        $('#btnClearReceiveSearch').click(function() {
+            $('#modalSearchReceive').val('').focus(); 
+            $(this).hide(); 
+            setReceiveModalEmpty();
+        });
+
+        $(document).on('click', '.btn-pilih-receive', function() {
+            let receiveId = $(this).data('id');
+
+            $.ajax({
+                url: 'index.php?page=receive',
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'search_receive_detail', id: receiveId },
+                success: function(res) {
+                    if (res.status === 'success' && res.data) {
+                        const header = res.data.header;
+                        const items = res.data.items;
+
+                        isEditMode = true;
+                        editingReceiveId = header.id;
+                        lastUpdatedAt = header.updated_at || '';
+
+                        // Set header (Dikunci saat edit)
+                        $('#docNumber').val(header.doc_number).prop('readonly', true).removeClass('is-invalid is-valid');
+                        $('#docErrorText').remove();
+                        $('#btnCancelEditReceive').show(); 
+                        
+                        $('#received_by').val(header.received_by);
+                        $('#notes').val(header.notes);
+                        $('#date_receive').val(header.date_receive).prop('disabled', true);
+                        $('#warehouseSelect').val(header.warehouse || header.warehouse_id).prop('disabled', true);
+
+                        // Setup Cart
+                        cart = items.map(function(item) {
+                            return {
+                                id: item.item_id,
+                                kode: item.item_code,
+                                nama: item.item_name,
+                                uom: item.item_uom,
+                                qty: parseFloat(item.item_qty || 0), 
+                                stok: 999999 // Karena penerimaan, stok limit diabaikan
+                            };
+                        });
+
+                        renderCart();
+                        $('#receiveModal').modal('hide');
+                        if (typeof showNotification !== 'undefined') {
+                            showNotification(`Mode Edit Aktif untuk Dokumen: ${header.doc_number}`, 'info');
+                        }
+                    } else {
+                        if (typeof showNotification !== 'undefined') showNotification('Gagal memuat detail dokumen.', 'danger');
+                    }
+                }
+            });
+        });
+
+        $('#btnCancelEditReceive').click(function() {
+            resetToNewReceivement();
+        });
+    }
+
+    // ==========================================
+    // 1. VALIDASI TANGGAL TRANSAKSI
     // ==========================================
     $('#date_receive').on('input change', function() {
+        if (isEditMode) return; // Abaikan validasi jika edit mode (karena dikunci)
         clearTimeout(dateTimeout);
         const $this = $(this);
         const selectedDateStr = $this.val();
@@ -27,25 +192,22 @@ $(document).ready(function() {
             let selectedDate = new Date(year, month, day);
             selectedDate.setHours(0, 0, 0, 0);
 
-            let today = new Date();
-            today.setHours(0, 0, 0, 0);
-
             let minDate = new Date();
             minDate.setDate(minDate.getDate() - 14);
             minDate.setHours(0, 0, 0, 0);
 
             if (selectedDate.getTime() < minDate.getTime()) {
-                showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
+                if (typeof showNotification !== 'undefined') showNotification('Tanggal tidak valid! Maksimal 14 hari ke belakang.', 'danger');
             }            
         }, jedaMengetik);
     });
 
-    const isViewOnly = (typeof IS_VIEW_MODE !== 'undefined' && IS_VIEW_MODE === true);
-
     // ==========================================
-    // VALIDASI AUTO-CHECK NOMOR DOKUMEN (UX FRIENDLY)
+    // 2. VALIDASI AUTO-CHECK NOMOR DOKUMEN 
     // ==========================================
     $('#docNumber').on('blur', function() {
+        if (isEditMode) return; // Jangan cek duplikat jika sedang mode edit
+
         let docNumber = $(this).val().trim();
         let docInput = $('#docNumber');
         let btnCheckout = $('#btnCheckout');
@@ -62,16 +224,12 @@ $(document).ready(function() {
             url: 'index.php?page=receive',
             type: 'POST',
             dataType: 'json',
-            data: {
-                action: 'check_doc',
-                doc_number: docNumber
-            },
+            data: { action: 'check_doc', doc_number: docNumber },
             success: function(response) {
-                if (response.data.status === 'exists') {
+                if (response.data && response.data.status === 'exists') {
                     docInput.removeClass('is-valid').addClass('is-invalid');                    
                     docInput.after(`<small id="docErrorText" class="text-danger mt-1 d-block"><i class="fa-solid fa-circle-exclamation"></i> Nomor dokumen <b>${docNumber}</b> sudah terpakai! Harap gunakan nomor lain.</small>`);
                     btnCheckout.prop('disabled', true).html('<i class="fa-solid fa-ban me-2"></i> Nomor Dokumen Duplikat');
-
                 } else {
                     docInput.removeClass('is-invalid').addClass('is-valid');
                     btnCheckout.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
@@ -84,6 +242,7 @@ $(document).ready(function() {
     });
 
     $('#docNumber').on('input', function() {
+        if (isEditMode) return;
         $(this).removeClass('is-invalid is-valid');
         $('#docErrorText').remove();
         $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
@@ -134,7 +293,6 @@ $(document).ready(function() {
             
             let groupedSummary = {};
 
-            // A. Gambar Baris Tabel (Kiri)
             cart.forEach((item, index) => {
                 if (!groupedSummary[item.id]) {
                     groupedSummary[item.id] = { nama: item.nama, uom: item.uom, totalQty: 0 };
@@ -177,7 +335,6 @@ $(document).ready(function() {
                 tbody.append(tr);
             });
 
-            // B. Gambar Kotak Ringkasan (Kanan)
             let uniqueItemCount = Object.keys(groupedSummary).length;
 
             Object.values(groupedSummary).forEach(group => {
@@ -190,7 +347,6 @@ $(document).ready(function() {
                 summaryCards.append(cardHTML);
             });
             
-            // C. Kotak Grand Total
             summaryCards.append(`
                 <div class="mt-2 p-3 border border-primary rounded bg-primary bg-opacity-10">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -202,12 +358,7 @@ $(document).ready(function() {
         }
     }
 
-
-    // ==========================================
-    // INTERAKSI INPUT & MODAL (MODE AKTIF)
-    // ==========================================
     if (!isViewOnly) {
-        
         // --- A. FUNGSI KERANJANG UTAMA ---
         $(document).on('click', '.btn-plus', function() {
             let index = $(this).data('index');
@@ -222,7 +373,7 @@ $(document).ready(function() {
                 cart[index].qty -= 1;
             } else {
                 cart.splice(index, 1);
-                showNotification(`Dihapus: ${removedName}`, 'warning');
+                if (typeof showNotification !== 'undefined') showNotification(`Dihapus: ${removedName}`, 'warning');
             }
             renderCart();
         });
@@ -233,7 +384,7 @@ $(document).ready(function() {
             
             if (isNaN(val) || val <= 0) {
                 cart[index].qty = 1;
-                showNotification('Kuantitas tidak boleh 0 atau kosong!', 'warning');
+                if (typeof showNotification !== 'undefined') showNotification('Kuantitas tidak boleh 0 atau kosong!', 'warning');
             } else {
                 cart[index].qty = val;
             }
@@ -245,27 +396,14 @@ $(document).ready(function() {
             let removedName = cart[index].nama;
             cart.splice(index, 1);
             renderCart();
-            showNotification(`Dihapus: ${removedName}`, 'warning');
+            if (typeof showNotification !== 'undefined') showNotification(`Dihapus: ${removedName}`, 'warning');
         });
 
         $('#btnClearCart').click(function() {
-            if (cart.length > 0) {
-                if (!confirm("Apakah Anda yakin ingin membatalkan transaksi dan membersihkan form?")) return;
-            }
-            cart = [];
-            $('#docNumber').val('');
-            $('#received_by').val('');
-            $('#notes').val('');
-            $('#warehouseSelect').val('1');
-            $('#date_receive').val(new Date().toISOString().split('T')[0]);
-            $('#docNumber').removeClass('is-invalid is-valid');
-            $('#docErrorText').remove();
-            $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
-            renderCart();
+            resetToNewReceivement();
         });
 
-
-        // --- B. FUNGSI MODAL PENCARIAN BARANG (SEDERHANA) ---
+        // --- B. FUNGSI MODAL PENCARIAN BARANG ---
         let modalDraft = [];
 
         function renderModalSummary() {
@@ -335,7 +473,6 @@ $(document).ready(function() {
                         let isChecked = existingDraft ? 'checked' : '';
                         let safeUOM = item.item_uom || 'Pcs';
 
-                        // Kolom Qty dihapus, HTML lebih bersih
                         let tr = `
                             <tr class="modal-item-row">
                                 <td class="text-muted fw-mono align-middle ps-3">${item.item_code}</td>
@@ -388,18 +525,14 @@ $(document).ready(function() {
             searchInput.focus();
         });
 
-        // Event Centang Checkbox (Langsung Set Qty = 1)
         $(document).on('change', '.item-chk', function() {
             let $chk = $(this);
             let id = $chk.data('id');
 
             if ($chk.is(':checked')) {
                 modalDraft.push({
-                    id: id,
-                    kode: $chk.data('kode'),
-                    nama: $chk.data('nama'),
-                    uom: $chk.data('uom'),
-                    qty: 1 // Default otomatis 1
+                    id: id, kode: $chk.data('kode'), nama: $chk.data('nama'),
+                    uom: $chk.data('uom'), qty: 1
                 });
             } else {
                 modalDraft = modalDraft.filter(item => item.id != id);
@@ -416,7 +549,7 @@ $(document).ready(function() {
 
         $('#btnSubmitModalItems').click(function() {
             if (modalDraft.length === 0) {
-                showNotification('Pilih minimal satu barang terlebih dahulu!', 'warning');
+                if (typeof showNotification !== 'undefined') showNotification('Pilih minimal satu barang terlebih dahulu!', 'warning');
                 return;
             }
 
@@ -426,14 +559,13 @@ $(document).ready(function() {
 
             $('#itemModal').modal('hide');
             renderCart();
-            showNotification(`${modalDraft.length} baris barang ditambahkan.`, 'success');
+            if (typeof showNotification !== 'undefined') showNotification(`${modalDraft.length} baris barang ditambahkan.`, 'success');
         });
-
 
         // --- C. PROSES CHECKOUT / SIMPAN TRANSAKSI ---
         $('#btnCheckout').click(function() {
             if (cart.length === 0) {
-                showNotification('Keranjang masih kosong!', 'danger');
+                if (typeof showNotification !== 'undefined') showNotification('Keranjang masih kosong!', 'danger');
                 return;
             }
 
@@ -441,13 +573,13 @@ $(document).ready(function() {
             let receivedBy = $('#received_by').val().trim();
 
             if (docNumber === "" || docNumber === "0") {
-                showNotification('Nomor Dokumen tidak boleh kosong!', 'danger');
+                if (typeof showNotification !== 'undefined') showNotification('Nomor Dokumen tidak boleh kosong!', 'danger');
                 $('#docNumber').focus();
                 return;
             }
 
             if (receivedBy === "" || receivedBy === "0") {
-                showNotification('Nama Penerima tidak boleh kosong!', 'danger');
+                if (typeof showNotification !== 'undefined') showNotification('Nama Penerima tidak boleh kosong!', 'danger');
                 $('#received_by').focus();
                 return;
             }
@@ -466,18 +598,18 @@ $(document).ready(function() {
                     warehouse: $('#warehouseSelect').val(),
                     date_receive: $('#date_receive').val(),
                     notes: $('#notes').val(),
-                    cart: JSON.stringify(cart)
+                    cart: JSON.stringify(cart),
+                    // Parameter Edit Mode
+                    is_edit_mode: isEditMode ? 1 : 0,
+                    receive_id: editingReceiveId,
+                    last_updated_at: lastUpdatedAt
                 },
                 success: function(response) {
                     if (response.status === 'success') {
-                        showNotification(response.message || 'Transaksi berhasil disimpan!', 'success');
-                        cart = [];
-                        $('#docNumber').val('');
-                        $('#received_by').val('');
-                        $('#notes').val('');
-                        renderCart();
+                        if (typeof showNotification !== 'undefined') showNotification(response.message || 'Transaksi berhasil disimpan!', 'success');
+                        resetToNewReceivement();
                     } else {
-                        showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
+                        if (typeof showNotification !== 'undefined') showNotification(response.message || 'Gagal menyimpan transaksi', 'danger');
                     }
                 },
                 error: function(xhr) {
@@ -485,7 +617,7 @@ $(document).ready(function() {
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     }
-                    showNotification(errorMessage, 'danger');
+                    if (typeof showNotification !== 'undefined') showNotification(errorMessage, 'danger');
                 },
                 complete: function() {
                     btn.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
@@ -493,5 +625,4 @@ $(document).ready(function() {
             });
         });
     }    
-
 });
