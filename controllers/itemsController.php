@@ -35,7 +35,11 @@ class ItemsController extends BaseController {
             'category'   => $this->getPost('category'),
             'item_uom'   => $this->getPost('item_uom'),
             'unit_price' => $this->getPost('unit_price'),
-            'unit_cost'  => $this->getPost('unit_cost')
+            'unit_cost'  => $this->getPost('unit_cost'),
+            'unit_weight'  => $this->getPost('unit_weight'),
+            'weight_uom'  => $this->getPost('weight_uom'),
+            'origin_code'  => $this->getPost('origin_code'),
+            'origin_name'  => $this->getPost('origin_name'),
         ]);
 
         if (empty($data['item_code']) || empty($data['item_name'])) {
@@ -62,7 +66,11 @@ class ItemsController extends BaseController {
             'category'   => $this->getPost('category'),
             'item_uom'   => $this->getPost('item_uom'),
             'unit_price' => $this->getPost('unit_price'),
-            'unit_cost'  => $this->getPost('unit_cost')
+            'unit_cost'  => $this->getPost('unit_cost'),
+            'unit_weight'  => $this->getPost('unit_weight'),
+            'weight_uom'  => $this->getPost('weight_uom'),
+            'origin_code'  => $this->getPost('origin_code'),
+            'origin_name'  => $this->getPost('origin_name'),
         ]);
 
         $res = $this->model->update('items', $data, "id = $id");

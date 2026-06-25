@@ -35,7 +35,7 @@ class ItemsModel extends DatabaseHelper {
 	
 	public function getFilteredPaginated($search = '', $category = '', $limit = 10, $offset = 0) {
         $query = $this->buildFilterQuery($search, $category);
-        $sql = $query['sql'] . " ORDER BY id DESC";
+        $sql = $query['sql'] . " ORDER BY id ASC";
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 

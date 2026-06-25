@@ -9,6 +9,9 @@ class POSView {
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
 
+        $allowed_roles = ['all', 'superadmin'];                                    
+        $is_allowed_edit = in_array(strtolower($user_role), $allowed_roles);
+
         ob_start();
         ?>
         
@@ -43,10 +46,8 @@ class POSView {
                                            placeholder="" readonly
                                            value="<?= $isViewMode ? $transactionData['header']['invoice_no'] : '' ?>">
                                     
-                                    <?php 
-                                    $allowed_roles = ['all', 'superadmin'];                                    
-                                    $is_allowed_search = in_array(strtolower($user_role), $allowed_roles);
-                                    if (!$isViewMode && $is_allowed_search): ?>
+                                    <?php                                     
+                                    if (!$isViewMode && $is_allowed_edit): ?>
                                         <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#invoiceModal">
                                             <i class="fa-solid fa-search"></i> Cari
                                         </button>
@@ -187,7 +188,7 @@ class POSView {
                                 </button>
                                 <?php endif; ?>
                                 
-                                <?php if ($isViewMode): ?>               
+                                <?php if ($isViewMode && strtolower($user_role) != 'mst'): ?>               
                                     <button type="button" class="btn btn-success w-100 py-2 fw-bold shadow-sm" 
                                             onclick="printReceipt('<?= $transactionData['header']['id'] ?>')">
                                         <i class="fa-solid fa-print me-1"></i> Re-print Invoice

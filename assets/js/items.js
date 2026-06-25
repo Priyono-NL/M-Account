@@ -31,7 +31,7 @@ $(document).ready(function() {
                     }
 
                     res.data.forEach(function(item) {
-                        let catBadge = item.category == '1' ? 'ByProduct' : 'Sampah';
+                        let catBadge = item.category == '1' ? 'BS 1' : 'BS 2';
                         let price = parseInt(item.unit_price).toLocaleString('id-ID');
                         let itemJson = JSON.stringify(item).replace(/'/g, "&#39;");
 
@@ -101,6 +101,7 @@ $(document).ready(function() {
     $("#btnAddItem").click(function() {
         $("#formItem")[0].reset();
         $("#itemId").val("");
+        $("#itemCode").val("").prop("readonly", false);
         $("#modalTitle").text("Tambah Barang Baru");
         $("#modalItem").modal("show");
     });
@@ -112,6 +113,10 @@ $(document).ready(function() {
         $("#itemName").val(data.item_name);
         $("#itemCategory").val(data.category);
         $("#itemUom").val(data.item_uom);
+        $("#unitWeight").val(data.unit_weight);
+        $("#weightUom").val(data.weight_uom);
+        $("#originCode").val(data.origin_code);
+        $("#originName").val(data.origin_name);
         $("#itemPrice").val(new Intl.NumberFormat('id-ID').format(data.unit_price));
         $("#itemCost").val(new Intl.NumberFormat('id-ID').format(data.unit_cost));
         $("#modalTitle").text("Edit Barang");
@@ -159,6 +164,7 @@ $(document).ready(function() {
             complete: function() { 
                 btn.prop('disabled', false).text(originalText); 
                 if ($("#modalItem").is(":visible")) originalValues.forEach(item => item.el.val(item.val));
+                loadFilteredItems(1);
             }
         });
     });

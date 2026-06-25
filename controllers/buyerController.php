@@ -56,7 +56,18 @@ class BuyerController extends BaseController {
         ]);
 
         $res = $this->model->update('buyer', $data, "id = $id");
-        return $res ? $this->jsonSuccess("Data pelanggan diperbarui") : $this->jsonError("Gagal memperbarui data");
+        return $res ? $this->jsonSuccess("Data pelanggan diperbarui") : $this->jsonError("Gagal memperbarui pelanggan");
+    }
+
+    public function delete() {
+        $id = (int)$this->getPost('id');
+
+        if ($id <= 0) {
+            return $this->jsonError("ID Pelanggan tidak valid.");
+        }
+
+        $res = $this->model->delete('buyer', "id = $id");
+        return $res ? $this->jsonSuccess("Data pelanggan dihapus") : $this->jsonError("Gagal menghapus pelanggan");
     }
 
     public function download_template() {

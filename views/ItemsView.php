@@ -40,8 +40,8 @@ class ItemsView {
                     <div class="col-md-3">
                         <select class="form-select form-select-sm" id="filterCategory">
                             <option value="">Semua Kategori</option>
-                            <option value="1">ByProduct</option>
-                            <option value="2">Sampah</option>
+                            <option value="1">BS 1</option>
+                            <option value="2">BS 2</option>
                         </select>
                     </div>
                     
@@ -98,42 +98,72 @@ class ItemsView {
                         <div class="modal-body py-4">
                             <input type="hidden" name="id" id="itemId">
                             <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">KODE BARANG</label>
+                                <label class="form-label text-muted small fw-bold">KODE BARANG</label><span class="text-danger">*</span>
                                 <input type="text" class="form-control form-control-sm" name="item_code" id="itemCode" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label text-muted small fw-bold">NAMA BARANG</label>
+                                <label class="form-label text-muted small fw-bold">NAMA BARANG</label><span class="text-danger">*</span>
                                 <input type="text" class="form-control form-control-sm" name="item_name" id="itemName" required>
                             </div>
                             <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">KATEGORI</label>
+                                <div class="col-3 mb-3">
+                                    <label class="form-label text-muted small fw-bold">KATEGORI</label><span class="text-danger">*</span>
                                     <select class="form-select form-select-sm" name="category" id="itemCategory">
-                                        <option value="1">ByProduct</option>
-                                        <option value="2">Sampah</option>
+                                        <option value="1">BS 1</option>
+                                        <option value="2">BS 2</option>
                                     </select>
                                 </div>
-                                <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">UOM</label>
-                                    <input type="text" class="form-control form-control-sm" name="item_uom" id="itemUom" required>
+                                <div class="col-3 mb-3">
+                                    <label class="form-label text-muted small fw-bold">UNIT WEIGHT</label>
+                                    <input type="text" class="form-control form-control-sm" name="unit_weight" id="unitWeight" required>
+                                </div>
+                                <div class="col-3 mb-3">
+                                    <label class="form-label text-muted small fw-bold">WEIGHT UOM</label>
+                                    <select class="form-select form-select-sm" name="weight_uom" id="weightUom" required>
+                                        <option value=""></option>
+                                        <option value="Ea">Each</option>
+                                        <option value="Gr">Gr</option>                                        
+                                        <option value="Kg">Kg</option>
+                                    </select>
+                                </div>
+                                <div class="col-3 mb-3">
+                                    <label class="form-label text-muted small fw-bold">UOM</label><span class="text-danger">*</span>
+                                    <select class="form-select form-select-sm" name="item_uom" id="itemUom" required>
+                                        <option value="Bal">Bal</option>
+                                        <option value="Box">Box</option>
+                                        <option value="Ea">Each</option>
+                                        <option value="Kg">Kg</option>
+                                        <option value="Tin">Tin</option>
+                                        <option value="Zak">Zak</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">HARGA JUAL</label>
+                                    <label class="form-label text-muted small fw-bold">ORIGIN CODE</label>
+                                    <input type="text" class="form-control form-control-sm" name="origin_code" id="originCode">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold">ORIGIN NAME</label>
+                                    <input type="text" class="form-control form-control-sm" name="origin_name" id="originName">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold">HARGA JUAL</label><span class="text-danger">*</span>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" class="form-control input-harga" name="unit_price" id="itemPrice" required>
                                     </div>
                                 </div>
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">HARGA COST</label>
+                                    <label class="form-label text-muted small fw-bold">HARGA COST</label><span class="text-danger">*</span>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" class="form-control input-harga" name="unit_cost" id="itemCost" required>
                                     </div>
                                 </div>
-                            </div>
+                            </div>                            
                         </div>
                         <div class="modal-footer border-0 pt-0">
                             <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Batal</button>
