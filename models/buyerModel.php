@@ -30,7 +30,7 @@ class BuyerModel extends DatabaseHelper {
 	
 	public function getFilteredPaginated($search = '', $limit = 10, $offset = 0) {
         $query = $this->buildFilterQuery($search);
-        $sql = $query['sql'] . " ORDER BY id DESC";
+        $sql = $query['sql'] . " ORDER BY id ASC";
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
