@@ -50,7 +50,12 @@ class StockInController extends BaseController {
      */
     public function get_products() {
         $keyword = $this->getPost('keyword', '');
-        $results = $this->itemsModel->getFiltered($keyword); 
+        $warehouse_id = $this->getPost('warehouse_id', '');
+        $category = '';
+        if ($warehouse_id == '1') $category = '1';
+        elseif ($warehouse_id == '2') $category = '2';
+
+        $results = $this->itemsModel->getFiltered($keyword, $category); 
         
         return $this->jsonSuccess("Data produk berhasil dimuat", $results);
     }

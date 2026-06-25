@@ -99,9 +99,9 @@ class ItemsController extends BaseController {
         ]];
         $rows[] = [ 
             'C123456', 
-            'TEST',
-            'ByProduct/Sampah',
-            'Kg/Pcs/Zak',
+            'TEST NAMA',
+            'BS 1/BS 2',
+            'Bal/Box/Kg/Ea/Tin/Zak',
             '1000',
             '1000',
         ];

@@ -452,13 +452,14 @@ $(document).ready(function() {
 
         function loadModalProducts(keyword = '') {
             let tbodyModal = $('#modalItemTableBody');
+            let currentWarehouse = $('#warehouseSelect').val();
             tbodyModal.html('<tr><td colspan="3" class="text-center text-muted py-5"><i class="fa-solid fa-spinner fa-spin me-2 fs-3 mb-2 d-block opacity-50"></i> Mencari produk...</td></tr>');
 
             $.ajax({
                 url: 'index.php?page=receive',
                 type: 'POST',
                 dataType: 'json',
-                data: { action: 'get_products', keyword: keyword },
+                data: { action: 'get_products', keyword: keyword, warehouse_id: currentWarehouse },
                 success: function(response) {
                     tbodyModal.empty();
                     const productsList = response.data || [];

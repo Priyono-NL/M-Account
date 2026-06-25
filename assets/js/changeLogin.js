@@ -2,9 +2,9 @@ $(document).ready(function() {
     
     const ROLE_BADGE = {
         'superadmin': { bg: '#ef444418', text: '#ef4444' }, 
-        'admin':      { bg: '#f59e0b18', text: '#f59e0b' }, 
-        'manager':    { bg: '#22c55e18', text: '#22c55e' }, 
-        'user':       { bg: '#94a3b818', text: '#64748b' }  
+        'All':      { bg: '#f59e0b18', text: '#f59e0b' }, 
+        'IO':    { bg: '#22c55e18', text: '#22c55e' }, 
+        'MST':       { bg: '#94a3b818', text: '#64748b' }  
     };
 
     let allUsers = [];
