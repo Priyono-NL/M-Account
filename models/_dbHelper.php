@@ -80,16 +80,20 @@ class DatabaseHelper {
 
     public function satpamGembok($date, $warehouse) {
         $monthPeriod = date('Y-m', strtotime($date));
-        $sql = "SELECT is_closed FROM stock_closing 
-                WHERE DATE_FORMAT(date, '%Y-%m') = :month 
+        
+        $sql = "SELECT id FROM stock_closing_log 
+                WHERE periode = :month 
                 AND warehouse = :warehouse 
                 LIMIT 1";
+                
         $lock = $this->query_one($sql, [
             'month'     => $monthPeriod,
             'warehouse' => $warehouse
         ]);
-        if ($lock && $lock['is_closed'] == 1) {
-            throw new Exception("Gagal! Periode " . date('M Y', strtotime($date)) . " untuk Gudang ini sudah ditutup (Locked).");
+        
+        if ($lock) {
+            $namaBulan = date('F Y', strtotime($date));
+            throw new Exception("Transaksi Ditolak! Pembukuan periode {$namaBulan} untuk gudang ini sudah ditutup secara permanen.");
         }
     }
 

@@ -163,17 +163,24 @@ const renderPagination = (paging, controlsId = '#paginationControls', infoId = '
                   <a class="page-link px-3" href="#" data-page="${page - 1}">&laquo;</a>
                </li>`;
 
-    // 3. Logika Titik-titik (Smart Elipsis)
+    // 3. Logika Titik-titik (Smart Elipsis) - DIPERBAIKI JANGKAUANNYA
     if (totalPages > 0) {
         let pages = [];
-        if (totalPages <= 5) {
+        
+        if (totalPages <= 7) {
+            // Jika total halaman sedikit (<= 7), tampilkan semua angkanya
             for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
-            if (page <= 3) {
-                pages = [1, 2, 3, '...', totalPages];
-            } else if (page >= totalPages - 2) {
-                pages = [1, '...', totalPages - 2, totalPages - 1, totalPages];
-            } else {
+            // Jika halaman aktif ada di awal
+            if (page <= 4) {
+                pages = [1, 2, 3, 4, 5, '...', totalPages];
+            } 
+            // Jika halaman aktif ada di akhir
+            else if (page >= totalPages - 3) {
+                pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            } 
+            // Jika halaman aktif ada di tengah
+            else {
                 pages = [1, '...', page - 1, page, page + 1, '...', totalPages];
             }
         }
@@ -196,8 +203,46 @@ const renderPagination = (paging, controlsId = '#paginationControls', infoId = '
                   <a class="page-link px-3" href="#" data-page="${page + 1}">&raquo;</a>
                </li>`;
 
+    // 5. [OPSIONAL] Fitur Jump to Page (Kotak Input)
+    if (totalPages > 5) {
+        // Hapus tanda # dari nama ID agar rapi
+        let cleanId = controlsId.replace('#', '');
+        pgHtml += `
+            <li class="page-item ms-3 border-0 d-flex align-items-center">
+                <span class="text-muted small me-2">Go to:</span>
+                <input type="number" class="form-control form-control-sm text-center jump-input" 
+                       min="1" max="${totalPages}" value="${page}" 
+                       style="width: 60px; height: 32px;" id="jumpPageInput_${cleanId}">
+                <button class="btn btn-sm btn-secondary ms-1 btn-jump-page" 
+                        data-target-input="#jumpPageInput_${cleanId}" 
+                        style="height: 32px;">Go</button>
+            </li>
+        `;
+    }
+
     $(controlsId).html(pgHtml);
 };
+
+// Aksi ketika tombol Go di Paginasi diklik
+$(document).on('click', '.btn-jump-page', function(e) {
+    e.preventDefault();
+    let targetInputId = $(this).data('target-input');
+    let targetPage = parseInt($(targetInputId).val());
+    
+    // Cari tombol ".page-link" yang aktif/ada untuk mengambil event load data
+    // Kita menembak event klik secara virtual pada class page-link
+    let $dummyLink = $('<a href="#" class="page-link" style="display:none;" data-page="' + targetPage + '"></a>');
+    $(this).closest('ul.pagination').append($dummyLink);
+    $dummyLink.trigger('click');
+    $dummyLink.remove();
+});
+
+// Agar saat ditekan 'Enter' di dalam kotak input, langsung mengeklik tombol Go sebelahnya
+$(document).on('keypress', '.jump-input', function(e) {
+    if (e.which === 13) {
+        $(this).siblings('.btn-jump-page').click();
+    }
+});
 
 function changeActiveCompany(companyId) {
     if (!companyId) return;

@@ -76,32 +76,12 @@ return [
         ],
         [
             'type'        => 'link',
-            'key'         => 'stockClose',
+            'key'         => 'stocks',
             'name'        => 'Stock Item',
             'desc'        => 'Melihat status dan jumlah stok item yang tersedia saat ini.',
             'icon'        => 'fa-solid fa-boxes-stacked',
-            'url'         => 'index.php?page=stockClose',
+            'url'         => 'index.php?page=stocks',
             'rule'        => 'public',
-            'active_rule' => 'default'
-        ],
-        [
-            'type'        => 'link',
-            'key'         => 'stockOpname',
-            'name'        => 'Stock Opname (Form)',
-            'desc'        => 'Melakukan pemeriksaan fisik stok berkala.',
-            'icon'        => 'fa-solid fa-box-open',
-            'url'         => 'index.php?page=stockOpname',
-            'rule'        => 'public',
-            'active_rule' => 'default'
-        ],
-        [
-            'type'        => 'link',
-            'key'         => 'stockAdjustment',
-            'name'        => 'Stok Adjustment',
-            'desc'        => 'Melakukan penyesuaian/koreksi jumlah stok (Khusus Admin).',
-            'icon'        => 'fa-solid fa-check-to-slot',
-            'url'         => 'index.php?page=stockAdjustment',
-            'rule'        => 'admin',
             'active_rule' => 'default'
         ],
         [

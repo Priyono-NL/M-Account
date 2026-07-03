@@ -24,24 +24,54 @@ class StockInModel extends DatabaseHelper {
      * FUNGSI SINKRONISASI STOK GLOBAL (Single Source of Truth)
      */
     private function syncCurrentStock($item_id, $warehouse) {
-        $sqlCalc = "SELECT SUM(CASE WHEN type = 'IN' THEN qty ELSE -qty END) as real_stock 
-                    FROM item_transactions 
-                    WHERE item_id = :item_id AND warehouse = :warehouse";
-                    
-        $result = $this->query_one($sqlCalc, ['item_id' => $item_id, 'warehouse' => $warehouse]);
-        $real_stock = $result ? (float)$result['real_stock'] : 0;
+        // 1. Dapatkan string periode bulan berjalan (Contoh: '2026-07')
+        $currentPeriod = date('Y-m'); 
+        $startOfMonth = date('Y-m-01'); // Untuk mencocokkan tanggal di stocks_period
 
+        // 2. Ambil Saldo Awal Bulan Ini (Dari hasil Closing bulan lalu)
+        $sqlOpen = "SELECT qty FROM stocks_period 
+                    WHERE item_id = :item_id AND warehouse = :warehouse AND stock_date = :start_date 
+                    LIMIT 1";
+        $resOpen = $this->query_one($sqlOpen, [
+            'item_id' => $item_id, 'warehouse' => $warehouse, 'start_date' => $startOfMonth
+        ]);
+        $qtyOpen = $resOpen ? (float)$resOpen['qty'] : 0;
+
+        // 3. Ambil Total IN dan OUT Bulan Ini SAJA dari vw_mutasi_bulanan menggunakan filter `period`
+        $sqlMutasi = "SELECT 
+                        COALESCE(SUM(qty_in), 0) as total_in, 
+                        COALESCE(SUM(qty_out), 0) as total_out 
+                      FROM vw_mutasi_bulanan 
+                      WHERE item_id = :item_id 
+                        AND warehouse = :warehouse 
+                        AND period = :current_period";
+                        
+        $mutasi = $this->query_one($sqlMutasi, [
+            'item_id' => $item_id, 
+            'warehouse' => $warehouse, 
+            'current_period' => $currentPeriod
+        ]);
+        
+        $totalIn = $mutasi ? (float)$mutasi['total_in'] : 0;
+        $totalOut = $mutasi ? (float)$mutasi['total_out'] : 0;
+
+        // 4. Kalkulasi Stok Riil Saat Ini
+        $real_stock = $qtyOpen + $totalIn - $totalOut;
+
+        // 5. Simpan/Update ke tabel `stocks`
         $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
             'item_id' => $item_id, 'warehouse' => $warehouse
         ]);
 
         if ($cekStock) {
-            $this->query("UPDATE stocks SET qty_total = :qty_total WHERE id = :id", [
+            $this->query("UPDATE stocks SET qty_total = :qty_total, updated_at = NOW() WHERE id = :id", [
                 'qty_total' => $real_stock, 'id' => $cekStock['id']
             ]);
         } else {
             $this->insert('stocks', [
-                'item_id'   => $item_id, 'warehouse' => $warehouse, 'qty_total' => $real_stock
+                'item_id'   => $item_id, 
+                'warehouse' => $warehouse, 
+                'qty_total' => $real_stock
             ]);
         }
     }
@@ -87,7 +117,6 @@ class StockInModel extends DatabaseHelper {
 
                 // 3. WIPE (HAPUS BERSIH) DETAIL & LOG LAMA
                 $this->query("DELETE FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
-                $this->query("DELETE FROM item_transactions WHERE reference_no = :inv AND type = 'IN'", ['inv' => $doc_number_old]);
 
                 // 4. UPDATE HEADER
                 $this->query("UPDATE receivement SET received_by = :received_by, notes = :notes, updated_at = NOW() WHERE id = :id", [
@@ -113,17 +142,31 @@ class StockInModel extends DatabaseHelper {
                     $this->insert('receivement_detail', [
                         'receive_id' => $receive_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
                     ]);
-
-                    $this->insert('item_transactions', [
-                        'item_id' => $item_id, 'warehouse' => $warehouse, 'transaction_date' => $stockLogTimestamp,
-                        'type' => 'IN', 'qty' => $new_qty, 'reference_no' => $doc_number_old, 'notes' => "Penerimaan - $doc_number_old (Edit)"
-                    ]);
                 }
 
             } else {
                 // ==========================================
                 // TRANSAKSI PENERIMAAN BARU
                 // ==========================================
+                $prefix = 'IN-';
+                $year = date('Y');
+
+                $searchPrefix = $prefix . $year . '-';
+                $lastRecord = $this->query_one(
+                    "SELECT doc_number FROM receivement WHERE doc_number LIKE :prefix ORDER BY id DESC LIMIT 1 FOR UPDATE", 
+                    ['prefix' => $searchPrefix . '%']
+                );
+
+                $nextNum = 1;
+                if ($lastRecord) {
+                    $parts = explode('-', $lastRecord['invoice_no']);                    
+                    $lastNum = (int) end($parts);
+                    $nextNum = $lastNum + 1; 
+                }                
+                $formattedNum = str_pad($nextNum, 5, '0', STR_PAD_LEFT);
+
+                $doc_number = $searchPrefix . $formattedNum;
+
                 $receiveData = [
                     'doc_number'    => $doc_number,
                     'received_by'   => $received_by,
@@ -151,16 +194,6 @@ class StockInModel extends DatabaseHelper {
                         'receive_id' => $receive_id,
                         'item_id'    => $item['id'],
                         'item_qty'   => $item['qty'] 
-                    ]);
-                    
-                    $this->insert('item_transactions', [
-                        'item_id'          => $item['id'],
-                        'warehouse'        => $warehouse,
-                        'transaction_date' => $stockLogTimestamp,
-                        'type'             => 'IN',
-                        'qty'              => $item['qty'],
-                        'reference_no'     => $doc_number,
-                        'notes'            => "Penerimaan Baru - $doc_number"
                     ]);
                 }
             }

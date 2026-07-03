@@ -28,6 +28,15 @@ class POSView {
                                     <i class="fa-solid fa-file-invoice me-2 text-primary"></i>Informasi Transaksi
                                 <?php endif; ?>
                             </h6>
+							
+							<?php if (!$isViewMode && $is_allowed_edit): ?>
+								<div>
+									<p id="info-state"></p>
+                                    <button id='btnFindInvoice' class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#invoiceModal">
+                                        <i class="fa-solid fa-search"></i> Cari & Edit
+                                    </button>
+								</div>
+                            <?php endif; ?>
                             
                             <?php if ($isViewMode): ?>
                             <div>
@@ -42,15 +51,12 @@ class POSView {
                             <div class="col-md-4">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">NO INVOICE</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control bg-light fw-bold text-muted" id="invoiceNo" 
-                                           placeholder="" readonly
+                                    <input type="text" class="form-control fw-bold text-muted" id="invoiceNo" 
+                                           placeholder="" readonly <?= $isViewMode ? 'disabled' : '' ?>
                                            value="<?= $isViewMode ? $transactionData['header']['invoice_no'] : '' ?>">
                                     
                                     <?php                                     
-                                    if (!$isViewMode && $is_allowed_edit): ?>
-                                        <button class="btn btn-primary px-3" type="button" data-bs-toggle="modal" data-bs-target="#invoiceModal">
-                                            <i class="fa-solid fa-search"></i> Cari
-                                        </button>
+                                    if (!$isViewMode && $is_allowed_edit): ?>                                        
                                         <button class="btn btn-danger px-3" type="button" id="btnCancelEditInvoice" style="display: none;" title="Batalkan Edit Invoice">
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
@@ -76,7 +82,7 @@ class POSView {
                             <div class="col-md-6">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control bg-white" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly 
+                                    <input type="text" class="form-control" id="buyerNameDisplay" placeholder="-- Pilih Pelanggan --" readonly <?= $isViewMode ? 'disabled' : '' ?>
                                         value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['buyer_name'] . ' - ' . $transactionData['header']['buyer_code']) : '' ?>">
                                             
                                     <?php if (!$isViewMode): ?>

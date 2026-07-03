@@ -9,7 +9,7 @@ function printReceipt(id) {
         return;
     }
     const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
-    // const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
+    //const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
@@ -41,11 +41,14 @@ $(document).ready(function() {
         cart = [];
         
         $('#buyerId').val('');
-        $('#buyerNameDisplay').val('');
+        $('#buyerNameDisplay').prop('disabled', false).val('');
         $('#salesDate').prop('disabled', false).val(new Date().toISOString().split('T')[0]);
         $('#warehouseSelect').prop('disabled', false).val('1');
         $('#salesType').prop('disabled', false).val('SLS');
-        $('#invoiceNo').val('');
+        $('#invoiceNo').prop('disabled', false).val('');
+		$('#btnFindInvoice').show();
+		$('#btnFindBuyer').show();
+		$('#info-state').empty();
         
         $('#btnCancelEditInvoice').hide();
         $('#btnClearBuyer').hide();
@@ -148,11 +151,11 @@ $(document).ready(function() {
                         lastUpdatedAt = header.updated_at || '';
                         
                         // Set header (Disabled)
-                        $('#invoiceNo').val(header.invoice_no);
+                        $('#invoiceNo').val(header.invoice_no).prop('disabled', true);
                         $('#btnCancelEditInvoice').show(); 
                         
                         $('#buyerId').val(header.buyer);
-                        $('#buyerNameDisplay').val(header.buyer_name + ' - ' + header.buyer_code);
+                        $('#buyerNameDisplay').val(header.buyer_name + ' - ' + header.buyer_code).prop('disabled', true);
                         $('#salesDate').val(header.sales_date).prop('disabled', true);
                         $('#warehouseSelect').val(header.warehouse).prop('disabled', true);
                         $('#salesType').val(header.sale_type).prop('disabled', true);
@@ -179,6 +182,8 @@ $(document).ready(function() {
 
                         renderCart();
                         $('#invoiceModal').modal('hide');
+						$('#info-state').html(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`);
+						$('#btnFindInvoice').hide();
                         if(typeof showNotification !== 'undefined') showNotification(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`, 'info');
                     } else {
                         if(typeof showNotification !== 'undefined') showNotification('Gagal memuat detail data invoice.', 'danger');

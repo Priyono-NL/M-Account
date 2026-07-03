@@ -24,12 +24,14 @@ $(document).ready(function() {
         lastUpdatedAt = '';
         cart = [];
         
-        $('#docNumber').val('').prop('readonly', false).removeClass('is-invalid is-valid');
-        $('#received_by').val('');
-        $('#notes').val('');
+        $('#docNumber').val('').prop('disabled', false).removeClass('is-invalid is-valid');
+        $('#received_by').val('').prop('disabled', false);
+        $('#notes').val('').prop('disabled', false);
         $('#warehouseSelect').prop('disabled', false).val('1');
         $('#date_receive').prop('disabled', false).val(new Date().toISOString().split('T')[0]);
         
+        $('#btnFindDoc').show();
+        $('#info-state').empty();
         $('#docErrorText').remove();
         $('#btnCancelEditReceive').hide();
         $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
@@ -131,12 +133,12 @@ $(document).ready(function() {
                         lastUpdatedAt = header.updated_at || '';
 
                         // Set header (Dikunci saat edit)
-                        $('#docNumber').val(header.doc_number).prop('readonly', true).removeClass('is-invalid is-valid');
+                        $('#docNumber').val(header.doc_number).prop('disabled', true).removeClass('is-invalid is-valid');
                         $('#docErrorText').remove();
                         $('#btnCancelEditReceive').show(); 
                         
-                        $('#received_by').val(header.received_by);
-                        $('#notes').val(header.notes);
+                        $('#received_by').val(header.received_by).prop('disabled', true);
+                        $('#notes').val(header.notes).prop('disabled', true);
                         $('#date_receive').val(header.date_receive).prop('disabled', true);
                         $('#warehouseSelect').val(header.warehouse || header.warehouse_id).prop('disabled', true);
 
@@ -154,8 +156,10 @@ $(document).ready(function() {
 
                         renderCart();
                         $('#receiveModal').modal('hide');
+                        $('#info-state').html(`Mode Edit Aktif untuk Dokumen: ${header.doc_number}. Informasi header dikunci.`);
+                        $('#btnFindDoc').hide();
                         if (typeof showNotification !== 'undefined') {
-                            showNotification(`Mode Edit Aktif untuk Dokumen: ${header.doc_number}`, 'info');
+                            showNotification(`Mode Edit Aktif untuk Dokumen: ${header.doc_number}. Informasi header dikunci.`, 'info');
                         }
                     } else {
                         if (typeof showNotification !== 'undefined') showNotification('Gagal memuat detail dokumen.', 'danger');

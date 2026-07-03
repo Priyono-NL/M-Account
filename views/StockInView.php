@@ -9,6 +9,9 @@ class StockInView {
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
 
+        $allowed_roles = ['all', 'superadmin'];                                    
+        $is_allowed_edit = in_array(strtolower($user_role), $allowed_roles);
+
         ob_start();
         ?>
         
@@ -20,6 +23,15 @@ class StockInView {
                     <i class="fa-solid fa-file-invoice me-2 text-primary"></i>Transaksi Penerimaan Barang
                 <?php endif; ?>
             </h5>
+
+            <?php if (!$isViewMode && $is_allowed_edit): ?>
+                <div>
+                    <p id="info-state"></p>
+                    <button class="btn btn-primary px-3" type="button" id="btnFindDoc" data-bs-toggle="modal" data-bs-target="#receiveModal">
+                        <i class="fa-solid fa-search"></i> Cari & Edit
+                    </button>
+                </div>
+            <?php endif; ?>
 
             <?php if ($isViewMode): ?>
                 <button type="button" class="btn btn-sm btn-light border text-muted fw-semibold shadow-sm" onclick="window.location.href='index.php?page=receive&action=history'">
@@ -49,24 +61,18 @@ class StockInView {
                                 value="<?= $isViewMode ? date('Y-m-d', strtotime($transactionData['header']['date_receive'])) : date('Y-m-d') ?>"
                                 <?= $isViewMode ? 'disabled' : '' ?> min="<?= date('Y-m-d') ?>">
                     </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-2 col-sm-6">
                         <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">DOCUMENT NUMBER <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <input type="text" class="form-control form-control-sm" id="docNumber" 
-                                    placeholder="W-001" 
+                                    placeholder="IN-year-00000" readonly
                                     value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['doc_number']) : '' ?>"
                                     <?= $isViewMode ? 'disabled' : '' ?>>
-                            <?php 
-                                    $allowed_roles = ['all', 'superadmin'];                                    
-                                    $is_allowed_search = in_array(strtolower($user_role), $allowed_roles);
-                                    if (!$isViewMode && $is_allowed_search): ?>
-                                        <button class="btn btn-primary px-3" type="button" id="btnFindDoc" data-bs-toggle="modal" data-bs-target="#receiveModal">
-                                            <i class="fa-solid fa-search"></i> Cari
-                                        </button>
-                                        <button class="btn btn-danger px-3" type="button" id="btnCancelEditReceive" style="display: none;" title="Batalkan Edit Document Number">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    <?php endif; ?>
+                            <?php if (!$isViewMode && $is_allowed_edit): ?>                                        
+                                <button class="btn btn-danger px-3" type="button" id="btnCancelEditReceive" style="display: none;" title="Batalkan Edit Document Number">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div> 
                     <div class="col-md-2 col-sm-6">
@@ -76,8 +82,8 @@ class StockInView {
                                 value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['received_by']) : '' ?>"
                                 <?= $isViewMode ? 'disabled' : '' ?>>
                     </div>                                                                    
-                    <div class="col-md-3 col-sm-12">
-                        <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">CATATAN (OPSIONAL)</label>
+                    <div class="col-md-4 col-sm-12">
+                        <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">CATATAN</label>
                         <input type="text" class="form-control form-control-sm" id="notes" 
                                 placeholder="Detail Dokumen ..."
                                 value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['notes']) : '' ?>"

@@ -7,8 +7,8 @@ class StocksModel extends DatabaseHelper {
     }
     
     /**
-     * MENGAMBIL STOK SAAT INI (SNAPSHOT)
-     * Sangat cepat dan ringkas karena tabel stocks sekarang hanya 1 baris per item per gudang.
+     * 1. MENGAMBIL STOK SAAT INI (ON-HAND)
+     * Mengambil dari tabel `stocks`
      */
     public function getLatestStock($search = '', $warehouse = '') {
         $sql = "SELECT 
@@ -41,177 +41,176 @@ class StocksModel extends DatabaseHelper {
     }
 
     /**
-     * FUNGSI SINKRONISASI STOK GLOBAL (Fungsi Penyelamat / Single Source of Truth)
-     * Dapat dipanggil dari modul manapun untuk merapikan saldo stok akhir ke tabel `stocks`
+     * 2. DATA KARTU STOK (STOCK CARD) KRONOLOGIS
+     * Menggabungkan transaksi langsung dari tabel `sales` dan `receievement`
      */
-    public function syncCurrentStock($item_id, $warehouse) {
-        $sqlCalc = "SELECT SUM(CASE WHEN type = 'IN' THEN qty ELSE -qty END) as real_stock 
-                    FROM item_transactions 
-                    WHERE item_id = :item_id AND warehouse = :warehouse";
-                    
-        $result = $this->query_one($sqlCalc, ['item_id' => $item_id, 'warehouse' => $warehouse]);
-        $real_stock = $result ? (float)$result['real_stock'] : 0;
+    public function getStockCard($item_id, $warehouse, $startDate, $endDate) {
+        // A. Hitung Saldo Awal (IN - OUT sebelum Start Date)
+        $sqlOpen = "SELECT (
+                        COALESCE((
+                            SELECT SUM(rd.item_qty) 
+                            FROM receievement_detail rd JOIN receievement r ON rd.receive_id = r.id
+                            WHERE rd.item_id = :item_id AND r.warehouse = :warehouse AND r.date_receive < :startDate
+                        ), 0)
+                        -
+                        COALESCE((
+                            SELECT SUM(sd.item_qty) 
+                            FROM sales_detail sd JOIN sales s ON sd.sale_id = s.id
+                            WHERE sd.item_id = :item_id AND s.warehouse = :warehouse AND s.sales_date < :startDate
+                        ), 0)
+                    ) as qty_opening";
+        
+        $resOpen = $this->query_one($sqlOpen, [
+            'item_id' => $item_id, 'warehouse' => $warehouse, 'startDate' => $startDate . ' 00:00:00'
+        ]);
+        $openingBalance = $resOpen ? (float)$resOpen['qty_opening'] : 0;
 
-        $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
-            'item_id' => $item_id, 'warehouse' => $warehouse
+        // B. Ambil Mutasi Dalam Rentang Waktu (UNION ALL)
+        $sqlTrans = "SELECT * FROM (
+                        SELECT r.id AS trans_id, r.date_receive AS trans_date, r.doc_number AS trans_code, 
+                               'IN' AS type, rd.item_qty AS qty, 'Penerimaan Barang' AS notes
+                        FROM receievement_detail rd JOIN receievement r ON rd.receive_id = r.id
+                        WHERE rd.item_id = :item_id AND r.warehouse = :warehouse
+                        
+                        UNION ALL
+                        
+                        SELECT s.id AS trans_id, s.sales_date AS trans_date, s.invoice_no AS trans_code, 
+                               'OUT' AS type, sd.item_qty AS qty, 'Penjualan' AS notes
+                        FROM sales_detail sd JOIN sales s ON sd.sale_id = s.id
+                        WHERE sd.item_id = :item_id AND s.warehouse = :warehouse
+                     ) AS mutasi
+                     WHERE trans_date BETWEEN :startDate AND :endDate
+                     ORDER BY trans_date ASC, trans_id ASC";
+
+        $transactions = $this->query_all($sqlTrans, [
+            'item_id' => $item_id, 'warehouse' => $warehouse, 
+            'startDate' => $startDate . ' 00:00:00', 'endDate' => $endDate . ' 23:59:59'
         ]);
 
-        if ($cekStock) {
-            $this->query("UPDATE stocks SET qty_total = :qty_total WHERE id = :id", [
-                'qty_total' => $real_stock, 'id' => $cekStock['id']
-            ]);
-        } else {
-            $this->insert('stocks', [
-                'item_id'   => $item_id, 'warehouse' => $warehouse, 'qty_total' => $real_stock
-            ]);
+        // C. Kalkulasi Saldo Berjalan
+        $cardData = [];
+        $running = $openingBalance;
+        $cardData[] = ['date' => $startDate, 'code' => '-', 'notes' => 'SALDO AWAL', 'in' => 0, 'out' => 0, 'balance' => $running];
+
+        foreach ($transactions as $t) {
+            $in  = ($t['type'] === 'IN') ? (float)$t['qty'] : 0;
+            $out = ($t['type'] === 'OUT') ? (float)$t['qty'] : 0;
+            $running += ($in - $out);
+            $cardData[] = ['date' => $t['trans_date'], 'code' => $t['trans_code'], 'notes' => $t['notes'], 'in' => $in, 'out' => $out, 'balance' => $running];
         }
+
+        return ['opening' => $openingBalance, 'closing' => $running, 'mutations' => $cardData];
     }
 
     /**
-     * FUNGSI PRIVATE: Menghasilkan struktur SQL filter stok bulanan
-     * Dihitung murni dari tabel `item_transactions` tanpa melihat tabel `stocks`
+     * 3. LAPORAN STOK BULANAN (PAGINASI JQUERY DATATABLES)
+     * Menggunakan View `vw_laporan_stok`
      */
-    private function buildFilterQuery($search = '', $warehouse = '', $periodDate = '') {
-        if (empty($periodDate)) {
-            return ['sql' => '', 'params' => []];
-        }
-        
-        $referenceDate = (strlen($periodDate) === 7) ? $periodDate . '-01' : $periodDate;        
-        $startDateTime = date('Y-m-01 00:00:00', strtotime($referenceDate));
-        $endDateTime   = date('Y-m-t 23:59:59', strtotime($referenceDate));
-
-        $sql = "SELECT 
-                    i.id as id,
-                    i.item_name, 
-                    i.item_code, 
-                    i.unit_price, 
-                    i.item_uom,
-                    base.warehouse,
-                    
-                    COALESCE(saldo_awal.qty_open, 0) AS qty_open,
-                    COALESCE(mutasi.total_in, 0) AS qty_in,
-                    COALESCE(mutasi.total_out, 0) AS qty_out,
-                    (COALESCE(saldo_awal.qty_open, 0) + COALESCE(mutasi.total_in, 0) - COALESCE(mutasi.total_out, 0)) AS qty_close,
-                    
-                    mutasi.last_date AS date
-                FROM items i
-                
-                -- Ambil daftar barang yang pernah ada transaksinya sampai bulan tersebut
-                INNER JOIN (
-                    SELECT DISTINCT item_id, warehouse FROM item_transactions WHERE transaction_date <= :endDateTime
-                ) base ON i.id = base.item_id
-                
-                -- Hitung Saldo Awal (Total IN - OUT sebelum bulan ini)
-                LEFT JOIN (
-                    SELECT item_id, warehouse, SUM(CASE WHEN type = 'IN' THEN qty ELSE -qty END) as qty_open
-                    FROM item_transactions
-                    WHERE transaction_date < :startDateTime
-                    GROUP BY item_id, warehouse
-                ) saldo_awal ON base.item_id = saldo_awal.item_id AND base.warehouse = saldo_awal.warehouse
-                
-                -- Hitung Mutasi IN & OUT (Hanya pada bulan ini)
-                LEFT JOIN (
-                    SELECT item_id, warehouse, 
-                           SUM(CASE WHEN type = 'IN' THEN qty ELSE 0 END) as total_in, 
-                           SUM(CASE WHEN type = 'OUT' THEN qty ELSE 0 END) as total_out, 
-                           MAX(transaction_date) as last_date
-                    FROM item_transactions
-                    WHERE transaction_date >= :startDateTime AND transaction_date <= :endDateTime
-                    GROUP BY item_id, warehouse
-                ) mutasi ON base.item_id = mutasi.item_id AND base.warehouse = mutasi.warehouse
-                
-                WHERE 1=1";
-
-        $params = [
-            'startDateTime' => $startDateTime,
-            'endDateTime'   => $endDateTime
-        ];
-
-        if (!empty($search)) {
-            $sql .= " AND (i.item_code LIKE :search OR i.item_name LIKE :search)";
-            $params['search'] = "%{$search}%";
-        }
-        
-        if ($warehouse !== '') {
-            $sql .= " AND base.warehouse = :warehouse";
-            $params['warehouse'] = $warehouse;
-        }       
-        
-        return [
-            'sql'    => $sql,
-            'params' => $params
-        ];
-    }
-
-    /**
-     * UNTUK PROSES INTERNAL CLOSING (TANPA LIMIT DATA)
-     */
-    public function getFiltered($search = '', $warehouse = '', $periodDate = '') {
-        $query = $this->buildFilterQuery($search, $warehouse, $periodDate);
-        if (empty($query['sql'])) return [];
-
-        $sql = $query['sql'] . " ORDER BY i.item_name ASC, base.warehouse ASC";
-        return $this->query_all($sql, $query['params']);
-    }
-
-    /**
-     * UNTUK VIEW DATA TABEL JQUERY STOK BULANAN (DENGAN PAGINASI SERVER-SIDE)
-     */
-    public function getFilteredPaginated($search = '', $warehouse = '', $periodDate = '', $limit = 10, $offset = 0) {
-        $query = $this->buildFilterQuery($search, $warehouse, $periodDate);
-        if (empty($query['sql'])) return ['data' => [], 'total' => 0];
-
-        $sql = $query['sql'] . " ORDER BY i.item_name ASC, base.warehouse ASC";
-        return $this->query_paginated($sql, $query['params'], $limit, $offset);
-    }
-
     public function getMonthlyReportPaginated($search = '', $warehouse = '', $monthPeriod = '', $limit = 25, $offset = 0) {
-        $sql = "SELECT * FROM vw_stock_report WHERE 1=1";        
+        $sql = "SELECT * FROM vw_laporan_stok WHERE 1=1";        
         $params = [];
 
         if (!empty($monthPeriod)) {
-            $sql .= " AND periode = :monthPeriod";
+            $sql .= " AND period = :monthPeriod";
             $params['monthPeriod'] = $monthPeriod;
         }
-
         if (!empty($search)) {
             $sql .= " AND (item_code LIKE :search OR item_name LIKE :search)";
             $params['search'] = "%{$search}%";
         }
-        
         if ($warehouse !== '') {
             $sql .= " AND warehouse = :warehouse";
             $params['warehouse'] = $warehouse;
         }
 
         $sql .= " ORDER BY item_name ASC, warehouse ASC";       
-
         return $this->query_paginated($sql, $params, $limit, $offset);
     }
 
-    public function getClosingDataPaginated($search = '', $warehouse = '', $monthPeriod = '', $limit = 25, $offset = 0) {
-        $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod LIMIT 1";
-        $lock = $this->query_one($sqlCheck, ['monthPeriod' => $monthPeriod]);
-        $isClosed = ($lock && $lock['is_closed'] == 1);
-        
-        if ($isClosed) {
-            $result = $this->getMonthlyReportPaginated($search, $warehouse, $monthPeriod, $limit, $offset);
-            return [
-                'status' => 'CLOSED',
-                'data'   => $result['data'],
-                'total'  => $result['total']
-            ];
-        } else {
-            $periodDate = date('Y-m-t', strtotime($monthPeriod . '-01'));
-            $result = $this->getFilteredPaginated($search, $warehouse, $periodDate, $limit, $offset);
-            return [
-                'status' => 'ONGOING',
-                'data'   => $result['data'],
-                'total'  => $result['total']
-            ];
+    /**
+     * 4. CEK APAKAH PERIODE SUDAH DI-CLOSING
+     */
+    public function isPeriodClosed($monthPeriod, $warehouse = '') {
+        $sql = "SELECT id FROM stock_closing_log WHERE periode = :monthPeriod";
+        $params = ['monthPeriod' => $monthPeriod];
+        if ($warehouse !== '') {
+            $sql .= " AND warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+        $sql .= " LIMIT 1";
+        $check = $this->query_one($sql, $params);
+        return !empty($check);
+    }
+
+    /**
+     * 5. PROSES CLOSING STOK
+     * Mengambil QTY CLOSE dari bulan ini, lalu disimpan sebagai saldo awal (stocks_period) untuk bulan depan.
+     */
+    public function doClosing($monthPeriod = '', $warehouse = '', $executedBy = 'System') {
+        if ($this->isPeriodClosed($monthPeriod, $warehouse)) {
+            throw new Exception("Periode {$monthPeriod} sudah dikunci permanen!");
+        }
+
+        // Ambil data stok akhir bulan ini full tanpa limit
+        $sqlData = "SELECT * FROM vw_laporan_stok WHERE period = :monthPeriod";
+        $params = ['monthPeriod' => $monthPeriod];
+        if ($warehouse !== '') {
+            $sqlData .= " AND warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+        $currentStock = $this->query_all($sqlData, $params);
+
+        if (empty($currentStock)) {
+            throw new Exception("Tidak ada data stok pada periode ini untuk di-closing.");
+        }
+
+        // Tanggal 1 bulan depan (Untuk record saldo awal bulan depan)
+        $nextMonthDate = date('Y-m-01', strtotime($monthPeriod . '-01 +1 month'));
+        $insertedCount = 0;
+        $gudangTerproses = [];
+
+        try {
+            $this->beginTransaction();
+            
+            // Hapus data awal bulan depan jika sebelumnya pernah ada error parsial (Mencegah duplikat)
+            $sqlDel = "DELETE FROM stocks_period WHERE stock_date = :nextMonthDate";
+            if ($warehouse !== '') $sqlDel .= " AND warehouse = :warehouse";
+            $stmtDel = $this->db->prepare($sqlDel);
+            $stmtDel->execute(['nextMonthDate' => $nextMonthDate] + ($warehouse !== '' ? ['warehouse' => $warehouse] : []));
+
+            // Simpan Qty Close bulan ini menjadi Qty awal di stocks_period bulan depan
+            foreach ($currentStock as $stock) {
+                $gudangTerproses[$stock['warehouse']] = true;
+                $this->insert('stocks_period', [
+                    'item_id'    => $stock['item_id'],
+                    'warehouse'  => $stock['warehouse'],
+                    'stock_date' => $nextMonthDate,
+                    'qty'        => $stock['qty_close'] // Nilai close dimasukkan ke qty open bulan depan
+                ]);
+                $insertedCount++;
+            }
+                        
+            // Catat log closing
+            foreach (array_keys($gudangTerproses) as $whID) {
+                $this->insert('stock_closing_log', [
+                    'periode'     => $monthPeriod,
+                    'warehouse'   => $whID,
+                    'executed_by' => $executedBy
+                ]);
+            }
+            
+            $this->commit();
+            return $insertedCount;
+            
+        } catch (Exception $e) {
+            $this->rollBack();
+            throw new Exception("Gagal menyimpan closing: " . $e->getMessage());
         }
     }
-    
+
+    /**
+     * MENGAMBIL RIWAYAT CLOSING STOK
+     */
     public function getClosingHistory($warehouse = '') {
         $sql = "SELECT id, periode, warehouse, executed_by, executed_at 
                 FROM stock_closing_log 
@@ -225,102 +224,6 @@ class StocksModel extends DatabaseHelper {
 
         $sql .= " ORDER BY executed_at DESC";
         return $this->query_all($sql, $params);
-    }
-    
-    public function isPeriodClosed($monthPeriod, $warehouse = '') {
-        $sql = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod";
-        $params = ['monthPeriod' => $monthPeriod];
-        
-        if ($warehouse !== '') {
-            $sql .= " AND warehouse = :warehouse";
-            $params['warehouse'] = $warehouse;
-        }
-        $sql .= " LIMIT 1";
-        
-        $check = $this->query_one($sql, $params);
-        return ($check && $check['is_closed'] == 1);
-    }
-
-    public function doClosing($monthPeriod = '', $warehouse = '', $executedBy = 'System') {
-        $endDate = date('Y-m-t', strtotime($monthPeriod . '-01'));
-        $prevMonth = date('Y-m', strtotime($monthPeriod . '-01 -1 month'));
-
-        $sqlCheck = "SELECT is_closed FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod";
-        $checkParams = ['monthPeriod' => $monthPeriod];
-        if ($warehouse !== '') {
-            $sqlCheck .= " AND warehouse = :warehouse";
-            $checkParams['warehouse'] = $warehouse;
-        }
-        $sqlCheck .= " LIMIT 1";
-
-        $checkLock = $this->query_one($sqlCheck, $checkParams);
-        if ($checkLock && $checkLock['is_closed'] == 1) {
-            throw new Exception("Periode {$monthPeriod} sudah dikunci permanen!");
-        }
-
-        $currentStock = $this->getFiltered('', $warehouse, $monthPeriod);
-        $insertedCount = 0;
-        
-        if (empty($currentStock)) {
-            throw new Exception("Tidak ada pergerakan stok pada periode ini untuk di-closing.");
-        }
-
-        try {
-            $this->beginTransaction();
-            
-            $sqlPrev = "SELECT item_id, warehouse, qty_close FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :prevMonth";
-            $prevParams = ['prevMonth' => $prevMonth];
-            if ($warehouse !== '') {
-                $sqlPrev .= " AND warehouse = :warehouse";
-                $prevParams['warehouse'] = $warehouse;
-            }
-            $prevData = $this->query_all($sqlPrev, $prevParams);
-            
-            $gudangTerproses = [];
-            $prevStockData = [];
-            foreach ($prevData as $row) {
-                $key = $row['item_id'] . '_' . $row['warehouse'];
-                $prevStockData[$key] = $row['qty_close']; 
-            }
-
-            $sqlDel = "DELETE FROM stock_closing WHERE DATE_FORMAT(date, '%Y-%m') = :monthPeriod";
-            if ($warehouse !== '') $sqlDel .= " AND warehouse = :warehouse";
-            $stmtDel = $this->db->prepare($sqlDel);
-            $stmtDel->execute($checkParams);
-
-            foreach ($currentStock as $stock) {
-                $key = $stock['id'] . '_' . $stock['warehouse'];
-                $qtyOpen = isset($prevStockData[$key]) ? $prevStockData[$key] : 0;
-                $gudangTerproses[$stock['warehouse']] = true;
-
-                $dataInsert = [
-                    'item_id'   => $stock['id'],
-                    'warehouse' => $stock['warehouse'],
-                    'date'      => $endDate,
-                    'qty_open'  => $qtyOpen,
-                    'qty_close' => $stock['qty_close'],
-                    'is_closed' => 1
-                ];
-
-                $this->insert('stock_closing', $dataInsert);
-                $insertedCount++;
-            }
-                        
-            foreach (array_keys($gudangTerproses) as $whID) {
-                $logData = [
-                    'periode'     => $monthPeriod,
-                    'warehouse'   => $whID,
-                    'executed_by' => $executedBy . ' (LOCKED)'
-                ];
-                $this->insert('stock_closing_log', $logData);
-            }
-            $this->commit();
-            return $insertedCount;
-            
-        } catch (Exception $e) {
-            $this->rollBack();
-            throw new Exception("Gagal menyimpan closing: " . $e->getMessage());
-        }
     }
 }
 ?>
