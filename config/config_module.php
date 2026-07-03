@@ -130,16 +130,6 @@ return [
         ],
         [
             'type'        => 'link',
-            'key'         => 'history',
-            'name'        => 'Item Log',
-            'desc'        => 'Melihat riwayat mutasi keluar masuk barang secara detail.',
-            'icon'        => 'fa-solid fa-clock-rotate-left',
-            'url'         => 'index.php?page=history',
-            'rule'        => 'public',
-            'active_rule' => 'default'
-        ],
-        [
-            'type'        => 'link',
             'key'         => 'users',
             'name'        => 'User Login',
             'desc'        => 'Halaman manajemen user khusus superadmin.',

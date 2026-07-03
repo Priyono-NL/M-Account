@@ -96,7 +96,6 @@ $controllers = [
     'receive' => 'StockInController',
     'items' => 'ItemsController',
     'buyers' => 'BuyerController',
-    'history' => 'ReportsController',
     'stocks' => 'StocksController',
     'stockClosing' => 'StockCloseController',
     'sales' => 'SalesPivotController',
