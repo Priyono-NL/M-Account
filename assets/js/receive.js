@@ -558,13 +558,35 @@ $(document).ready(function() {
                 return;
             }
 
+            let addedCount = 0;
+
             modalDraft.forEach(function(draftItem) {
+                // 1. Cek apakah barang sudah ada di keranjang (cart) utama
+                let existingItemInCart = cart.find(c => c.id == draftItem.id);
+
+                // 2. Jika SUDAH ADA, blokir dan berikan notifikasi error
+                if (existingItemInCart) {
+                    if (typeof showNotification !== 'undefined') {
+                        showNotification(`Barang ${draftItem.nama} sudah ada di keranjang utama!`, 'danger');
+                    }
+                    return; // Lewati item ini, lanjut ke item berikutnya di loop draft
+                }
+
+                // 3. Jika BELUM ADA, masukkan ke dalam keranjang utama
                 cart.push({ ...draftItem, stok: 999999 }); 
+                addedCount++;
             });
 
+            // Tutup modal dan render ulang tabel keranjang
             $('#itemModal').modal('hide');
             renderCart();
-            if (typeof showNotification !== 'undefined') showNotification(`${modalDraft.length} baris barang ditambahkan.`, 'success');
+
+            // Tampilkan notifikasi sukses hanya jika ada barang baru yang berhasil masuk
+            if (addedCount > 0) {
+                if (typeof showNotification !== 'undefined') {
+                    showNotification(`${addedCount} baris barang berhasil ditambahkan.`, 'success');
+                }
+            }
         });
 
         // --- C. PROSES CHECKOUT / SIMPAN TRANSAKSI ---
@@ -574,15 +596,7 @@ $(document).ready(function() {
                 return;
             }
 
-            let docNumber = $('#docNumber').val().trim();
-            let receivedBy = $('#received_by').val().trim();
-
-            if (docNumber === "" || docNumber === "0") {
-                if (typeof showNotification !== 'undefined') showNotification('Nomor Dokumen tidak boleh kosong!', 'danger');
-                $('#docNumber').focus();
-                return;
-            }
-
+            let receivedBy = $('#received_by').val().trim();            
             if (receivedBy === "" || receivedBy === "0") {
                 if (typeof showNotification !== 'undefined') showNotification('Nama Penerima tidak boleh kosong!', 'danger');
                 $('#received_by').focus();
@@ -598,7 +612,6 @@ $(document).ready(function() {
                 dataType: 'json',
                 data: {
                     action: 'checkout',
-                    doc_number: docNumber,
                     received_by: receivedBy,
                     warehouse: $('#warehouseSelect').val(),
                     date_receive: $('#date_receive').val(),

@@ -159,7 +159,7 @@ class StockInModel extends DatabaseHelper {
 
                 $nextNum = 1;
                 if ($lastRecord) {
-                    $parts = explode('-', $lastRecord['invoice_no']);                    
+                    $parts = explode('-', $lastRecord['doc_number']);                    
                     $lastNum = (int) end($parts);
                     $nextNum = $lastNum + 1; 
                 }                

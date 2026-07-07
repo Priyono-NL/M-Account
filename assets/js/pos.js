@@ -562,29 +562,39 @@ $(document).ready(function() {
         });
 
         $('#btnSubmitItems').click(function() {
-            if (itemDraft.length === 0) { if(typeof showNotification !== 'undefined') showNotification('Pilih minimal satu barang!', 'warning'); return; }
+            if (itemDraft.length === 0) { 
+                if(typeof showNotification !== 'undefined') showNotification('Pilih minimal satu barang!', 'warning'); 
+                return; 
+            }
             
             let currentSalesType = $('#salesType').val();
             let addedCount = 0;
 
             itemDraft.forEach(draft => {
+                // 1. Cek apakah barang sudah ada di keranjang (cart) utama
                 let existingItemInCart = cart.find(c => c.id == draft.id);
-                let existingQty = getQtyInCart(draft.id);
                 
-                // Jika sedang edit, ambil stok dari cart (yg sudah digabung stok lama), jika tidak, dari draft (stok real db)
-                let maxStok = existingItemInCart ? existingItemInCart.stok : draft.stok;
-
-                if (existingQty + draft.qty > maxStok) {
-                    if(typeof showNotification !== 'undefined') showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${maxStok}).`, 'warning');
-                } else {
-                    if (existingItemInCart) {
-                        existingItemInCart.qty += draft.qty;
-                    } else {
-                        cart.push({
-                            ...draft,
-                            harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
-                        });
+                // 2. Jika SUDAH ADA, blokir dan berikan notifikasi ke user
+                if (existingItemInCart) {
+                    if (typeof showNotification !== 'undefined') {
+                        showNotification(`Barang ${draft.nama} sudah ada di keranjang utama!`, 'danger');
                     }
+                    return; // Skip item ini, lanjut ke item berikutnya di dalam draft loop
+                }
+
+                // 3. Jika BELUM ADA, jalankan pengecekan stok normal
+                let maxStok = draft.stok;
+
+                if (draft.qty > maxStok) {
+                    if(typeof showNotification !== 'undefined') {
+                        showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${maxStok}).`, 'warning');
+                    }
+                } else {
+                    // Masukkan sebagai item baru di cart
+                    cart.push({
+                        ...draft,
+                        harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
+                    });
                     addedCount++;
                 }
             });
