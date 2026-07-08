@@ -1,6 +1,7 @@
 <?php
 class ItemsView {
     public static function render($items) {
+        extract($items);
         ob_start();
         ?>
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -38,11 +39,15 @@ class ItemsView {
                     </div>
 
                     <div class="col-md-3">
-                        <select class="form-select form-select-sm" id="filterCategory">
-                            <option value="">Semua Kategori</option>
-                            <option value="1">BS 1</option>
-                            <option value="2">BS 2</option>
-                        </select>
+                        <?php 
+                            Component::warehouseSelect(
+                                $warehouses, 
+                                $current_warehouse, 
+                                $is_locked, 
+                                'filterCategory',
+                                true
+                            ); 
+                        ?>
                     </div>
                     
                 </div>
@@ -57,7 +62,7 @@ class ItemsView {
                             <tr>
                                 <th class="ps-4 py-3">Kode</th>
                                 <th>Nama Barang</th>
-                                <th>Kategori</th>
+                                <th>Organization ID</th>
                                 <th class="text-center">UOM</th>
                                 <th class="text-end">Harga Jual</th>
                                 <th class="text-center pe-4">Aksi</th>
@@ -106,27 +111,21 @@ class ItemsView {
                                 <input type="text" class="form-control form-control-sm" name="item_name" id="itemName" required>
                             </div>
                             <div class="row">
-                                <div class="col-3 mb-3">
-                                    <label class="form-label text-muted small fw-bold">KATEGORI</label><span class="text-danger">*</span>
-                                    <select class="form-select form-select-sm" name="category" id="itemCategory">
-                                        <option value="1">BS 1</option>
-                                        <option value="2">BS 2</option>
-                                    </select>
-                                </div>
-                                <div class="col-3 mb-3">
-                                    <label class="form-label text-muted small fw-bold">UNIT WEIGHT</label>
-                                    <input type="text" class="form-control form-control-sm" name="unit_weight" id="unitWeight" required>
-                                </div>
-                                <div class="col-3 mb-3">
-                                    <label class="form-label text-muted small fw-bold">WEIGHT UOM</label>
-                                    <select class="form-select form-select-sm" name="weight_uom" id="weightUom" required>
-                                        <option value=""></option>
-                                        <option value="Ea">Each</option>
-                                        <option value="Gr">Gr</option>                                        
-                                        <option value="Kg">Kg</option>
-                                    </select>
-                                </div>
-                                <div class="col-3 mb-3">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold">Organization ID</label><span class="text-danger">*</span>
+                                    <?php 
+                                        Component::warehouseFormSelect(
+                                            $warehouses, 
+                                            $current_warehouse, 
+                                            $is_locked, 
+                                            false,
+                                            $_SESSION['user']['extra_config']['warehouse'] ?? null,
+                                            'itemCategory',
+                                            'organization_id'
+                                        ); 
+                                    ?>
+                                </div>                                
+                                <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">UOM</label><span class="text-danger">*</span>
                                     <select class="form-select form-select-sm" name="item_uom" id="itemUom" required>
                                         <option value="Bal">Bal</option>
@@ -135,6 +134,19 @@ class ItemsView {
                                         <option value="Kg">Kg</option>
                                         <option value="Tin">Tin</option>
                                         <option value="Zak">Zak</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold">UNIT WEIGHT</label>
+                                    <input type="text" class="form-control form-control-sm" name="unit_weight" id="unitWeight" required>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold">WEIGHT UOM</label>
+                                    <select class="form-select form-select-sm" name="weight_uom" id="weightUom" required>
+                                        <option value=""></option>
+                                        <option value="Ea">Each</option>
+                                        <option value="Gr">Gr</option>                                        
+                                        <option value="Kg">Kg</option>
                                     </select>
                                 </div>
                             </div>

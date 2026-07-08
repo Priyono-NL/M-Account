@@ -31,7 +31,7 @@ $(document).ready(function() {
                     }
 
                     res.data.forEach(function(item) {
-                        let catBadge = item.category == '1' ? 'BS 1' : 'BS 2';
+                        let catBadge = item.warehouse_name || 'Tanpa Gudang';
                         let price = parseInt(item.unit_price).toLocaleString('id-ID');
                         let itemJson = JSON.stringify(item).replace(/'/g, "&#39;");
 
@@ -111,7 +111,7 @@ $(document).ready(function() {
         $("#itemId").val(data.id);
         $("#itemCode").val(data.item_code).prop("readonly", true);
         $("#itemName").val(data.item_name);
-        $("#itemCategory").val(data.category);
+        $("#itemCategory").val(data.organization_id);
         $("#itemUom").val(data.item_uom);
         $("#unitWeight").val(data.unit_weight);
         $("#weightUom").val(data.weight_uom);

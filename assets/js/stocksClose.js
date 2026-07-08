@@ -55,7 +55,6 @@ $(document).ready(function() {
                     }
 
                     res.data.forEach(function(t) {
-                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);                        
                         let qtyInStr = t.qty_in > 0 ? `<span class="text-success">+${t.qty_in}</span>` : '0';
                         let qtyOutStr = t.qty_out > 0 ? `<span class="text-danger">-${t.qty_out}</span>` : '0';
                         let rawDate = t.date || t.transaction_date; 
@@ -66,7 +65,7 @@ $(document).ready(function() {
 
                         let tr = `
                             <tr>                                
-                                <td class="text-center ps-4"><span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">${warehouseName}</span></td>
+                                <td class="text-center ps-4"><span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">${t.warehouse_name}</span></td>
                                 <td><div class="fw-bold text-dark">${t.item_name}</div><small class="text-muted" style="font-size: 11px;">${t.item_code}</small></td>
                                 <td class="text-center fw-medium text-muted">${t.qty_open}</td>
                                 <td class="text-center fw-bold">${qtyInStr}</td>

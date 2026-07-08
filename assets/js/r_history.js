@@ -66,9 +66,7 @@ $(document).ready(function() {
                         return;
                     }
 
-                    res.data.forEach(function(t) {
-                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
-                                                                        
+                    res.data.forEach(function(t) {                                                
                         let dateObj = new Date(t.date_receive);
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -76,7 +74,7 @@ $(document).ready(function() {
                             <tr>
                                 <td class="ps-4 text-center">
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">
-                                        ${warehouseName}
+                                        ${t.warehouse_name}
                                     </span>
                                 </td>                               
                                 <td class="fw-bold text-primary">${t.doc_number}</td>                                

@@ -202,13 +202,14 @@ class SalesModel extends DatabaseHelper {
      * FUNGSI PRIVATE: Menghasilkan query filter WHERE yang bersih dari instruksi ORDER BY.
      */
     private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
-        $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
+        $sql = "SELECT s.*, b.buyer_name, b.buyer_code, w.warehouse_name,
                     (SELECT SUM(sd.item_qty * i.unit_price) 
                     FROM sales_detail sd
                     JOIN items i ON sd.item_id = i.id
                     WHERE sd.sale_id = s.id) as total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
+                LEFT JOIN warehouse w ON s.warehouse = w.id
                 WHERE 1=1";
         
         $params = [];

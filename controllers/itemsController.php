@@ -10,7 +10,12 @@ class ItemsController extends BaseController {
     }
 
     public function index() {
-        ItemsView::render([]);
+        $warehouseContext = $this->getWarehouseContext();
+        ItemsView::render([
+            'warehouses'=> $warehouseContext['warehouses'],
+            'current_warehouse' => '',
+            'is_locked' => $warehouseContext['is_locked']
+        ]);
     }
 
     public function filter_api() {
@@ -32,7 +37,7 @@ class ItemsController extends BaseController {
         $data = $this->sanitize([
             'item_code'  => $this->getPost('item_code'),
             'item_name'  => $this->getPost('item_name'),
-            'category'   => $this->getPost('category'),
+            'organization_id'   => $this->getPost('organization_id'),
             'item_uom'   => $this->getPost('item_uom'),
             'unit_price' => $this->getPost('unit_price'),
             'unit_cost'  => $this->getPost('unit_cost'),
@@ -63,7 +68,7 @@ class ItemsController extends BaseController {
 
         $data = $this->sanitize([
             'item_name'  => $this->getPost('item_name'),
-            'category'   => $this->getPost('category'),
+            'organization_id'   => $this->getPost('organization_id'),
             'item_uom'   => $this->getPost('item_uom'),
             'unit_price' => $this->getPost('unit_price'),
             'unit_cost'  => $this->getPost('unit_cost'),
@@ -92,7 +97,7 @@ class ItemsController extends BaseController {
         $rows = [[ 
             '<b>Kode Barang</b>', 
             '<b>Nama Barang</b>',
-            '<b>Kategori</b>',
+            '<b>Organization Id</b>',
             '<b>UoM</b>',
             '<b>Harga Jual</b>',
             '<b>Harga Cost</b>',
@@ -133,7 +138,7 @@ class ItemsController extends BaseController {
                 foreach ($rows as $row) {
                     $item_code  = trim($row[0] ?? '');
                     $item_name  = trim($row[1] ?? '');
-                    $category   = trim($row[2] ?? '1');
+                    $organization_id   = trim($row[2] ?? '1');
                     $item_uom   = trim($row[3] ?? '');
                     $unit_price = trim($row[4] ?? 0);
                     $unit_cost  = trim($row[5] ?? 0);
@@ -145,7 +150,7 @@ class ItemsController extends BaseController {
                     $data = $this->sanitize([
                         'item_code'  => $item_code,
                         'item_name'  => $item_name,
-                        'category'   => $category,
+                        'organization_id'   => $organization_id,
                         'item_uom'   => $item_uom,
                         'unit_price' => $unit_price,
                         'unit_cost'  => $unit_cost

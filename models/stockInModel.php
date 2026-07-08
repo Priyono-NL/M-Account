@@ -224,7 +224,10 @@ class StockInModel extends DatabaseHelper {
      * FUNGSI PRIVATE: Menyusun string SQL base dan binding parameters untuk filter data.
      */
     private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '') {
-        $sql = "SELECT r.* FROM receivement r WHERE 1=1";
+        $sql = "SELECT r.*, w.warehouse_name 
+                FROM receivement r 
+                LEFT JOIN warehouse w ON r.warehouse = w.id
+                WHERE 1=1";
         $params = [];
 
         if (!empty($search)) {

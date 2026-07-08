@@ -8,7 +8,10 @@ class ItemsModel extends DatabaseHelper {
     }
 	
 	private function buildFilterQuery($search, $category) {
-        $sql = "SELECT * FROM items WHERE is_active = 0";
+        $sql = "SELECT items.*, warehouse.warehouse_name AS warehouse_name 
+                FROM items
+                LEFT JOIN warehouse ON items.organization_id = warehouse.id
+                WHERE items.is_active = 0 ";
         $params = [];
 
         if (!empty($search)) {
@@ -17,7 +20,7 @@ class ItemsModel extends DatabaseHelper {
         }
         
         if ($category !== '') {
-            $sql .= " AND category = :category";
+            $sql .= " AND organization_id = :category";
             $params['category'] = $category;
         }
 

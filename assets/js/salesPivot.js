@@ -88,7 +88,7 @@ $(document).ready(function() {
                         let item = {                             
                             "Tipe Penjualan": row.sale_type,
                             "No. Invoice": row.invoice_no,
-                            "Gudang": row.warehouse,
+                            "Gudang": row.warehouse_name,
                             "Tgl Penjualan": row.sales_date,
                             "Nama Pembeli": row.buyer_name,
                             "Kode Pembeli": row.buyer_code,

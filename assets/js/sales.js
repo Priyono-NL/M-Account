@@ -69,8 +69,6 @@ $(document).ready(function() {
                     }
 
                     res.data.forEach(function(t) {
-                        let warehouseName = t.warehouse == '1' ? 'Gudang BS' : (t.warehouse == '2' ? 'Gudang Sampah' : t.warehouse);
-                        
                         let typeBadge = t.sale_type === 'SLS' 
                             ? '<span class="badge bg-success bg-opacity-10 text-success border-0 px-2 py-1"><i class="fa-solid fa-arrow-trend-up me-1"></i> Normal</span>' 
                             : '<span class="badge bg-primary bg-opacity-10 text-primary border-0 px-2 py-1"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Expense</span>';
@@ -84,7 +82,7 @@ $(document).ready(function() {
                             <tr>
                                 <td class="ps-4 text-center">
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 px-2 fw-normal">
-                                        ${warehouseName}
+                                        ${t.warehouse_name}
                                     </span>
                                 </td>                                
                                 <td class="text-center">${typeBadge}</td>                                

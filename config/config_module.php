@@ -19,7 +19,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'pos',
-            'name'        => 'Penjualan (POS)',
+            'name'        => 'Penjualan',
             'desc'        => 'Akses penuh ke halaman transaksi penjualan kasir.',
             'icon'        => 'fa-solid fa-cash-register',
             'url'         => 'index.php?page=pos',
@@ -29,7 +29,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'receive',
-            'name'        => 'Receivement (Form)',
+            'name'        => 'Penerimaan',
             'desc'        => 'Mengelola dan mencatat penerimaan barang masuk dari supplier.',
             'icon'        => 'fa-solid fa-truck-ramp-box',
             'url'         => 'index.php?page=receive',
@@ -111,7 +111,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'sales_detail',
-            'name'        => 'Penjualan Log',
+            'name'        => 'Penjualan Detail',
             'desc'        => 'Melihat riwayat transaksi kasir secara terperinci.',
             'icon'        => 'fa-solid fa-file-invoice',
             'url'         => 'index.php?page=pos&action=history',
@@ -121,7 +121,7 @@ return [
         [
             'type'        => 'link',
             'key'         => 'receive_history',
-            'name'        => 'Penerimaan Log',
+            'name'        => 'Penerimaan Detail',
             'desc'        => 'Melihat log riwayat penerimaan barang dari supplier.',
             'icon'        => 'fa-solid fa-clipboard-check',
             'url'         => 'index.php?page=receive&action=history',
