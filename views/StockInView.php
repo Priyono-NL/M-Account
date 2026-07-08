@@ -28,7 +28,7 @@ class StockInView {
                 <div>
                     <p id="info-state"></p>
                     <button class="btn btn-primary px-3" type="button" id="btnFindDoc" data-bs-toggle="modal" data-bs-target="#receiveModal">
-                        <i class="fa-solid fa-search"></i> Cari & Edit
+                        <kbd class="bg-white text-primary me-2 shadow-sm">F8</kbd> <i class="fa-solid fa-search"></i> Cari & Edit
                     </button>
                 </div>
             <?php endif; ?>
@@ -102,7 +102,7 @@ class StockInView {
                         </h6>
                         <?php if (!$isViewMode): ?>
                         <button type="button" class="btn btn-primary btn-sm fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#itemModal">
-                            <i class="fa-solid fa-plus me-1"></i> Pilih & Tambah
+                            <kbd class="bg-white text-primary me-2 shadow-sm">F2</kbd> <i class="fa-solid fa-plus me-1"></i> Pilih & Tambah
                         </button>
                         <?php endif; ?>
                     </div>
@@ -149,10 +149,10 @@ class StockInView {
                             <?php if (!$isViewMode): ?>
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-primary fw-bold py-2 shadow-sm" id="btnCheckout">
-                                        <i class="fa-solid fa-check-double me-2"></i> Save Transaksi
+                                        <kbd class="bg-white text-primary me-2 shadow-sm">F4</kbd> <i class="fa-solid fa-check-double me-2"></i> Save Transaksi
                                     </button>
                                     <button class="btn btn-light border text-danger fw-semibold py-2" id="btnClearCart">
-                                        <i class="fa-solid fa-rotate-left me-1"></i> Clear Form
+                                        <kbd class="bg-white text-primary me-2 shadow-sm">Esc</kbd> <i class="fa-solid fa-rotate-left me-1"></i> Clear Form
                                     </button>
                                 </div>
                             <?php else: ?>
@@ -212,7 +212,7 @@ class StockInView {
                                 </div>
                                 <div class="p-3 border-top bg-white">
                                     <button type="button" id="btnSubmitModalItems" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm">
-                                        <i class="fa-solid fa-plus me-1"></i> Masukkan ke Keranjang Utama
+                                        <kbd class="bg-white text-primary me-2 shadow-sm">F3</kbd> <i class="fa-solid fa-plus me-1"></i> Masukkan ke Keranjang Utama
                                     </button>
                                 </div>
                             </div>
@@ -259,6 +259,10 @@ class StockInView {
                 </div>
             </div>
         </div>
+
+        <?php 
+            Component::shortcutLegend($is_allowed_edit); 
+        ?>
         
         <?php
         $content = ob_get_clean();

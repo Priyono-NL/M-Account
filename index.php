@@ -102,7 +102,8 @@ $controllers = [
     'changeLogin' => 'ChangeLoginController',
     'company' => 'CompanyController',
     'users' => 'UsersController',
-    'permission' => 'PermissionController'
+    'permission' => 'PermissionController',
+    'origins' => 'OriginController'
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

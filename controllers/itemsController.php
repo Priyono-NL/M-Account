@@ -11,10 +11,12 @@ class ItemsController extends BaseController {
 
     public function index() {
         $warehouseContext = $this->getWarehouseContext();
+        $origins = $this->model->getOrigins();
         ItemsView::render([
             'warehouses'=> $warehouseContext['warehouses'],
             'current_warehouse' => '',
-            'is_locked' => $warehouseContext['is_locked']
+            'is_locked' => $warehouseContext['is_locked'],
+            'origins' => $origins
         ]);
     }
 

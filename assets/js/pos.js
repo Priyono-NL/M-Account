@@ -732,5 +732,152 @@ $(document).ready(function() {
                 currentSaleId = null;
             });
         }
+
+        // ========================================================
+        // 6. FITUR KEYBOARD SHORTCUTS & MANAGEMENT FOCUS (KASIR MODE)
+        // ========================================================
+        $(document).on('keydown', function(e) {
+            // F2 - Buka Modal Tambah Barang
+            if (e.key === "F2") {
+                e.preventDefault();
+                if (!$('#itemModal').is(':visible')) $('#itemModal').modal('show');
+            }
+            // F3 - Tambah Barang ke Cart Utama
+            if (e.key === "F3") {
+                e.preventDefault();
+                if ($('#itemModal').is(':visible')) {
+                    $('#btnSubmitItems, #btnSubmitModalItems').filter(':visible').click();
+                }
+            }
+            // F1 - Buka Modal Cari Pelanggan
+            if (e.key === "F1") {
+                e.preventDefault();
+                if (!$('#buyerModal').is(':visible') && !isEditMode) $('#buyerModal').modal('show');
+            }
+            // F8 - Buka Modal Cari & Edit Invoice
+            if (e.key === "F8") {
+                e.preventDefault();
+                if (isUserAllowed && !$('#invoiceModal').is(':visible')) $('#invoiceModal').modal('show');
+            }
+            // F4 - Simpan Transaksi (Save)
+            if (e.key === "F4") {
+                e.preventDefault();
+                // Jalankan checkout hanya jika tidak ada modal yang sedang terbuka
+                if ($('.modal.show').length === 0) $('#btnCheckout').click();
+            }
+            // ESCAPE - Tutup Modal atau Clear Form
+            if (e.key === "Escape") {
+                if ($('.modal.show').length > 0) {
+                    $('.modal').modal('hide');
+                } else {
+                    $('#btnClearCart').click();
+                }
+            }
+        });
+
+        // Otomatis Pindahkan Kursor (Fokus) ke Input Pencarian saat Modal Terbuka
+        $('#itemModal').on('shown.bs.modal', function () { $('#modalSearchItem').focus(); });
+
+        $('#buyerModal').on('shown.bs.modal', function () { $('#modalSearchBuyer').focus(); });
+
+        $('#invoiceModal').on('shown.bs.modal', function () { $('#modalSearchInvoice').focus(); });
+
+        // ========================================================
+        // HOTKEYS: NAVIGASI PANAH & ENTER DI DALAM MODAL (DENGAN AUTO-SCROLL)
+        // ========================================================
+        $('#modalSearchBuyer, #modalSearchItem, #modalSearchInvoice').on('keydown', function(e) {
+            let $modal = $(this).closest('.modal');
+            let $tbody = $modal.find('tbody');
+            
+            // Ambil hanya baris data asli (abaikan baris loading / text-center)
+            let $rows = $tbody.find('tr').filter(function() {
+                return !$(this).attr('id') && !$(this).hasClass('text-center') && $(this).find('td').length > 1;
+            });
+
+            if ($rows.length === 0) return;
+
+            // Cari baris yang saat ini sedang aktif di-highlight biru
+            let $activeRow = $tbody.find('tr.table-primary');
+            let activeIndex = $rows.index($activeRow);
+
+            // 1. TOMBOL PANAH BAWAH (↓)
+            if (e.key === "ArrowDown") {
+                e.preventDefault(); 
+                $rows.removeClass('table-primary'); // Bersihkan warna biru lama
+                
+                if (activeIndex === -1 || activeIndex === $rows.length - 1) {
+                    $rows.first().addClass('table-primary'); // Jika belum ada atau di paling akhir, balik ke baris pertama
+                } else {
+                    $rows.eq(activeIndex + 1).addClass('table-primary'); // Turun 1 baris
+                }
+                
+                // Jalankan auto-scroll ke baris baru yang aktif
+                scrollToRow($tbody.find('tr.table-primary'));
+            } 
+            
+            // 2. TOMBOL PANAH ATAS (↑)
+            else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                $rows.removeClass('table-primary');
+                
+                if (activeIndex === -1 || activeIndex === 0) {
+                    $rows.last().addClass('table-primary'); // Jika belum ada atau di paling atas, lompat ke baris paling bawah
+                } else {
+                    $rows.eq(activeIndex - 1).addClass('table-primary'); // Naik 1 baris
+                }
+                
+                // Jalankan auto-scroll ke baris baru yang aktif
+                scrollToRow($tbody.find('tr.table-primary'));
+            } 
+            
+            // 3. TOMBOL ENTER (↵)
+            else if (e.key === "Enter") {
+                e.preventDefault();
+                if ($activeRow.length > 0) {
+                    let $selectBtn = $activeRow.find('.btn-pilih-buyer, .btn-pilih-invoice, .item-chk');
+                    
+                    if ($selectBtn.length > 0) {
+                        if ($selectBtn.is(':checkbox')) {
+                            // Khusus modal barang: Enter untuk Centang/Uncentang checkbox
+                            $selectBtn.prop('checked', !$selectBtn.prop('checked')).trigger('change');
+                        } else {
+                            // Khusus modal Buyer & Invoice: Langsung pilih/eksekusi
+                            $selectBtn.click();
+                        }
+                    }
+                }
+            }
+        });
+
+        // RESET HIGHLIGHT SAAT KASIR MENGETIK ULANG KEYWORD BARU
+        $('#modalSearchBuyer, #modalSearchItem, #modalSearchInvoice').on('input', function() {
+            $(this).closest('.modal').find('tbody tr').removeClass('table-primary');
+        });
+
+        // FUNGSI UTAMA AUTO-SCROLL (BERDASARKAN KOORDINAT OFFSET)
+        function scrollToRow($row) {
+            if ($row.length === 0) return;
+
+            // Deteksi container mana yang memicu scrollbar (biasanya .table-responsive atau .modal-body)
+            let $container = $row.closest('.table-responsive').length ? $row.closest('.table-responsive') : $row.closest('.modal-body');
+            if (!$container.length) return;
+
+            // Ambil batas koordinat container penampung scroll
+            let containerTop = $container.offset().top;
+            let containerBottom = containerTop + $container.innerHeight();
+
+            // Ambil batas koordinat baris tabel (.table-primary) yang dituju
+            let rowTop = $row.offset().top;
+            let rowBottom = rowTop + $row.outerHeight();
+
+            // JIKA BARIS BERADA DI BAWAH BATAS VIEWPORT (Scroll Turun)
+            if (rowBottom > containerBottom) {
+                $container.scrollTop($container.scrollTop() + (rowBottom - containerBottom));
+            }
+            // JIKA BARIS BERADA DI ATAS BATAS VIEWPORT (Scroll Naik)
+            else if (rowTop < containerTop) {
+                $container.scrollTop($container.scrollTop() - (containerTop - rowTop));
+            }
+        }
     }
 });

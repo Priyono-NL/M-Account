@@ -71,8 +71,18 @@ return [
             'active_rule' => 'default'
         ],
         [
+            'type'        => 'link',
+            'key'         => 'origins',
+            'name'        => 'Master Origin Code',
+            'desc'        => 'Mengatur informasi data origins barang.',
+            'icon'        => 'fa-solid fa-code-branch',
+            'url'         => 'index.php?page=origins',
+            'rule'        => 'admin',
+            'active_rule' => 'default'
+        ],
+        [
             'type'        => 'divider',
-            'rule'        => 'public'
+            'rule'        => 'admin'
         ],
         [
             'type'        => 'link',

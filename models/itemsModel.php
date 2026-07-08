@@ -42,5 +42,12 @@ class ItemsModel extends DatabaseHelper {
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
+    public function getOrigins() {
+        $sql = "SELECT origin_code, origin_name
+            FROM origin_code 
+            ORDER BY origin_code ASC";
+        return $this->query_all($sql);
+    }
+
 }
 ?>

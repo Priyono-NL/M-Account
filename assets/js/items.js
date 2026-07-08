@@ -102,6 +102,7 @@ $(document).ready(function() {
         $("#formItem")[0].reset();
         $("#itemId").val("");
         $("#itemCode").val("").prop("readonly", false);
+        $("#originCode").val("").trigger('change');
         $("#modalTitle").text("Tambah Barang Baru");
         $("#modalItem").modal("show");
     });
@@ -115,12 +116,16 @@ $(document).ready(function() {
         $("#itemUom").val(data.item_uom);
         $("#unitWeight").val(data.unit_weight);
         $("#weightUom").val(data.weight_uom);
-        $("#originCode").val(data.origin_code);
-        $("#originName").val(data.origin_name);
+        $("#originCode").val(data.origin_code).trigger('change');
         $("#itemPrice").val(new Intl.NumberFormat('id-ID').format(data.unit_price));
         $("#itemCost").val(new Intl.NumberFormat('id-ID').format(data.unit_cost));
         $("#modalTitle").text("Edit Barang");
         $("#modalItem").modal("show");
+    });
+
+    $(document).on('change', '#originCode', function() {
+        let selectedName = $(this).find(':selected').data('name') || '';
+        $('#originName').val(selectedName);
     });
 
     $("#formItem").submit(function(e) {

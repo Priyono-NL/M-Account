@@ -153,11 +153,20 @@ class ItemsView {
                             <div class="row">
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">ORIGIN CODE</label>
-                                    <input type="text" class="form-control form-control-sm" name="origin_code" id="originCode">
+                                    <select class="form-select form-select-sm" name="origin_code" id="originCode">
+                                        <option value="">-- Pilih Origin --</option>
+                                        <?php if (!empty($origins)): ?>
+                                            <?php foreach ($origins as $ori): ?>
+                                                <option value="<?= $ori['origin_code'] ?>" data-name="<?= htmlspecialchars($ori['origin_name']) ?>">
+                                                    <?= htmlspecialchars($ori['origin_code']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">ORIGIN NAME</label>
-                                    <input type="text" class="form-control form-control-sm" name="origin_name" id="originName">
+                                    <input type="text" class="form-control form-control-sm bg-light" name="origin_name" id="originName" readonly>
                                 </div>
                             </div>
                             <div class="row">

@@ -34,9 +34,11 @@ $(document).ready(function() {
         $('#info-state').empty();
         $('#docErrorText').remove();
         $('#btnCancelEditReceive').hide();
-        $('#btnCheckout').prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+        $('#btnCheckout').prop('disabled', false).html('<kbd class="bg-white text-primary me-2 shadow-sm">F4</kbd> <i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
         
         renderCart();
+
+        $('#received_by').focus();
     }
 
     // ==========================================
@@ -220,7 +222,7 @@ $(document).ready(function() {
 
         if (docNumber === '') {
             docInput.removeClass('is-invalid is-valid');
-            btnCheckout.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+            btnCheckout.prop('disabled', false).html('<kbd class="bg-white text-primary me-2 shadow-sm">F4</kbd> <i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
             return;
         }
 
@@ -236,7 +238,7 @@ $(document).ready(function() {
                     btnCheckout.prop('disabled', true).html('<i class="fa-solid fa-ban me-2"></i> Nomor Dokumen Duplikat');
                 } else {
                     docInput.removeClass('is-invalid').addClass('is-valid');
-                    btnCheckout.prop('disabled', false).html('<i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
+                    btnCheckout.prop('disabled', false).html('<kbd class="bg-white text-primary me-2 shadow-sm">F4</kbd> <i class="fa-solid fa-check-double me-2"></i> Save Transaksi');
                 }
             },
             error: function() {
@@ -642,5 +644,126 @@ $(document).ready(function() {
                 }
             });
         });
+
+        // ========================================================
+        // 4. FITUR KEYBOARD SHORTCUTS (KASIR MODE - PENERIMAAN)
+        // ========================================================
+        $(document).on('keydown', function(e) {
+            // F2 - Buka Modal Cari Barang
+            if (e.key === "F2") {
+                e.preventDefault();
+                if (!$('#itemModal').is(':visible')) $('#itemModal').modal('show');
+            }
+            // F8 - Buka Modal Cari Dokumen Penerimaan Lama (Histori)
+            if (e.key === "F8") {
+                e.preventDefault();
+                if (isUserAllowed && !$('#receiveModal').is(':visible')) $('#receiveModal').modal('show');
+            }
+            // F9 - Eksekusi / Masukkan Draft Pilihan ke Keranjang Utama
+            if (e.key === "F3") {
+                e.preventDefault();
+                if ($('#itemModal').is(':visible')) $('#btnSubmitModalItems').click();
+            }
+            // F4 - Simpan Transaksi (Save)
+            if (e.key === "F4") {
+                e.preventDefault();
+                // Jalankan checkout hanya jika tidak ada modal yang sedang terbuka
+                if ($('.modal.show').length === 0) $('#btnCheckout').click();
+            }
+            // ESCAPE - Tutup Modal atau Clear Form
+            if (e.key === "Escape") {
+                if ($('.modal.show').length > 0) {
+                    $('.modal').modal('hide');
+                } else {
+                    $('#btnClearCart').click();
+                }
+            }
+        });
+
+        // Otomatis Pindahkan Kursor (Fokus) ke Input Pencarian saat Modal Terbuka
+        $('#itemModal').on('shown.bs.modal', function () { $('#modalSearchItem').focus(); });
+        $('#receiveModal').on('shown.bs.modal', function () { $('#modalSearchReceive').focus(); });
+        resetToNewReceivement();
+        // ========================================================
+        // 5. NAVIGASI PANAH & ENTER DI DALAM MODAL (DENGAN AUTO-SCROLL)
+        // ========================================================
+        $('#modalSearchReceive, #modalSearchItem').on('keydown', function(e) {
+            let $modal = $(this).closest('.modal');
+            let $tbody = $modal.find('tbody');
+            
+            // Ambil baris data asli (abaikan baris loading / kosong)
+            let $rows = $tbody.find('tr').filter(function() {
+                return !$(this).attr('id') && !$(this).hasClass('text-center') && $(this).find('td').length > 1;
+            });
+
+            if ($rows.length === 0) return;
+
+            let $activeRow = $tbody.find('tr.table-primary');
+            let activeIndex = $rows.index($activeRow);
+
+            // PANAH BAWAH (↓)
+            if (e.key === "ArrowDown") {
+                e.preventDefault(); 
+                $rows.removeClass('table-primary');
+                if (activeIndex === -1 || activeIndex === $rows.length - 1) {
+                    $rows.first().addClass('table-primary');
+                } else {
+                    $rows.eq(activeIndex + 1).addClass('table-primary');
+                }
+                scrollToRow($tbody.find('tr.table-primary'));
+            } 
+            
+            // PANAH ATAS (↑)
+            else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                $rows.removeClass('table-primary');
+                if (activeIndex === -1 || activeIndex === 0) {
+                    $rows.last().addClass('table-primary');
+                } else {
+                    $rows.eq(activeIndex - 1).addClass('table-primary');
+                }
+                scrollToRow($tbody.find('tr.table-primary'));
+            } 
+            
+            // ENTER (↵)
+            else if (e.key === "Enter") {
+                e.preventDefault();
+                if ($activeRow.length > 0) {
+                    let $selectBtn = $activeRow.find('.btn-pilih-receive, .item-chk');
+                    if ($selectBtn.length > 0) {
+                        if ($selectBtn.is(':checkbox')) {
+                            // Jika modal barang, toggle centang checkbox
+                            $selectBtn.prop('checked', !$selectBtn.prop('checked')).trigger('change');
+                        } else {
+                            // Jika modal dokumen, langsung pilih
+                            $selectBtn.click();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Reset warna highlight jika user mengetik keyword baru
+        $('#modalSearchReceive, #modalSearchItem').on('input', function() {
+            $(this).closest('.modal').find('tbody tr').removeClass('table-primary');
+        });
+
+        // Fungsi Kalkulasi Pergeseran Scrollbar Otomatis
+        function scrollToRow($row) {
+            if ($row.length === 0) return;
+            let $container = $row.closest('.table-responsive').length ? $row.closest('.table-responsive') : $row.closest('.modal-body');
+            if (!$container.length) return;
+
+            let containerTop = $container.offset().top;
+            let containerBottom = containerTop + $container.innerHeight();
+            let rowTop = $row.offset().top;
+            let rowBottom = rowTop + $row.outerHeight();
+
+            if (rowBottom > containerBottom) {
+                $container.scrollTop($container.scrollTop() + (rowBottom - containerBottom));
+            } else if (rowTop < containerTop) {
+                $container.scrollTop($container.scrollTop() - (containerTop - rowTop));
+            }
+        }
     }    
 });

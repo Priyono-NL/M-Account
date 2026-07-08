@@ -46,4 +46,25 @@ class Component {
         <?php endif; ?>
         <?php
     }
+
+    public static function shortcutLegend($showHistory = false, $page = false) {
+        ?>
+        <div class="fixed-bottom bg-dark text-white py-2 shadow-lg border-top border-secondary" style="z-index: 1030; font-size: 12px;">
+            <div class="container-fluid d-flex justify-content-center gap-4">
+                <?php if ($page): ?>
+                    <div><kbd class="bg-light text-dark">F1</kbd> Cari Pelanggan</div>
+                <?php endif; ?>
+                <div><kbd class="bg-light text-dark">F2</kbd> Tambah Barang</div>                
+                <div><kbd class="bg-light text-dark">F3</kbd> Masukkan Draft</div>
+                <?php if ($showHistory): ?>
+                    <div><kbd class="bg-light text-dark">F8</kbd> Cari & Edit</div>
+                <?php endif; ?>
+                
+                <div><kbd class="bg-light text-dark">F4</kbd> Simpan Transaksi</div>
+                <div><kbd class="bg-light text-dark">ESC</kbd> Bersihkan / Tutup</div>
+            </div>
+        </div>
+        <style>body { padding-bottom: 40px; }</style>
+        <?php
+    }
 }
