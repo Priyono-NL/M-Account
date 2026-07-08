@@ -43,7 +43,7 @@ $(document).ready(function() {
                                     <button class="btn btn-light btn-sm text-primary border-0 btn-edit" data-item='${itemJson}' title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button class="btn btn-light btn-sm text-danger border-0 btn-delete" data-id="${item.id}" title="Hapus">
+                                    <button class="btn btn-light btn-sm text-danger border-0 btn-delete" data-code="${item.origin_code}" title="Hapus">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
@@ -89,6 +89,7 @@ $(document).ready(function() {
     $("#btnAddCompany").click(function() {
         $("#formAction").val("add");
         $("#originForm")[0].reset();
+        $("#originCode").prop("readonly", false).removeClass("bg-light text-secondary");
         $("#modalTitle").text("Tambah Origin Code");
         $("#modalOrigin").modal("show");
     });
@@ -96,7 +97,7 @@ $(document).ready(function() {
     $(document).on("click", ".btn-edit", function() {
         const data = $(this).data("item");
         $("#formAction").val("update");
-        $("#originCode").val(data.origin_code);
+        $("#originCode").val(data.origin_code).prop("readonly", true).addClass("bg-light text-secondary");
         $("#originName").val(data.origin_name);
         $("#originType").val(data.origin_type);
         $("#modalTitle").text("Edit Origin Code");
@@ -130,13 +131,13 @@ $(document).ready(function() {
     });
 
     $(document).on("click", ".btn-delete", function() {
-        let id = $(this).data("id");
+        const originCode = $(this).data("code");
         if(confirm("Apakah Anda yakin ingin menghapus Origin Code ini ?")) {
             $.ajax({
                 url: "index.php?page=origins",
                 type: "POST",
                 dataType: "json",
-                data: { action: "delete", id: id },
+                data: { action: "delete", origin_code: originCode },
                 success: function(res) {
                     if(res.status === "success") {
                         if(typeof showNotification === "function") showNotification(res.message, "success");
