@@ -4,8 +4,6 @@ if (!ob_start("ob_gzhandler")) {
 }
 
 session_start();
-//nama sesuai dengan folder yang ditaro
-define('BASE_URL', '/maccount');
 
 // load env + dbHelper (Wajib di-load di awal karena dipakai global)
 require_once 'env_loader.php';

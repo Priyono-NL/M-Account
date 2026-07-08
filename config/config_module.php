@@ -82,7 +82,7 @@ return [
         ],
         [
             'type'        => 'divider',
-            'rule'        => 'admin'
+            'rule'        => 'public'
         ],
         [
             'type'        => 'link',

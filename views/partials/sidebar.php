@@ -21,17 +21,31 @@ $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
     </div>
 
     <ul class="nav flex-column mt-3">
-        <?php foreach ($menu_items as $item) : ?>
+        <?php 
+        // Penanda status untuk mereduksi divider ganda / kosong
+        $pending_divider = false; 
+        $rendered_any    = false; 
+
+        foreach ($menu_items as $item) : 
+        ?>
             <?php
             // =======================================================
             // 1. RENDERING TYPE: DIVIDER (GARIS PEMBATAS)
             // =======================================================
             if (isset($item['type']) && $item['type'] === 'divider') {
                 $rule = $item['rule'] ?? 'public';
+                
+                // Proteksi awal berdasarkan level role dasar
                 if ($rule === 'superadmin' && $rolename !== 'superadmin') continue;
-                echo '<hr class="mx-3 my-2 text-secondary opacity-25">';
+                if ($rule === 'admin' && !in_array($rolename, ['admin', 'superadmin'])) continue;
+
+                // Jangan cetak dulu, tandai sebagai PENDING jika sebelumnya sudah ada menu yang tampil
+                if ($rendered_any) {
+                    $pending_divider = true;
+                }
                 continue;
             }
+
             // =======================================================
             // 2. VALIDASI HAK AKSES (GATEKEEPER)
             // =======================================================
@@ -43,6 +57,15 @@ $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
 
             if ($rolename === 'superadmin') $is_visible = true;
             if (!$is_visible) continue;
+
+            // =======================================================
+            // [BARU] EKSEKUSI DIVIDER JIKA ADA MENU YANG VALID
+            // =======================================================
+            if ($pending_divider) {
+                echo '<hr class="mx-3 my-2 text-secondary opacity-25">';
+                $pending_divider = false; // Reset penanda setelah dicetak
+            }
+            $rendered_any = true; // Menandakan minimal sudah ada 1 item menu yang aktif di layar
 
             // =======================================================
             // 3. LOGIKA AKURASI STATE ACTIVE MENU
