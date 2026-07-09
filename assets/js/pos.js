@@ -8,8 +8,8 @@ function printReceipt(id) {
         alert("ID Transaksi tidak ditemukan.");
         return;
     }
-    const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
-    //const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
+    // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
+    const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
@@ -727,7 +727,8 @@ $(document).ready(function() {
         
         $('#btnPrintInvoice').click(function() {
             if (currentSaleId) {
-                const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
+                // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
+                const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;
                 window.open(printUrl, '_blank');
                 if(modalCheckoutSuccess) modalCheckoutSuccess.hide();
                 currentSaleId = null;

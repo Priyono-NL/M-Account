@@ -9,21 +9,21 @@ class InvoiceView {
         
         $rawText = $ESC . "@";
         
-        // --- AKTIFKAN MODUL ELITE (12 CPI) ---
+        // --- AKTIFKAN MODUL 15 CPI (WAJIB AGAR LEBAR 9,5 CM MUAT 51 KOLOM) ---
         $rawText .= $ESC . "k" . chr(0);
         $rawText .= "\x12";
-        $rawText .= $ESC . "g";        
-        $rawText .= $ESC . "C" . chr(33); //panjang
-        $rawText .= $ESC . "Q" . chr(53); //lebar 
+        $rawText .= $ESC . "g"; // ESC g = Mode 15 CPI (Karakter rapat, muat hingga 56 karakter di 9,5 cm)
+        $rawText .= $ESC . "C" . chr(33); // Panjang halaman
+        $rawText .= $ESC . "Q" . chr(51); // Batasi margin kanan ketat di 51 kolom
         
         // --- 2. ISI KONTEN ---
         
         // Judul (Trik Swedia untuk Simbol ¤)
         $rawText .= $ESC . "R" . chr(5);
-		
-		$simbol = "$$"; 
+        
+        $simbol = "$$"; 
         $judul = $simbol . " PASS KELUAR " . $simbol;
-        $rawText .= str_pad($judul, 53, " ", STR_PAD_BOTH) . $LN . $LN;
+        $rawText .= str_pad($judul, 51, " ", STR_PAD_BOTH) . $LN . $LN;
         
         // Header Info
         $valDate  = $header['sales_date'] ?? '-';
@@ -31,18 +31,19 @@ class InvoiceView {
         $valPrint = ($header['is_reprint'] == false) ? '' : $header['reprint'];
         $valBuyer = trim(($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-'));
         
-		$kiriDate = "Date      " . $valDate;
+        $kiriDate = "Date      " . $valDate;
         $kananPrint = "Print#" . $valPrint;
-        $dateLine   = str_pad($kiriDate, 38) . str_pad($kananPrint, 15, " ", STR_PAD_LEFT);
+        // Total kolom baris tanggal: 36 + 15 = 51
+        $dateLine   = str_pad($kiriDate, 36) . str_pad($kananPrint, 15, " ", STR_PAD_LEFT);
         
         $rawText .= $dateLine . $LN;
         $rawText .= "Doc. No   " . $valDoc . $LN;
         $rawText .= "Buyer     " . $valBuyer . $LN;
         $rawText .= "Remark    " . $LN . $LN;
         
-        // Tabel Header
-        $th_nama = str_pad("Deskripsi", 28);
-		$th_hrg  = str_pad("Harga", 9, " ", STR_PAD_LEFT);
+        // Tabel Header (Total Pas 51 Kolom)
+        $th_nama = str_pad("Deskripsi", 26);
+        $th_hrg  = str_pad("Harga", 9, " ", STR_PAD_LEFT);
         $th_qty  = str_pad("Qty", 4, " ", STR_PAD_LEFT);        
         $th_tot  = str_pad("Subtotal", 12, " ", STR_PAD_LEFT);
         $rawText .= $th_nama . $th_hrg . $th_qty . $th_tot . $LN;
@@ -50,21 +51,38 @@ class InvoiceView {
         if (!empty($items)) {
             foreach ($items as $item) {
                 $subtotal = ($item['unit_price'] ?? 0) * ($item['item_qty'] ?? 0);
-                $nama  = str_pad(substr($item['item_name'], 0, 27), 28); 
-				$harga = str_pad($isExp ? '-' : number_format($item['unit_price'], 0, ',', '.'), 9, " ", STR_PAD_LEFT);
+                
+                // Potong nama barang di 25 karakter agar kolom sebelahnya tidak tergeser
+                $nama  = str_pad(substr($item['item_name'], 0, 25), 26); 
+                $harga = str_pad($isExp ? '-' : number_format($item['unit_price'], 0, ',', '.'), 9, " ", STR_PAD_LEFT);
                 $qty   = str_pad($item['item_qty'], 4, " ", STR_PAD_LEFT);                
                 $total = str_pad($isExp ? '-' : number_format($subtotal, 0, ',', '.'), 12, " ", STR_PAD_LEFT);
                 
                 $rawText .= $nama . $harga . $qty . $total . $LN;
             }
-        }		
+        }       
         $simbolTotal = "$$$$$";
         $teksTotal = "TOTAL:";
         $grandTotal = $isExp ? '-' : number_format($header['total'] ?? 0, 0, ',', '.');
-		
-		$blokKiri = $simbolTotal . str_pad($teksTotal, 41 - strlen($simbolTotal), " ", STR_PAD_LEFT);
-        $blokKanan = str_pad($grandTotal, 12, " ", STR_PAD_LEFT);		
+        
+        // Blok Kiri (39) + Blok Kanan (12) = 51 Kolom
+        $blokKiri = $simbolTotal . str_pad($teksTotal, 39 - strlen($simbolTotal), " ", STR_PAD_LEFT);
+        $blokKanan = str_pad($grandTotal, 12, " ", STR_PAD_LEFT);       
         $rawText .= $blokKiri . $blokKanan . $LN;
+
+        for ($i = 0; $i < 14; $i++) {
+            $rawText .= $LN;
+        }
+
+        $notice1 = "HANYA UNTUK KONSUMSI SENDIRI TIDAK UNTUK";
+        $notice2 = "DIPERJUALBELIKAN";
+        $notice3 = "-------------------------------------------";
+        $notice4 = "DILARANG MENGGUNAKAN MERK DAGANG PERUSAHAAN";
+
+        $rawText .= str_pad($notice1, 51, " ", STR_PAD_BOTH) . $LN;
+        $rawText .= str_pad($notice2, 51, " ", STR_PAD_BOTH) . $LN;
+        $rawText .= str_pad($notice3, 51, " ", STR_PAD_BOTH) . $LN;
+        $rawText .= str_pad($notice4, 51, " ", STR_PAD_BOTH) . $LN;
         
         // --- 3. PELATUK FORM FEED ---
         $rawText .= "\x0C";

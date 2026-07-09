@@ -14,7 +14,7 @@ class SuratView {
 		$rawText .= $ESC . "t" . chr(1);
         
         // --- SETTING MODUL ---
-        $rawText .= $ESC . "k" . chr(1);
+        $rawText .= $ESC . "k" . chr(0);
         $rawText .= "\x12";
         $rawText .= $ESC . "g";
         $rawText .= $ESC . "C" . chr(33);  // PANJANG

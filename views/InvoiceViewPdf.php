@@ -6,13 +6,16 @@ class InvoiceViewPdf {
         <html>
         <head>
             <style>
-                @page { margin: 0; }
-                
+                @page { 
+                    /* Margin: Atas Kanan Bawah Kiri */
+                    /* Kita beri margin bawah 2.2cm khusus sebagai "ruang pelindung" untuk notice */
+                    margin: 0.3cm 0.3cm 2.2cm 0.3cm; 
+                }
+
                 body { 
                     font-family: 'Courier', monospace;
                     font-size: 8pt;
-                    line-height: 1.1; 
-                    margin: 0.3cm; 
+                    line-height: 1.2; 
                     color: #000;
                 }
 
@@ -22,7 +25,23 @@ class InvoiceViewPdf {
                 .text-bold { font-weight: bold; }
 
                 table { width: 100%; border-collapse: collapse; }
-                table td { vertical-align: top; padding: 1px 0; }
+                table td, table th { vertical-align: top; padding: 2px 0; }
+
+                /* --- KUNCI POSISI DI BAWAH --- */
+                .notice-box {
+                    position: fixed; /* Mengunci elemen relatif terhadap halaman */
+                    bottom: -2cm; /* Menarik elemen ke bawah agar masuk ke area margin-bottom @page tadi */
+                    left: 0;
+                    right: 0;
+                    height: 2cm;
+                    text-align: center;
+                    font-size: 7.5pt;
+                    line-height: 1.3;
+                }
+                .notice-divider {
+                    margin: 3px 0;
+                    letter-spacing: -0.5px;
+                }
 
                 .no-print { display: none; }
             </style>
@@ -51,7 +70,7 @@ class InvoiceViewPdf {
             <table style="margin-top: 10px;">
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 45%;">Item Description</th>                        
+                        <th class="text-left" style="width: 45%;">Item Description</th>                        
                         <th class="text-right" style="width: 20%;">Price</th>
                         <th class="text-right" style="width: 10%;">Qty</th>
                         <th class="text-right" style="width: 25%;">Subtotal</th>
@@ -71,7 +90,7 @@ class InvoiceViewPdf {
                 </tbody>
             </table>
 
-            <table>
+            <table style="margin-top: 5px;">
                 <tr>
                     <td style="width: 65%">¤¤¤¤¤</td>
                     <td style="width: 10%;">TOTAL:</td>
@@ -80,8 +99,17 @@ class InvoiceViewPdf {
                     </td>
                 </tr>
             </table>
+
+            <div class="notice-box">
+                HANYA UNTUK KONSUMSI SENDIRI TIDAK UNTUK
+                <br>
+                DIPERJUALBELIKAN
+                <div class="notice-divider">-------------------------------------------</div>
+                DILARANG MENGGUNAKAN MERK DAGANG PERUSAHAAN
+            </div>
         </body>
         </html>
         <?php
     }
 }
+?>

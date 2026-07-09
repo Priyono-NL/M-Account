@@ -206,11 +206,11 @@ class POSController extends BaseController {
         ob_start();
         $cm_to_pt = 28.3465;
         if ($header['warehouse'] == 1) {
-            $width  = 11.43 * $cm_to_pt;
+            $width  = 9.5 * $cm_to_pt;
             $height = 13.97 * $cm_to_pt;
             InvoiceViewPdf::render($header, $items);
         } else {
-            $width  = 21.59 * $cm_to_pt;
+            $width  = 21.44 * $cm_to_pt;
             $height = 13.97 * $cm_to_pt;
             SuratViewPdf::render($header, $items);
         }
