@@ -59,8 +59,10 @@ $(document).ready(function() {
     // ==========================================
     // 0. FITUR CARI & EDIT INVOICE (MODAL)
     // ==========================================
-    const allowedRoles = ['all', 'superadmin'];
+    const allowedRoles = ['all'];
     const isUserAllowed = typeof USER_ROLE !== 'undefined' && allowedRoles.includes(USER_ROLE.toLowerCase());
+
+    if (!isUserAllowed) $('#salesType option[value="EXP"]').prop('disabled', true).hide();
 
     if (isUserAllowed && !isViewOnly) {
         
@@ -419,7 +421,7 @@ $(document).ready(function() {
             $('#buyerNameDisplay').val(nama + ' - ' + kode); 
             $('#btnClearBuyer').show();
             
-            if (isExp === 'EXP') {
+            if (isExp === 'EXP' && isUserAllowed) {
                 $('#salesType option[value="EXP"]').prop('disabled', false);
             } else {
                 if ($('#salesType').val() === 'EXP') {
@@ -681,7 +683,12 @@ $(document).ready(function() {
 
             let buyerId = $('#buyerId').val();
             if (!buyerId) { if(typeof showNotification !== 'undefined') showNotification('Harap pilih Pelanggan (Buyer)!', 'danger'); return; }
-            console.log(buyerId);
+
+            let currentSalesType = $('#salesType').val(); 
+            if (currentSalesType === 'EXP' && !isUserAllowed) {
+                if (typeof showNotification !== 'undefined') showNotification('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.', 'danger');else alert('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.');
+                return; // Menghentikan AJAX
+            }
 
             let btn = $(this);
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');

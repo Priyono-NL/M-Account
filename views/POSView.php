@@ -9,7 +9,7 @@ class POSView {
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
 
-        $allowed_roles = ['all', 'superadmin'];                                    
+        $allowed_roles = ['all'];                                    
         $is_allowed_edit = in_array(strtolower($user_role), $allowed_roles);
 
         ob_start();
@@ -377,7 +377,7 @@ class POSView {
         $extra_js .= 'const USER_ROLE = "' . $user_role . '";';
         $extra_js .= '</script>';
         
-        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos-min.js"></script>';
+        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

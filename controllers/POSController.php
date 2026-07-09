@@ -133,6 +133,9 @@ class POSController extends BaseController {
 
         if (empty($buyer_id)) return $this->jsonError("Harap pilih pelanggan terlebih dahulu.");
 
+        $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
+        if ($sales_type === 'EXP' && $rolename !== 'all') return $this->jsonError("Akses Ditolak! Tipe penjualan EXP hanya boleh dilakukan oleh pengguna dengan hak akses ALL.");
+
         $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode, $sale_id, $last_updated_at);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
