@@ -1,5 +1,7 @@
 <?php
 class DatabaseHelper {
+    private static $instance = null;
+    
     protected $db;
     protected $configs = [];
 
@@ -10,14 +12,25 @@ class DatabaseHelper {
         $user   = DB_USER;
         $pass   = DB_PASS;
 
-        try {
-            $this->db = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-			$this->db->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
-        } catch(PDOException $e) {
-            die("Koneksi Database Gagal: " . $e->getMessage());
+        if (self::$instance === null) {
+            try {
+                self::$instance = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
+                self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                self::$instance->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+            } catch(PDOException $e) {
+                error_log("Koneksi Database Gagal: " . $e->getMessage());
+
+                if (defined('APP_ENV') && APP_ENV === 'development') {
+                    die("Koneksi Database Gagal: " . $e->getMessage());
+                } else {
+                    http_response_code(500);
+                    die("Terjadi kesalahan internal pada sistem server. Silakan hubungi Administrator.");
+                }
+            }
         }
+
+        $this->db = self::$instance;
 
         if (session_status() === PHP_SESSION_NONE) {
             session_start();

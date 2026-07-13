@@ -3,7 +3,15 @@ if (!ob_start("ob_gzhandler")) {
     ob_start();
 }
 
-session_start();
+// Otomatis mendeteksi jika server production kamu menggunakan HTTPS/SSL
+$is_secure = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
+
+session_start([
+    'use_strict_mode' => true,       // Mencegah serangan Session Fixation (memaksa ID sesi baru saat login)
+    'cookie_httponly' => true,       // Proteksi XSS: Mencegah script JavaScript membaca Session ID di browser
+    'cookie_secure'   => $is_secure,  // Cookie sesi hanya dikirim lewat jalur aman HTTPS jika terdeteksi aktif
+    'cookie_samesite' => 'Lax',       // Membantu memitigasi serangan CSRF (Cross-Site Request Forgery)
+]);
 
 // load env + dbHelper (Wajib di-load di awal karena dipakai global)
 require_once 'env_loader.php';

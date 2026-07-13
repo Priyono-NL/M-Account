@@ -27,11 +27,11 @@ class PermissionModel extends DatabaseHelper {
         $exists = $this->checkPermissionExists($role_id);
 
         if ($exists) {
-            // Update
+            // Pengecekan 7: Mengubah role_id menjadi placeholder aman :role_id
             return $this->update('m_permission', [
                 'permission' => $json_paths,
                 'updated_at' => $now
-            ], "role_id = $role_id");
+            ], "role_id = :role_id", ['role_id' => $role_id]);
         } else {
             // Insert
             return $this->insert('m_permission', [

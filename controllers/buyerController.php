@@ -55,7 +55,8 @@ class BuyerController extends BaseController {
             'buyer_address' => $this->getPost('buyer_address')
         ]);
 
-        $res = $this->model->update('buyer', $data, "id = $id");
+        // Pengecekan 7: Amankan klausul update buyer
+        $res = $this->model->update('buyer', $data, "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("Data pelanggan diperbarui") : $this->jsonError("Gagal memperbarui pelanggan");
     }
 
@@ -66,7 +67,8 @@ class BuyerController extends BaseController {
             return $this->jsonError("ID Pelanggan tidak valid.");
         }
 
-        $res = $this->model->delete('buyer', "id = $id");
+        // Pengecekan 7: Amankan klausul delete buyer
+        $res = $this->model->delete('buyer', "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("Data pelanggan dihapus") : $this->jsonError("Gagal menghapus pelanggan");
     }
 
@@ -137,3 +139,4 @@ class BuyerController extends BaseController {
         }
     }
 }
+?>

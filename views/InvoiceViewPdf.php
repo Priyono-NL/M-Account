@@ -53,14 +53,14 @@ class InvoiceViewPdf {
 
             <table style="margin-top: 10px;">
                 <tr>
-                    <td>Date <?= $header['sales_date'] ?></td>
-                    <td class="text-right">Print#<?= ($header['is_reprint'] == false) ? '' : $header['reprint'] ?></td>
+                    <td>Date <?= isset($header['sales_date']) ? htmlspecialchars(strtoupper(date('d-M-Y', strtotime($header['sales_date']))), ENT_QUOTES, 'UTF-8') : '-' ?></td>
+                    <td class="text-right">Print#<?= htmlspecialchars(($header['is_reprint'] == false) ? '' : $header['reprint'], ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <tr>
-                    <td colspan="2">Doc. No <?= $header['invoice_no'] ?></td>
+                    <td colspan="2">Doc. No <?= htmlspecialchars($header['invoice_no'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <tr>
-                    <td colspan="2">Buyer <?= $header['buyer_code'] ?> - <?= $header['buyer_name'] ?></td>
+                    <td colspan="2">Buyer <?= htmlspecialchars($header['buyer_code'] ?? '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($header['buyer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <tr>
                     <td colspan="2">Remark</td>
@@ -81,9 +81,9 @@ class InvoiceViewPdf {
                         $subtotal = $item['unit_price'] * $item['item_qty'];
                     ?>
                     <tr>
-                        <td><?= $item['item_name'] ?></td>                        
+                        <td><?= htmlspecialchars($item['item_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>                        
                         <td class="text-right"><?= $isExp ? '-' : number_format($item['unit_price'], 0, ',', '.') ?></td>
-                        <td class="text-right"><?= $item['item_qty'] ?></td>
+                        <td class="text-right"><?= htmlspecialchars($item['item_qty'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                         <td class="text-right"><?= $isExp ? '-' : number_format($subtotal, 0, ',', '.') ?></td>
                     </tr>
                     <?php endforeach; ?>

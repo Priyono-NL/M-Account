@@ -38,13 +38,13 @@ class SuratViewPdf {
 
             <table style="margin-top: 5px;">
                 <tr>
-                    <td style="width: 55%">Tanggal : <?= $header['sales_date'] ?></tdstyle>
-                    <td stlye="width: 35%">Nomor Faktur : <?= $header['invoice_no'] ?></td>
-                    <td class="text-right">Print#<?= ($header['is_reprint'] == false) ? '' : $header['reprint'] ?></td>
+                    <td style="width: 55%">Tanggal : <?= isset($header['sales_date']) ? htmlspecialchars(strtoupper(date('d-M-Y', strtotime($header['sales_date']))), ENT_QUOTES, 'UTF-8') : '-' ?></td>
+                    <td style="width: 35%">Nomor Faktur : <?= htmlspecialchars($header['invoice_no'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="text-right">Print#<?= htmlspecialchars(($header['is_reprint'] == false) ? '' : $header['reprint'], ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <tr>
-                    <td>Kepada : <?= $header['buyer_code'] ?> <?= $header['buyer_name'] ?></td>
-                    <td>Kode Gudang : <?= $header['warehouse'] ?></tdclass>
+                    <td>Kepada : <?= htmlspecialchars($header['buyer_code'] ?? '', ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($header['buyer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>Kode Gudang : <?= htmlspecialchars($header['warehouse'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                     <td></td>
                 </tr>
             </table>
@@ -63,32 +63,13 @@ class SuratViewPdf {
                         $subtotal = $item['unit_price'] * $item['item_qty'];
                     ?>
                     <tr>
-                        <td><?= $item['item_name'] ?></td>
-                        <td><?= $item['item_qty'] ?> <?= $item['item_uom'] ?></td>
+                        <td><?= htmlspecialchars($item['item_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($item['item_qty'] ?? '', ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($item['item_uom'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                         <td class="text-right"><?= $isExp ? '-' : number_format($item['unit_price'], 0, ',', '.') ?></td>
                         <td class="text-right"><?= $isExp ? '-' : number_format($subtotal, 0, ',', '.') ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
-            </table>
-
-            <table style="width: 100%; margin-top: 10px; margin-bottom: 5px;" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td style="width: 1%; white-space: nowrap;">¤¤¤¤¤</td>
-                    
-                    <td style="width: 99%; vertical-align: middle;">
-                        <div style="border-bottom: 1px dashed #000; width: 100%;"></div>
-                    </td>
-                </tr>
-            </table>
-
-            <table>
-                <tr class="text-bold">
-                    <td class="text-right" style="width: 80%;">GRAND TOTAL:</td>
-                    <td class="text-right" style="width: 20%;">
-                        <?= $isExp ? '-' : number_format($header['total'], 0, ',', '.') ?>
-                    </td>
-                </tr>
             </table>
 
             <table style="margin-top: 20px;">
@@ -114,3 +95,4 @@ class SuratViewPdf {
         <?php
     }
 }
+?>

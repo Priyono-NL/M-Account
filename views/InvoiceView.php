@@ -26,7 +26,7 @@ class InvoiceView {
         $rawText .= str_pad($judul, 51, " ", STR_PAD_BOTH) . $LN . $LN;
         
         // Header Info
-        $valDate  = $header['sales_date'] ?? '-';
+        $valDate  = isset($header['sales_date']) ? strtoupper(date('d-M-Y', strtotime($header['sales_date']))) : '-';
         $valDoc   = $header['invoice_no'] ?? '-';
         $valPrint = ($header['is_reprint'] == false) ? '' : $header['reprint'];
         $valBuyer = trim(($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-'));

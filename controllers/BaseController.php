@@ -49,7 +49,7 @@ class BaseController {
         self::$my_companies  = $this->companyModel->getAllCompanies();
         if ($_SESSION['user']['can_switch']) self::$c_disabled = null;
 
-        if (!isset($_SESSION['user']['active_company_id']) && self::$company_count > 0) {
+        if (!isset($_SESSION['user']['active_company_id']) && count(self::$my_companies) > 0) {
             $_SESSION['user']['active_company_id'] = self::$my_companies[0]['id'];
         }
 

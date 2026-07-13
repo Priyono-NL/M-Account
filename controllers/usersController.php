@@ -71,22 +71,23 @@ class UsersController extends BaseController {
     }
 
     public function add() {
+        $password_raw = $this->getPost('password');
+
         $data = $this->sanitize([
             'username' => $this->getPost('username'),
-            'password' => $this->getPost('password'),
             'person_id' => $this->getPost('person_id'),
             'role_id' => $this->getPost('role_id'),
             'company' => $this->getPost('company')
         ]);
 
-        if (empty($data['username']) || empty($data['password'])) {
+        if (empty($data['username']) || empty($password_raw)) {
             return $this->jsonError("Username dan Password Wajib Diisi.");
         }
 
         $isDuplicate = $this->model->checkExists('m_users', 'username', $data['username']);
         if ($isDuplicate) return $this->jsonError("Gagal! Username '{$data['username']}' sudah terdaftar.");
 
-        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        $data['password'] = password_hash($password_raw, PASSWORD_DEFAULT);
 
         $res = $this->model->insert('m_users', $data);
         return $res ? $this->jsonSuccess("User berhasil ditambah") : $this->jsonError("Gagal menambah User");
@@ -96,7 +97,7 @@ class UsersController extends BaseController {
         $id = (int)$this->getPost('id');        
         if ($id <= 0) return $this->jsonError("ID User tidak valid.");
 
-        $password = $this->getPost('password');
+        $password_raw = $this->getPost('password');
 
         $updateData = [
             'username' => $this->getPost('username'),
@@ -104,10 +105,11 @@ class UsersController extends BaseController {
             'role_id' => $this->getPost('role_id'),
             'company' => $this->getPost('company')
         ];
-        if (!empty($password)) $updateData['password'] = password_hash($password, PASSWORD_DEFAULT);
         $updateData = $this->sanitize($updateData);
+        if (!empty($password_raw)) $updateData['password'] = password_hash($password_raw, PASSWORD_DEFAULT);
 
-        $res = $this->model->update('m_users', $updateData, "id = $id");
+        // Pengecekan 7: Amankan klausul update data user
+        $res = $this->model->update('m_users', $updateData, "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("Data User diperbarui") : $this->jsonError("Gagal memperbarui data");
     }
 
@@ -115,18 +117,15 @@ class UsersController extends BaseController {
         $id = (int)$this->getPost('id');
         if ($id <= 0) return $this->jsonError("ID User tidak valid.");
 
-        $res = $this->model->delete('m_users', "id = $id");
+        // Pengecekan 7: Amankan klausul delete data user
+        $res = $this->model->delete('m_users', "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("User berhasil dihapus") : $this->jsonError("Gagal menghapus User");
     }
 
-    // ==========================================
-    // UBAH PASSWORD DARI NAVBAR (CURRENT LOGGED IN USER)
-    // ==========================================
     public function change_password() {
         $old_password = $this->getPost('old_password');
         $new_password = $this->getPost('new_password');
 
-        // Ambil ID user yang sedang login dari session
         $user_id = $_SESSION['user']['id'] ?? null;
 
         if (!$user_id) {
@@ -141,22 +140,18 @@ class UsersController extends BaseController {
             return $this->jsonError("Password baru minimal 6 karakter.");
         }
 
-        // Ambil data user dari database untuk memverifikasi password lamanya
         $user = $this->model->getById('m_users', $user_id);
 
         if (!$user) {
             return $this->jsonError("Data user tidak ditemukan di database.");
         }
 
-        // Verifikasi kesesuaian password lama
         if (!password_verify($old_password, $user['password'])) {
             return $this->jsonError("Password lama yang Anda masukkan salah!");
         }
 
-        // Enkripsi password baru
         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-        // Update ke database
         $res = $this->model->update('m_users', ['password' => $hashed_password], "id = :id", ['id' => $user_id]);
 
         if ($res) {

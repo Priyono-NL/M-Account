@@ -88,7 +88,8 @@ class CompanyController extends BaseController {
                 'company_short' => $company_short,
             ]);
 
-            $this->model->update('company', $dataCompany, "id = $id");
+            // Pengecekan 7: Amankan klausa update company
+            $this->model->update('company', $dataCompany, "id = :id", ['id' => $id]);
 
             $processed_wh_ids = [];
 
@@ -99,10 +100,11 @@ class CompanyController extends BaseController {
 
                 $wh_id = isset($warehouse_ids[$index]) ? (int)$warehouse_ids[$index] : 0;
                 if ($wh_id > 0) {
+                    // Pengecekan 7: Amankan klausa update warehouse
                     $this->model->update('warehouse', [
                         'warehouse_name' => $wh_name,
                         'is_active'         => 0 
-                    ], "id = $wh_id");
+                    ], "id = :wh_id", ['wh_id' => $wh_id]);
                     
                     $processed_wh_ids[] = $wh_id;
                 } else {
@@ -120,7 +122,8 @@ class CompanyController extends BaseController {
             $current_db_warehouses = $this->model->getWarehousesByCompanyId($id);
             foreach ($current_db_warehouses as $db_wh) {
                 if (!in_array($db_wh['id'], $processed_wh_ids)) {
-                    $this->model->delete('warehouse', "id = {$db_wh['id']}");
+                    // Pengecekan 7: Amankan klausa delete warehouse
+                    $this->model->delete('warehouse', "id = :wh_id", ['wh_id' => $db_wh['id']]);
                 }
             }
 
@@ -140,8 +143,9 @@ class CompanyController extends BaseController {
         try {
             $this->model->beginTransaction();
             
-            $this->model->delete('company', "id = $id");
-            $this->model->delete('warehouse', "company_id = $id");
+            // Pengecekan 7: Amankan klausa delete company & warehouse terkait
+            $this->model->delete('company', "id = :id", ['id' => $id]);
+            $this->model->delete('warehouse', "company_id = :company_id", ['company_id' => $id]);
 
             $this->model->commit();
             return $this->jsonSuccess("Company berhasil dihapus");

@@ -29,7 +29,7 @@ class SuratView {
 		$rawText .= str_pad($judul, 113, " ", STR_PAD_BOTH) . $LN . $LN;
         
         // Header Info
-        $tgl    = "Tanggal : " . ($header['sales_date'] ?? '-');
+        $tgl    = "Tanggal : " . (isset($header['sales_date']) ? strtoupper(date('d-M-Y', strtotime($header['sales_date']))) : '-');
         $kepada = "Kepada  : " . ($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-');
 		$print  = "Print#" . (($header['is_reprint'] == false) ? '' : $header['reprint']);
 		$no_inv = "Nomor Faktur : " . ($header['invoice_no'] ?? '-');

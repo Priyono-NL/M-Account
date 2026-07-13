@@ -80,7 +80,8 @@ class ItemsController extends BaseController {
             'origin_name'  => $this->getPost('origin_name'),
         ]);
 
-        $res = $this->model->update('items', $data, "id = $id");
+        // Pengecekan 7: Amankan klausul update master barang
+        $res = $this->model->update('items', $data, "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("Data barang diperbarui") : $this->jsonError("Gagal memperbarui data");
     }
 
@@ -91,7 +92,8 @@ class ItemsController extends BaseController {
             return $this->jsonError("ID Barang tidak valid.");
         }
 
-        $res = $this->model->delete('items', "id = $id");
+        // Pengecekan 7: Amankan klausul delete master barang
+        $res = $this->model->delete('items', "id = :id", ['id' => $id]);
         return $res ? $this->jsonSuccess("Barang berhasil dihapus") : $this->jsonError("Gagal menghapus barang");
     }
 
@@ -177,3 +179,4 @@ class ItemsController extends BaseController {
         }
     }
 }
+?>
