@@ -80,14 +80,20 @@ $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
                 case 'pos_main':
                     $active_class = ($uri_page == 'pos' && $uri_action != 'history' && !$isView) ? 'active' : '';
                     break;
-                case 'receive_main':
-                    $active_class = ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '';
-                    break;
                 case 'sales_history':
                     $active_class = ($uri_page == 'pos' && ($uri_action == 'history' || $isView)) ? 'active' : '';
                     break;
+                case 'receive_main':
+                    $active_class = ($uri_page == 'receive' && $uri_action != 'history' && !$isView) ? 'active' : '';
+                    break;                
                 case 'receive_history':
                     $active_class = ($uri_page == 'receive' && ($uri_action == 'history' || $isView)) ? 'active' : '';
+                    break;
+                case 'stock_main':
+                    $active_class = ($uri_page == 'stocks' && $uri_action != 'card') ? 'active' : '';
+                    break;
+                case 'stock_card':
+                    $active_class = ($uri_page == 'stocks' && $uri_action == 'card') ? 'active' : '';
                     break;
                 default:
                     $active_class = ($uri_page == $item_key) ? 'active' : '';

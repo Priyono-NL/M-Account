@@ -92,7 +92,17 @@ return [
             'icon'        => 'fa-solid fa-boxes-stacked',
             'url'         => 'index.php?page=stocks',
             'rule'        => 'public',
-            'active_rule' => 'default'
+            'active_rule' => 'stock_main'
+        ],
+        [
+            'type'        => 'link',
+            'key'         => 'stockCard',
+            'name'        => 'Kartu Stok Barang',
+            'desc'        => 'Melihat log kronologis mutasi masuk dan keluar per item barang.',
+            'icon'        => 'fa-solid fa-clipboard-list',
+            'url'         => 'index.php?page=stocks&action=card',
+            'rule'        => 'public',
+            'active_rule' => 'stock_card'
         ],
         [
             'type'        => 'link',

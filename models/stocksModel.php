@@ -46,7 +46,7 @@ class StocksModel extends DatabaseHelper {
         $sqlOpen = "SELECT (
                         COALESCE((
                             SELECT SUM(rd.item_qty) 
-                            FROM receievement_detail rd JOIN receievement r ON rd.receive_id = r.id
+                            FROM receivement_detail rd JOIN receivement r ON rd.receive_id = r.id
                             WHERE rd.item_id = :item_id AND r.warehouse = :warehouse AND r.date_receive < :startDate
                         ), 0)
                         -
@@ -65,7 +65,7 @@ class StocksModel extends DatabaseHelper {
         $sqlTrans = "SELECT * FROM (
                         SELECT r.id AS trans_id, r.date_receive AS trans_date, r.doc_number AS trans_code, 
                                'IN' AS type, rd.item_qty AS qty, 'Penerimaan Barang' AS notes
-                        FROM receievement_detail rd JOIN receievement r ON rd.receive_id = r.id
+                        FROM receivement_detail rd JOIN receivement r ON rd.receive_id = r.id
                         WHERE rd.item_id = :item_id AND r.warehouse = :warehouse
                         
                         UNION ALL
