@@ -8,73 +8,36 @@ class SalesModel extends DatabaseHelper {
     }
 
     /**
-     * FUNGSI SINKRONISASI STOK GLOBAL (Single Source of Truth)
+     * OPTIMASI POIN 1: DELTA ADJUSTMENT (HIGH PERFORMANCE)
+     * Mengubah nilai stok secara instan tanpa perlu scan view mutasi bulanan.
      */
-    private function syncCurrentStock($item_id, $warehouse) {
-        // 1. Dapatkan string periode bulan berjalan (Contoh: '2026-07')
-        $currentPeriod = date('Y-m'); 
-        $startOfMonth = date('Y-m-01'); // Untuk mencocokkan tanggal di stocks_period
-
-        // 2. Ambil Saldo Awal Bulan Ini (Dari hasil Closing bulan lalu)
-        $sqlOpen = "SELECT qty FROM stocks_period 
-                    WHERE item_id = :item_id AND warehouse = :warehouse AND stock_date = :start_date 
-                    LIMIT 1";
-        $resOpen = $this->query_one($sqlOpen, [
-            'item_id' => $item_id, 'warehouse' => $warehouse, 'start_date' => $startOfMonth
-        ]);
-        $qtyOpen = $resOpen ? (float)$resOpen['qty'] : 0;
-
-        // 3. Ambil Total IN dan OUT Bulan Ini SAJA dari vw_mutasi_bulanan menggunakan filter `period`
-        $sqlMutasi = "SELECT 
-                        COALESCE(SUM(qty_in), 0) as total_in, 
-                        COALESCE(SUM(qty_out), 0) as total_out 
-                      FROM vw_mutasi_bulanan 
-                      WHERE item_id = :item_id 
-                        AND warehouse = :warehouse 
-                        AND period = :current_period";
-                        
-        $mutasi = $this->query_one($sqlMutasi, [
-            'item_id' => $item_id, 
-            'warehouse' => $warehouse, 
-            'current_period' => $currentPeriod
-        ]);
-        
-        $totalIn = $mutasi ? (float)$mutasi['total_in'] : 0;
-        $totalOut = $mutasi ? (float)$mutasi['total_out'] : 0;
-
-        // 4. Kalkulasi Stok Riil Saat Ini
-        $real_stock = $qtyOpen + $totalIn - $totalOut;
-
-        // 5. Simpan/Update ke tabel `stocks`
+    private function adjustStock($item_id, $warehouse, $qty_delta) {
         $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
             'item_id' => $item_id, 'warehouse' => $warehouse
         ]);
 
         if ($cekStock) {
-            $this->query("UPDATE stocks SET qty_total = :qty_total, updated_at = NOW() WHERE id = :id", [
-                'qty_total' => $real_stock, 'id' => $cekStock['id']
+            $this->query("UPDATE stocks SET qty_total = qty_total + :delta, updated_at = NOW() WHERE id = :id", [
+                'delta' => $qty_delta, 'id' => $cekStock['id']
             ]);
         } else {
             $this->insert('stocks', [
                 'item_id'   => $item_id, 
                 'warehouse' => $warehouse, 
-                'qty_total' => $real_stock
+                'qty_total' => $qty_delta
             ]);
         }
     }
 
     /**
      * TRANSACTION MUTATION: Menyimpan data POS Penjualan & Memotong Stok
-     * Menggunakan Snapshot Sync & Wipe Replace untuk mode edit
      */
     public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null, $last_updated_at = null) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
             $this->beginTransaction();
 
-            $stockLogTimestamp = $sales_date . ' ' . date('H:i:s');
             $current_sale_id = null;
-            $affected_items = []; // Kumpulkan ID item yang butuh disinkronisasi
 
             if ($is_edit_mode == 1 && $sale_id) {
                 // ==========================================
@@ -94,10 +57,10 @@ class SalesModel extends DatabaseHelper {
                 $invoice_no = $oldHeader['invoice_no'];
                 $current_sale_id = $sale_id;
 
-                // 1. Kumpulkan ID item lama untuk di-sync
-                $oldItems = $this->query_all("SELECT item_id FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
+                // 1. Ambil data item lama dan KEMBALIKAN stoknya ke gudang (karena penjualan dibatalkan = +)
+                $oldItems = $this->query_all("SELECT item_id, item_qty FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
                 foreach ($oldItems as $old) {
-                    $affected_items[] = $old['item_id'];
+                    $this->adjustStock($old['item_id'], $warehouse, (float)$old['item_qty']);
                 }
 
                 // 2. WIPE (HAPUS BERSIH DATA LAMA)
@@ -116,15 +79,16 @@ class SalesModel extends DatabaseHelper {
                     else $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
                 }
 
-                // 5. MASUKKAN DATA BARU
+                // 5. MASUKKAN DATA BARU & POTONG STOK BARU (-)
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
-                    $affected_items[] = $item_id;
 
                     $this->insert('sales_detail', [
                         'sale_id' => $sale_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
                     ]);
+
+                    $this->adjustStock($item_id, $warehouse, -$new_qty);
                 }
 
             } else {
@@ -173,20 +137,13 @@ class SalesModel extends DatabaseHelper {
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $qty = (float)$item['qty'];
-                    $affected_items[] = $item_id;
 
                     $this->insert('sales_detail', [
                         'sale_id'  => $sale_id, 'item_id'  => $item_id, 'item_qty' => $qty 
                     ]);
-                }
-            }
 
-            // ==========================================
-            // LANGKAH TERAKHIR: SINKRONISASI STOK FINAL
-            // ==========================================
-            $affected_items = array_unique($affected_items);
-            foreach ($affected_items as $item_id) {
-                $this->syncCurrentStock($item_id, $warehouse);
+                    $this->adjustStock($item_id, $warehouse, -$qty);
+                }
             }
 
             $this->commit();
@@ -241,27 +198,18 @@ class SalesModel extends DatabaseHelper {
         ];
     }
 
-    /**
-     * UNTUK EXPORT EXCEL (TANPA LIMIT/OFFSET)
-     */
     public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
         $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate, $type);
         $sql = $query['sql'] . " ORDER BY s.sales_date DESC, s.id DESC";
         return $this->query_all($sql, $query['params']);
     }
 
-    /**
-     * UNTUK TABEL WEB INTERAKTIF (PAGINASI SERVER-SIDE)
-     */
     public function getFilteredPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '', $limit = 25, $offset = 0) {
         $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate, $type);
         $sql = $query['sql'] . " ORDER BY s.sales_date DESC, s.id DESC";
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
-    /**
-     * VIEW DETAIL HEADER
-     */
     public function getSalesHeader($sales_id) {
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
                     (SELECT SUM(sd.item_qty * i.unit_price) 
@@ -275,10 +223,6 @@ class SalesModel extends DatabaseHelper {
         return $this->query_one($sql, ['id' => (int)$sales_id]);
     }   
     
-    /**
-     * VIEW DETAIL ITEMS
-     * Subquery dihilangkan karena tabel stocks sudah berupa Snapshot / Saldo Akhir.
-     */
     public function getTransactionItems($sale_id, $warehouse_id = null) {
         $sql = "SELECT sd.*, i.item_code, i.item_name, i.unit_price, i.item_uom,
                        COALESCE(s.qty_total, 0) as current_stock

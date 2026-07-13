@@ -7,9 +7,6 @@ class StockInModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    // ==========================================
-    // FUNGSI UNTUK MODAL SEARCH RECEIVEMENT
-    // ==========================================
     public function searchReceiveList($keyword) {
         $sql = "SELECT id, doc_number, date_receive, received_by, notes 
                 FROM receivement 
@@ -21,81 +18,41 @@ class StockInModel extends DatabaseHelper {
     }
 
     /**
-     * FUNGSI SINKRONISASI STOK GLOBAL (Single Source of Truth)
+     * OPTIMASI POIN 1: DELTA ADJUSTMENT (HIGH PERFORMANCE)
+     * Mengubah nilai stok secara instan tanpa perlu scan view mutasi bulanan.
      */
-    private function syncCurrentStock($item_id, $warehouse) {
-        // 1. Dapatkan string periode bulan berjalan (Contoh: '2026-07')
-        $currentPeriod = date('Y-m'); 
-        $startOfMonth = date('Y-m-01'); // Untuk mencocokkan tanggal di stocks_period
-
-        // 2. Ambil Saldo Awal Bulan Ini (Dari hasil Closing bulan lalu)
-        $sqlOpen = "SELECT qty FROM stocks_period 
-                    WHERE item_id = :item_id AND warehouse = :warehouse AND stock_date = :start_date 
-                    LIMIT 1";
-        $resOpen = $this->query_one($sqlOpen, [
-            'item_id' => $item_id, 'warehouse' => $warehouse, 'start_date' => $startOfMonth
-        ]);
-        $qtyOpen = $resOpen ? (float)$resOpen['qty'] : 0;
-
-        // 3. Ambil Total IN dan OUT Bulan Ini SAJA dari vw_mutasi_bulanan menggunakan filter `period`
-        $sqlMutasi = "SELECT 
-                        COALESCE(SUM(qty_in), 0) as total_in, 
-                        COALESCE(SUM(qty_out), 0) as total_out 
-                      FROM vw_mutasi_bulanan 
-                      WHERE item_id = :item_id 
-                        AND warehouse = :warehouse 
-                        AND period = :current_period";
-                        
-        $mutasi = $this->query_one($sqlMutasi, [
-            'item_id' => $item_id, 
-            'warehouse' => $warehouse, 
-            'current_period' => $currentPeriod
-        ]);
-        
-        $totalIn = $mutasi ? (float)$mutasi['total_in'] : 0;
-        $totalOut = $mutasi ? (float)$mutasi['total_out'] : 0;
-
-        // 4. Kalkulasi Stok Riil Saat Ini
-        $real_stock = $qtyOpen + $totalIn - $totalOut;
-
-        // 5. Simpan/Update ke tabel `stocks`
+    private function adjustStock($item_id, $warehouse, $qty_delta) {
         $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
             'item_id' => $item_id, 'warehouse' => $warehouse
         ]);
 
         if ($cekStock) {
-            $this->query("UPDATE stocks SET qty_total = :qty_total, updated_at = NOW() WHERE id = :id", [
-                'qty_total' => $real_stock, 'id' => $cekStock['id']
+            $this->query("UPDATE stocks SET qty_total = qty_total + :delta, updated_at = NOW() WHERE id = :id", [
+                'delta' => $qty_delta, 'id' => $cekStock['id']
             ]);
         } else {
             $this->insert('stocks', [
                 'item_id'   => $item_id, 
                 'warehouse' => $warehouse, 
-                'qty_total' => $real_stock
+                'qty_total' => $qty_delta
             ]);
         }
     }
 
-
     /**
-     * TRANSACTION MUTATION: Menyimpan data penerimaan dan memperbarui stok (ACID Transaction)
-     * Ditambahkan fitur EDIT dengan metode Wipe & Replace + Snapshot Sync
+     * TRANSACTION MUTATION: Menyimpan data penerimaan dan memperbarui stok
      */
     public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes, $is_edit_mode = 0, $receive_id = null, $last_updated_at = '') {
         try {
             $this->satpamGembok($date_receive, $warehouse);
             $this->beginTransaction();
             
-            $stockLogTimestamp = $date_receive . ' ' . date('H:i:s');
             $current_receive_id = null;
-            $affected_items = []; // Menyimpan ID barang yang stoknya perlu direkalkulasi
 
             if ($is_edit_mode == 1 && $receive_id) {
                 // ==========================================
                 // EDIT PENERIMAAN (WIPE & REPLACE)
                 // ==========================================
-                
-                // 1. Kunci Baris Header & Cek Optimistic Locking
                 $oldHeader = $this->query_one("SELECT doc_number, updated_at FROM receivement WHERE id = :id FOR UPDATE", ['id' => $receive_id]);
                 if (!$oldHeader) throw new Exception("Data penerimaan lama tidak ditemukan.");
 
@@ -106,26 +63,25 @@ class StockInModel extends DatabaseHelper {
                     throw new Exception("Gagal menyimpan! Dokumen ini baru saja diedit oleh user lain. Silakan cari ulang data.");
                 }
 
-                $doc_number_old = $oldHeader['doc_number']; 
                 $current_receive_id = $receive_id;
 
-                // 2. Kumpulkan ID item lama agar ikut disinkronisasi ulang stoknya
-                $oldItems = $this->query_all("SELECT item_id FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
+                // 1. Ambil data item lama dan BATALKAN jumlah barang masuknya (penerimaan batal = -)
+                $oldItems = $this->query_all("SELECT item_id, item_qty FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
                 foreach ($oldItems as $old) {
-                    $affected_items[] = $old['item_id'];
+                    $this->adjustStock($old['item_id'], $warehouse, -((float)$old['item_qty']));
                 }
 
-                // 3. WIPE (HAPUS BERSIH) DETAIL & LOG LAMA
+                // 2. WIPE (HAPUS BERSIH) DETAIL & LOG LAMA
                 $this->query("DELETE FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
 
-                // 4. UPDATE HEADER
+                // 3. UPDATE HEADER
                 $this->query("UPDATE receivement SET received_by = :received_by, notes = :notes, updated_at = NOW() WHERE id = :id", [
                     'received_by' => $received_by,
                     'notes' => $notes,
                     'id' => $receive_id
                 ]);
 
-                // 5. GABUNGKAN ITEM KERANJANG BARU (Cegah Duplikat Baris)
+                // 4. GABUNGKAN ITEM KERANJANG BARU (Cegah Duplikat Baris)
                 $aggregatedCart = [];
                 foreach ($cart as $item) {
                     $iid = $item['id'];
@@ -133,15 +89,16 @@ class StockInModel extends DatabaseHelper {
                     else $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
                 }
 
-                // 6. MASUKKAN LOG BARU
+                // 5. MASUKKAN LOG BARU & TAMBAHKAN STOK BARU (+)
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
-                    $affected_items[] = $item_id;
 
                     $this->insert('receivement_detail', [
                         'receive_id' => $receive_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
                     ]);
+
+                    $this->adjustStock($item_id, $warehouse, $new_qty);
                 }
 
             } else {
@@ -188,22 +145,17 @@ class StockInModel extends DatabaseHelper {
                 }
 
                 foreach ($aggregatedCart as $item) {
-                    $affected_items[] = $item['id'];
+                    $item_id = $item['id'];
+                    $qty = (float)$item['qty'];
                     
                     $this->insert('receivement_detail', [
                         'receive_id' => $receive_id,
-                        'item_id'    => $item['id'],
-                        'item_qty'   => $item['qty'] 
+                        'item_id'    => $item_id,
+                        'item_qty'   => $qty 
                     ]);
-                }
-            }
 
-            // ==========================================
-            // LANGKAH TERAKHIR: SINKRONISASI STOK FINAL
-            // ==========================================
-            $affected_items = array_unique($affected_items);
-            foreach ($affected_items as $item_id) {
-                $this->syncCurrentStock($item_id, $warehouse);
+                    $this->adjustStock($item_id, $warehouse, $qty);
+                }
             }
 
             $this->commit();
@@ -220,9 +172,6 @@ class StockInModel extends DatabaseHelper {
         }
     }
 
-    /**
-     * FUNGSI PRIVATE: Menyusun string SQL base dan binding parameters untuk filter data.
-     */
     private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '') {
         $sql = "SELECT r.*, w.warehouse_name 
                 FROM receivement r 
@@ -255,27 +204,18 @@ class StockInModel extends DatabaseHelper {
         ];
     }
 
-    /**
-     * UNTUK EXPORT EXCEL (TANPA LIMIT/PAGINASI)
-     */
     public function getFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
         $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
         $sql = $query['sql'] . " ORDER BY r.date_receive DESC, r.id DESC";
         return $this->query_all($sql, $query['params']);
     }
 
-    /**
-     * UNTUK VIEW DATA TABEL JQUERY (DENGAN PAGINASI SERVER-SIDE)
-     */
     public function getFilteredPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
         $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
         $sql = $query['sql'] . " ORDER BY r.date_receive DESC, r.id DESC";
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
     }
 
-    /**
-     * VIEW DETAIL: Mengambil produk-produk di dalam satu nomor transaksi penerimaan
-     */
     public function getTransactionItems($receive_id) {
         $sql = "SELECT rd.*, i.item_code, i.item_name, i.unit_price, i.item_uom
                 FROM receivement_detail rd
@@ -285,9 +225,6 @@ class StockInModel extends DatabaseHelper {
         return $this->query_all($sql, ['receive_id' => (int)$receive_id]);
     }
 
-    /**
-     * CEK NOMOR DOKUMEN DUPLIKAT
-     */
     public function getByDocNumber($doc_number) {
         $sql = "SELECT * FROM receivement WHERE doc_number = :doc_number LIMIT 1";
         $result = $this->query_one($sql, ['doc_number' => $doc_number]);        
