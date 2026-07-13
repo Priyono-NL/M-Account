@@ -8,7 +8,6 @@ class StocksModel extends DatabaseHelper {
     
     /**
      * 1. MENGAMBIL STOK SAAT INI (ON-HAND)
-     * Mengambil dari tabel `stocks`
      */
     public function getLatestStock($search = '', $warehouse = '') {
         $sql = "SELECT 
@@ -42,10 +41,8 @@ class StocksModel extends DatabaseHelper {
 
     /**
      * 2. DATA KARTU STOK (STOCK CARD) KRONOLOGIS
-     * Menggabungkan transaksi langsung dari tabel `sales` dan `receievement`
      */
     public function getStockCard($item_id, $warehouse, $startDate, $endDate) {
-        // A. Hitung Saldo Awal (IN - OUT sebelum Start Date)
         $sqlOpen = "SELECT (
                         COALESCE((
                             SELECT SUM(rd.item_qty) 
@@ -65,7 +62,6 @@ class StocksModel extends DatabaseHelper {
         ]);
         $openingBalance = $resOpen ? (float)$resOpen['qty_opening'] : 0;
 
-        // B. Ambil Mutasi Dalam Rentang Waktu (UNION ALL)
         $sqlTrans = "SELECT * FROM (
                         SELECT r.id AS trans_id, r.date_receive AS trans_date, r.doc_number AS trans_code, 
                                'IN' AS type, rd.item_qty AS qty, 'Penerimaan Barang' AS notes
@@ -87,7 +83,6 @@ class StocksModel extends DatabaseHelper {
             'startDate' => $startDate . ' 00:00:00', 'endDate' => $endDate . ' 23:59:59'
         ]);
 
-        // C. Kalkulasi Saldo Berjalan
         $cardData = [];
         $running = $openingBalance;
         $cardData[] = ['date' => $startDate, 'code' => '-', 'notes' => 'SALDO AWAL', 'in' => 0, 'out' => 0, 'balance' => $running];
@@ -104,7 +99,6 @@ class StocksModel extends DatabaseHelper {
 
     /**
      * 3. LAPORAN STOK BULANAN (PAGINASI JQUERY DATATABLES)
-     * Menggunakan View `vw_laporan_stok`
      */
     public function getMonthlyReportPaginated($search = '', $warehouse = '', $monthPeriod = '', $limit = 25, $offset = 0) {
         $sql = "SELECT * FROM vw_laporan_stok WHERE 1=1";        
@@ -143,58 +137,68 @@ class StocksModel extends DatabaseHelper {
     }
 
     /**
-     * 5. PROSES CLOSING STOK
-     * Mengambil QTY CLOSE dari bulan ini, lalu disimpan sebagai saldo awal (stocks_period) untuk bulan depan.
+     * 5. PROSES CLOSING STOK (HIGH PERFORMANCE OPTIMIZED)
      */
     public function doClosing($monthPeriod = '', $warehouse = '', $executedBy = 'System') {
         if ($this->isPeriodClosed($monthPeriod, $warehouse)) {
             throw new Exception("Periode {$monthPeriod} sudah dikunci permanen!");
         }
 
-        // Ambil data stok akhir bulan ini full tanpa limit
-        $sqlData = "SELECT * FROM vw_laporan_stok WHERE period = :monthPeriod";
-        $params = ['monthPeriod' => $monthPeriod];
+        // Pengecekan 9: Deteksi gudang terdampak secara ringan tanpa me-load seluruh baris produk ke memory RAM PHP
+        $sqlCheck = "SELECT DISTINCT warehouse FROM vw_laporan_stok WHERE period = :monthPeriod";
+        $checkParams = ['monthPeriod' => $monthPeriod];
         if ($warehouse !== '') {
-            $sqlData .= " AND warehouse = :warehouse";
-            $params['warehouse'] = $warehouse;
+            $sqlCheck .= " AND warehouse = :warehouse";
+            $checkParams['warehouse'] = $warehouse;
         }
-        $currentStock = $this->query_all($sqlData, $params);
+        $warehousesToLog = $this->query_all($sqlCheck, $checkParams);
 
-        if (empty($currentStock)) {
+        if (empty($warehousesToLog)) {
             throw new Exception("Tidak ada data stok pada periode ini untuk di-closing.");
         }
 
         // Tanggal 1 bulan depan (Untuk record saldo awal bulan depan)
         $nextMonthDate = date('Y-m-01', strtotime($monthPeriod . '-01 +1 month'));
         $insertedCount = 0;
-        $gudangTerproses = [];
 
         try {
             $this->beginTransaction();
             
             // Hapus data awal bulan depan jika sebelumnya pernah ada error parsial (Mencegah duplikat)
             $sqlDel = "DELETE FROM stocks_period WHERE stock_date = :nextMonthDate";
-            if ($warehouse !== '') $sqlDel .= " AND warehouse = :warehouse";
-            $stmtDel = $this->db->prepare($sqlDel);
-            $stmtDel->execute(['nextMonthDate' => $nextMonthDate] + ($warehouse !== '' ? ['warehouse' => $warehouse] : []));
-
-            // Simpan Qty Close bulan ini menjadi Qty awal di stocks_period bulan depan
-            foreach ($currentStock as $stock) {
-                $gudangTerproses[$stock['warehouse']] = true;
-                $this->insert('stocks_period', [
-                    'item_id'    => $stock['item_id'],
-                    'warehouse'  => $stock['warehouse'],
-                    'stock_date' => $nextMonthDate,
-                    'qty'        => $stock['qty_close'] // Nilai close dimasukkan ke qty open bulan depan
-                ]);
-                $insertedCount++;
+            $delParams = ['nextMonthDate' => $nextMonthDate];
+            if ($warehouse !== '') {
+                $sqlDel .= " AND warehouse = :warehouse";
+                $delParams['warehouse'] = $warehouse;
             }
+            $stmtDel = $this->db->prepare($sqlDel);
+            $stmtDel->execute($delParams);
+
+            // Pengecekan 9: Bulk Insert langsung di level database MySQL (INSERT INTO ... SELECT)
+            $sqlInsert = "INSERT INTO stocks_period (item_id, warehouse, stock_date, qty)
+                          SELECT item_id, warehouse, :nextMonthDate, qty_close 
+                          FROM vw_laporan_stok 
+                          WHERE period = :monthPeriod";
+            
+            $insertParams = [
+                'nextMonthDate' => $nextMonthDate,
+                'monthPeriod'   => $monthPeriod
+            ];
+
+            if ($warehouse !== '') {
+                $sqlInsert .= " AND warehouse = :warehouse";
+                $insertParams['warehouse'] = $warehouse;
+            }
+
+            $stmtInsert = $this->db->prepare($sqlInsert);
+            $stmtInsert->execute($insertParams);
+            $insertedCount = $stmtInsert->rowCount(); // Tangkap jumlah baris data yang sukses terproses
                         
-            // Catat log closing
-            foreach (array_keys($gudangTerproses) as $whID) {
+            // Catat log closing untuk masing-masing gudang yang sukses terproses
+            foreach ($warehousesToLog as $wh) {
                 $this->insert('stock_closing_log', [
                     'periode'     => $monthPeriod,
-                    'warehouse'   => $whID,
+                    'warehouse'   => $wh['warehouse'],
                     'executed_by' => $executedBy
                 ]);
             }

@@ -46,6 +46,107 @@ class BaseController {
             exit;
         }
 
+        // =======================================================================
+        // PENGECEKAN 8: GLOBAL FUNCTION-LEVEL AUTHORIZATION GATEKEEPER
+        // =======================================================================
+        $currentPage = $_GET['page'] ?? 'dashboard';
+        $currentPage = rtrim($currentPage, '/');
+        $segments = explode('/', $currentPage);
+        if (isset($segments[0]) && $segments[0] === 'maccount') {
+            array_shift($segments); 
+        }
+        $pageKey   = $segments[0] ?? 'dashboard';
+        $actionKey = $_GET['action'] ?? ($_POST['action'] ?? 'index');
+
+        // Mapping sub-routing khusus halaman detail/history
+        $targetKey = $pageKey;
+        if ($pageKey === 'pos' && $actionKey === 'history') {
+            $targetKey = 'sales_detail';
+        } elseif ($pageKey === 'receive' && $actionKey === 'history') {
+            $targetKey = 'receive_history';
+        }
+
+        $config_file = dirname(__DIR__) . '/config/config_module.php';
+        if (file_exists($config_file)) {
+            $config_source = require $config_file;
+            $menu_items = $config_source['modules'] ?? [];
+            
+            $currentModule = null;
+            foreach ($menu_items as $item) {
+                if (isset($item['key']) && $item['key'] === $targetKey) {
+                    $currentModule = $item;
+                    break;
+                }
+            }
+
+            if ($currentModule) {
+                $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
+                $rule = $currentModule['rule'] ?? 'public';
+
+                $unauthorized = false;
+                
+                // 1. Validasi Level Dasar Hak Akses Role Dasar
+                if ($rule === 'superadmin' && $rolename !== 'superadmin') {
+                    $unauthorized = true;
+                }
+                if ($rule === 'admin' && !in_array($rolename, ['admin', 'superadmin'])) {
+                    $unauthorized = true;
+                }
+
+                // 2. Validasi Modul Berdasarkan Mapping Permission Path Sesi (Kecuali Superadmin)
+                if (!$unauthorized && $rolename !== 'superadmin') {
+                    $my_paths = $_SESSION['user']['paths'] ?? [];
+                    
+                    // Definisikan toleransi jalur induk-anak agar AJAX API filter_api tidak terblokir
+                    $allowed_paths = ['/' . $targetKey];
+                    if ($targetKey === 'pos') {
+                        $allowed_paths[] = '/sales_detail';
+                    } elseif ($targetKey === 'receive') {
+                        $allowed_paths[] = '/receive_history';
+                    }
+
+                    $has_access = false;
+                    foreach ($allowed_paths as $ap) {
+                        if (in_array($ap, $my_paths)) {
+                            $has_access = true;
+                            break;
+                        }
+                    }
+
+                    if (!$has_access) {
+                        $unauthorized = true;
+                    }
+                }
+
+                // Jika terbukti tidak memiliki otorisasi, langsung putus request ke server secara tegas!
+                if ($unauthorized) {
+                    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                        header('Content-Type: application/json');
+                        http_response_code(403);
+                        echo json_encode(['status' => 'error', 'message' => 'Akses ditolak. Anda tidak memiliki izin otorisasi fungsi untuk modul ini.']);
+                        exit;
+                    }
+
+                    http_response_code(403);
+                    die("<!DOCTYPE html>
+                    <html lang='id'>
+                    <head>
+                        <meta charset='UTF-8'>
+                        <title>Akses Ditolak</title>
+                    </head>
+                    <body style='background-color: #f8d7da; color: #721c24; text-align: center; padding-top: 100px; font-family: sans-serif;'>
+                        <div style='display: inline-block; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 5px solid #dc3545;'>
+                            <h2>⚠️ Akses Ditolak!</h2>
+                            <p>Anda tidak memiliki hak otorisasi tingkat fungsi untuk membuka halaman atau modul ini secara langsung.</p>
+                            <p><a href='index.php?page=dashboard' style='color: #0d6efd; text-decoration: none; font-weight: bold;'>Kembali ke Dashboard</a></p>
+                        </div>
+                    </body>
+                    </html>");
+                }
+            }
+        }
+        // =======================================================================
+
         self::$my_companies  = $this->companyModel->getAllCompanies();
         if ($_SESSION['user']['can_switch']) self::$c_disabled = null;
 
@@ -122,7 +223,6 @@ class BaseController {
         ];
     }
 
-    /** Helper untuk mengambil data context warehouse yang seragam di semua controller **/
     protected function getWarehouseContext() {
         $companyId = $_SESSION['user']['active_company_id'] ?? null;
         $warehouses = $companyId ? $this->companyModel->getWarehousesByCompanyId($companyId) : [];

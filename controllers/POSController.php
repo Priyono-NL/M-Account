@@ -266,62 +266,6 @@ class POSController extends BaseController {
             ['pagination' => $paginationMeta]
         );
     }
-
-    /**
-     * EXPORT EXCEL: Mendownload seluruh riwayat penjualan tanpa batasan halaman
-     */
-    public function export_xls() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
-        $type      = $this->getPost('type', '');
-
-        $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
-        $grand_total = 0;
-
-        $rows = [[
-            '<b>No</b>', 
-            '<b>Gudang</b>', 
-            '<b>Tipe Transaksi</b>', 
-            '<b>No. Invoice</b>',  
-            '<b>Pelanggan</b>',
-            '<b>Tanggal Transaksi</b>', 
-            '<b>Total</b>'
-        ]];
-
-        foreach ($data as $index => $item) {
-            $namaGudang = $item['warehouse'];
-            if ($item['warehouse'] == '1') $namaGudang = 'Gudang BS';
-            elseif ($item['warehouse'] == '2') $namaGudang = 'Gudang BS 2';
-
-            $tipeTransaksi = ($item['sale_type'] === 'SLS') ? 'Normal Sales' : 'Expense Sales';
-            $tanggal = date('d M Y', strtotime($item['sales_date']));
-
-            $total = ($item['sale_type'] === 'EXP') ? 0 : (int)$item['total'];
-            $grand_total += $total;
-
-            $rows[] = [
-                $index + 1,
-                $namaGudang,
-                $tipeTransaksi,
-                $item['invoice_no'],
-                $item['buyer_name'],
-                $tanggal,
-                '<style nf="#,##0">' . $total . '</style>'
-            ];
-        }
-
-        $rows[] = [
-            '<b></b>', '<b></b>', '<b></b>', '<b></b>', '<b></b>',
-            '<b>GRAND TOTAL</b>',
-            '<style nf="#,##0"><b>' . $grand_total . '</b></style>'
-        ];
-
-        $fileName = "Laporan_Penjualan_" . date('Ymd_His') . ".xlsx";
-        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
-        exit;
-    }
     
 }
 ?>

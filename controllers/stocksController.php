@@ -50,54 +50,6 @@ class StocksController extends BaseController {
     }
 
     /**
-     * EXPORT EXCEL: Mengunduh semua data ringkasan stok berjalan
-     */
-    public function export_xls() {
-        $search     = $this->getPost('search', '');
-        $warehouse  = $this->getPost('warehouse', '');
-        $closeMonth = $this->getPost('closeMonth', date('Y-m'));
-        
-        // Kita gunakan limit 9.999.999 agar SEMUA data terambil ke dalam Excel tanpa terpotong paginasi
-        $result = $this->model->getMonthlyReportPaginated($search, $warehouse, $closeMonth, 9999999, 0);
-        $data = $result['data'];
-
-        $rows = [[
-            '<b>No</b>', '<b>Gudang</b>', '<b>Kode Barang</b>', '<b>Nama Barang</b>',
-            '<b>Qty Open</b>', '<b>Qty In</b>', '<b>Qty Out</b>',
-            '<b>Qty Close</b>', '<b>Qty Onhand</b>', '<b>Selisih</b>',
-        ]];
-
-        foreach ($data as $index => $item) {
-            // Mapping nama gudang
-            $namaGudang = $item['warehouse'];
-            if ($item['warehouse'] == '1') {
-                $namaGudang = 'Gudang BS';
-            } elseif ($item['warehouse'] == '2') {
-                $namaGudang = 'Gudang Sampah';
-            }
-
-            $rows[] = [
-                $index + 1,
-                $namaGudang,
-                $item['item_code'],
-                $item['item_name'],
-                (float)$item['qty_open'],
-                (float)$item['qty_in'],
-                (float)$item['qty_out'],
-                (float)$item['qty_close'],
-                (float)($item['qty_onhand'] ?? 0),
-                (float)($item['selisih'] ?? 0)
-            ];
-        }
-
-        // Format nama file: Laporan_Stok_072026.xlsx
-        $fileName = "Laporan_Stok_" . date('mY', strtotime($closeMonth . '-01')) . ".xlsx";
-        
-        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
-        exit;
-    }
-
-    /**
      * API ENDPOINT: Mengeksekusi proses Closing Stok
      */
     public function do_closing() {

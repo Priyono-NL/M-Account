@@ -219,48 +219,6 @@ class StockInController extends BaseController {
         if ($isExists) return $this->jsonSuccess("Dokumen sudah ada", ['status' => 'exists']);
         else return $this->jsonSuccess("Dokumen tersedia", ['status' => 'available']);
     }
-
-    /**
-     * EXPORT EXCEL: Mendownload seluruh riwayat penerimaan tanpa batas halaman
-     */
-    public function export_xls() {
-        $search    = $this->getPost('search', '');
-        $warehouse = $this->getPost('warehouse', '');
-        $startDate = $this->getPost('start_date', '');
-        $endDate   = $this->getPost('end_date', '');
-
-        $data = $this->stockInModel->getFiltered($search, $warehouse, $startDate, $endDate);
-
-        $rows = [[
-            '<b>No</b>', 
-            '<b>Gudang</b>',
-            '<b>Document Number</b>',  
-            '<b>Penerima</b>',
-            '<b>Tanggal Terima</b>', 
-        ]];
-
-        foreach ($data as $index => $item) {
-            $namaGudang = $item['warehouse'];
-            if ($item['warehouse'] == '1') {
-                $namaGudang = 'Gudang BS';
-            } elseif ($item['warehouse'] == '2') {
-                $namaGudang = 'Gudang Sampah';
-            }
-
-            $tanggal = date('d M Y', strtotime($item['date_receive']));
-
-            $rows[] = [
-                $index + 1,
-                $namaGudang,
-                $item['doc_number'],
-                $item['received_by'],
-                $tanggal,
-            ];
-        }
-
-        $fileName = "Laporan_Penerimaan_Stok_" . date('Ymd_His') . ".xlsx";
-        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
-        exit;
-    }
+    
 }
 ?>
