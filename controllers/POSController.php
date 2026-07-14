@@ -267,6 +267,18 @@ class POSController extends BaseController {
         );
     }
 
+    public function pivot_api() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $type      = $this->getPost('type', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
+
+        $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
+        
+        return $this->jsonSuccess("Data Pivot Filtered", $data);
+    }
+
     public function export_xls() {
         $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');

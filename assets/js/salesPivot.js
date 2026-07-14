@@ -63,7 +63,7 @@ $(document).ready(function() {
             type: "POST",
             dataType: "json",
             data: {
-                action: "filter_api",
+                action: "pivot_api",
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 type: $("#filterType").val(),
