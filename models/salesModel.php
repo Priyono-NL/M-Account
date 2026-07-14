@@ -211,13 +211,14 @@ class SalesModel extends DatabaseHelper {
     }
 
     public function getSalesHeader($sales_id) {
-        $sql = "SELECT s.*, b.buyer_name, b.buyer_code,
+        $sql = "SELECT s.*, b.buyer_name, b.buyer_code, w.warehouse_name,
                     (SELECT SUM(sd.item_qty * i.unit_price) 
                     FROM sales_detail sd
                     JOIN items i ON sd.item_id = i.id
                     WHERE sd.sale_id = s.id) as total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
+                LEFT JOIN warehouse w ON s.warehouse = w.id
                 WHERE s.id = :id";
         
         return $this->query_one($sql, ['id' => (int)$sales_id]);
@@ -228,7 +229,7 @@ class SalesModel extends DatabaseHelper {
                        COALESCE(s.qty_total, 0) as current_stock
                 FROM sales_detail sd 
                 LEFT JOIN items i ON sd.item_id = i.id
-                LEFT JOIN stocks s ON s.item_id = i.id AND s.warehouse = :warehouse_id
+                LEFT JOIN stocks s ON s.item_id = i.id AND s.warehouse = :warehouse_id                
                 WHERE sd.sale_id = :sale_id";
                 
         return $this->query_all($sql, ['sale_id' => (int)$sale_id, 'warehouse_id' => (int)$warehouse_id]);
@@ -251,6 +252,49 @@ class SalesModel extends DatabaseHelper {
     public function incrementPrintCount($sales_id) {
         $sql = "UPDATE sales SET print_count = print_count + 1 WHERE id = :id";
         return $this->query($sql, ['id' => $sales_id]);
+    }
+
+    public function getDetailedFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+        $sql = "SELECT 
+                    s.sales_date,
+                    s.invoice_no,
+                    s.sale_type,
+                    w.warehouse_name,
+                    b.buyer_name,
+                    i.item_code,
+                    i.item_name,
+                    i.item_uom,
+                    sd.item_qty,
+                    i.unit_price,
+                    (sd.item_qty * i.unit_price) AS subtotal
+                FROM sales_detail sd
+                JOIN sales s ON sd.sale_id = s.id
+                LEFT JOIN items i ON sd.item_id = i.id
+                LEFT JOIN buyer b ON s.buyer = b.id
+                LEFT JOIN warehouse w ON s.warehouse = w.id
+                WHERE 1=1";
+        $params = [];
+        
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql .= " AND s.sales_date BETWEEN :startDate AND :endDate";
+            $params['startDate'] = $startDate . ' 00:00:00';
+            $params['endDate'] = $endDate . ' 23:59:59';
+        }
+        if ($warehouse !== '') {
+            $sql .= " AND s.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+        if (!empty($type)) {
+            $sql .= " AND s.sale_type = :type";
+            $params['type'] = $type;
+        }
+        if (!empty($search)) {
+            $sql .= " AND (s.invoice_no LIKE :search OR b.buyer_name LIKE :search OR i.item_name LIKE :search OR i.item_code LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        
+        $sql .= " ORDER BY s.sales_date ASC, s.invoice_no ASC, i.item_name ASC";
+        return $this->query_all($sql, $params);
     }
 }
 ?>

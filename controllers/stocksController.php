@@ -25,19 +25,23 @@ class StocksController extends BaseController {
      * API ENDPOINT: Mengambil data ringkasan mutasi stok dengan Paginasi Server-Side (Limit 25)
      */
     public function filter_api() {
-        $search     = $this->getPost('search', '');
-        $warehouse  = $this->getPost('warehouse', '');
-        $closeMonth = $this->getPost('closeMonth', date('Y-m'));
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        
+        // Menangkap parameter rentang harian baru dari POST JS
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
 
         // 1. Ambil parameter halaman dan offset dari BaseController (Limit 25)
-        $paging = $this->getPaginationParams(25);
+        $paging = $this->getPaginationParams(10);
 
-        // 2. Cek apakah bulan ini sudah di-closing atau masih berjalan (ONGOING)
-        $isClosed = $this->model->isPeriodClosed($closeMonth, $warehouse);
+        // 2. Trik Adaptasi: Ekstrak YYYY-MM dari endDate untuk cek status closing bulanan asli Anda
+        $targetClosingMonth = substr($endDate, 0, 7); 
+        $isClosed = $this->model->isPeriodClosed($targetClosingMonth, $warehouse);
         $status = $isClosed ? 'CLOSED' : 'ONGOING';
 
-        // 3. Tarik data terpaginasi dari model (otomatis mengambil dari vw_laporan_stok_bulanan)
-        $result = $this->model->getMonthlyReportPaginated($search, $warehouse, $closeMonth, $paging['limit'], $paging['offset']);
+        // 3. Tarik data terpaginasi dari model harian baru (Kalkulasi realtime di memory)
+        $result = $this->model->getDailyStockReportPaginated($search, $warehouse, $startDate, $endDate, $paging['limit'], $paging['offset']);
                 
         // 4. Susun meta data paginasi berdasarkan jumlah data riil
         $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
@@ -50,23 +54,56 @@ class StocksController extends BaseController {
     }
 
     /**
-     * API ENDPOINT: Mengeksekusi proses Closing Stok
+     * EXPORT EXCEL: Mengunduh semua data mutasi stok sesuai hasil filter harian
      */
-    public function do_closing() {
-        $warehouse  = $this->getPost('warehouse', '');
-        $closeMonth = $this->getPost('closeMonth', date('Y-m'));
-        
-        // Ambil nama user yang mengeksekusi dari session, default ke System
-        $user = $_SESSION['user']['person_name'] ?? 'System';
+    public function export_xls() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
 
-        try {
-            $insertedCount = $this->model->doClosing($closeMonth, $warehouse, $user);
-            return $this->jsonSuccess("Closing Berhasil! {$insertedCount} barang telah dicatat sebagai saldo awal bulan depan.");
-        } catch (Exception $e) {
-            return $this->jsonError($e->getMessage());
+        // Tarik semua data tanpa batas halaman paginasi (Limit diset maksimal)
+        $result = $this->model->getDailyStockReportPaginated($search, $warehouse, $startDate, $endDate, 9999999, 0);
+        $data = $result['data'];
+
+        // Menyusun Header Tabel Excel
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Gudang</b>', 
+            '<b>Kode Barang</b>', 
+            '<b>Nama Barang</b>',
+            '<b>Qty Open</b>', 
+            '<b>Qty In</b>', 
+            '<b>Qty Out</b>',
+            '<b>Qty Close</b>', 
+            '<b>Qty Onhand</b>', 
+            '<b>Selisih</b>',
+        ]];
+
+        foreach ($data as $index => $item) {
+            $rows[] = [
+                $index + 1,
+                $item['warehouse_name'] ?? $item['warehouse'],
+                $item['item_code'],
+                $item['item_name'],
+                (float)$item['qty_open'],
+                (float)$item['qty_in'],
+                (float)$item['qty_out'],
+                (float)$item['qty_close'],
+                (float)$item['qty_onhand'],
+                (float)$item['selisih']
+            ];
         }
+
+        $fileName = "Laporan_Stok_" . date('Ymd') . ".xlsx";
+        
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
     }
 
+    /**
+     * Stock Card Controller
+     */
     public function card() {
         $warehouseContext = $this->getWarehouseContext();
         
@@ -108,6 +145,73 @@ class StocksController extends BaseController {
         $result = $this->model->getStockCard($item_id, $warehouse, $startDate, $endDate);
 
         return $this->jsonSuccess("Data Kartu Stok Berhasil Dimuat", $result);
+    }
+
+    public function export_card_xls() {
+        $itemId    = (int)$this->getPost('item_id');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
+
+        if ($itemId <= 0 || empty($warehouse)) {
+            die("Parameter tidak valid. Harap tentukan barang dan gudang.");
+        }
+
+        // 1. Ambil informasi nama barang & gudang untuk header Excel
+        $itemInfo = $this->model->query_one("SELECT item_code, item_name, item_uom FROM items WHERE id = :id", ['id' => $itemId]);
+        $whInfo   = $this->model->query_one("SELECT warehouse_name FROM warehouse WHERE id = :id", ['id' => $warehouse]);
+        
+        $itemCode = $itemInfo['item_code'] ?? '-';
+        $itemName = $itemInfo['item_name'] ?? '-';
+        $itemUom  = $itemInfo['item_uom'] ?? '-';
+        $whName   = $whInfo['warehouse_name'] ?? $warehouse;
+
+        // 2. Tarik data mutasi kronologis dari model asli kamu
+        $result = $this->model->getStockCard($itemId, $warehouse, $startDate, $endDate);
+        $mutations = $result['mutations'] ?? [];
+
+        // 3. Susun Informasi Profil Kartu Stok di baris atas Excel
+        $rows = [
+            ['<b>KARTU STOK BARANG</b>', ''],
+            ['Nama Barang:', $itemCode . ' - ' . $itemName],
+            ['Gudang Asal:', $whName],
+            ['Periode:', date('d-M-Y', strtotime($startDate)) . ' s/d ' . date('d-M-Y', strtotime($endDate))],
+            ['UOM:', $itemUom],
+            [], // Baris Kosong Pembatas
+            [
+                '<b>Tanggal Transaksi</b>', 
+                '<b>No. Dokumen / Ref</b>', 
+                '<b>Keterangan Mutasi</b>', 
+                '<b>Qty In</b>', 
+                '<b>Qty Out</b>', 
+                '<b>Saldo Stok</b>'
+            ]
+        ];
+
+        // 4. Masukkan baris mutasi ke dalam array Excel
+        foreach ($mutations as $row) {
+            // Format tanggal mutasi agar rapi tanpa jam
+            $tanggalTrans = ($row['date'] !== '-' && $row['code'] !== '-') 
+                ? date('d-M-Y', strtotime($row['date'])) 
+                : $row['date'];
+
+            $rows[] = [
+                $tanggalTrans,
+                $row['code'],
+                $row['notes'],
+                (float)$row['in'],
+                (float)$row['out'],
+                (float)$row['balance']
+            ];
+        }
+
+        // 5. Penamaan file dinamis: Laporan_Kartu_Stok_[KODEBARANG]_[TGL]
+        $tglAwal  = date('Ymd', strtotime($startDate));
+        $tglAkhir = date('Ymd', strtotime($endDate));
+        $fileName = "Laporan_Kartu_Stok_" . $itemCode . "_" . $tglAwal . "_sd_" . $tglAkhir . ".xlsx";
+        
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
     }
 }
 ?>

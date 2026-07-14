@@ -1,32 +1,83 @@
+// =========================================================================
+// FUNGSI GLOBAL: MENAMPILKAN DETAIL TRANSAKSI & REPRINT VIA MODAL
+// =========================================================================
 function viewDetail(id) {
-    let form = document.createElement("form");
-    form.setAttribute("method", "post");
-    form.setAttribute("action", "index.php?page=pos");
+    // Siapkan body modal kosong / loading state
+    let modalTbody = $("#mdTableItems tbody");
+    modalTbody.html('<tr><td colspan="7" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Mengambil detail nota...</td></tr>');
+    $("#mdInvNo, #mdBuyer, #mdDate, #mdWarehouse, #mdGrandTotal").text("-");
 
-    let actionInput = document.createElement("input");
-    actionInput.setAttribute("type", "hidden");
-    actionInput.setAttribute("name", "action");
-    actionInput.setAttribute("value", "index");
-    form.appendChild(actionInput);
+    // Tembak API detail bawaan POSController via AJAX
+    $.ajax({
+        url: 'index.php?page=pos',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'search_invoice_detail',
+            id: id
+        },
+        success: function(res) {
+            if (res.status === 'success') {
+                modalTbody.empty();
+                let header = res.data.header;
+                let items  = res.data.items || [];
+                let grandTotal = 0;
+                
+                let dateObj = new Date(header.sales_date);
+                let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                let buyer = header.buyer_name + ' (' + header.buyer_code + ')';
+                
+                // 1. Isi Profil Atas Nota pada Modal
+                $("#mdInvNo").text(header.invoice_no);
+                $("#mdBuyer").text(buyer);
+                $("#mdDate").text(formattedDate);
+                $("#mdWarehouse").text(header.warehouse_name);
 
-    let invoiceInput = document.createElement("input");
-    invoiceInput.setAttribute("type", "hidden");
-    invoiceInput.setAttribute("name", "id");
-    invoiceInput.setAttribute("value", id);
-    form.appendChild(invoiceInput);
+                // 2. Urai Baris Pecahan Item Barang Terjual
+                items.forEach(function(item, idx) {
+                    let sub = parseFloat(item.item_qty) * parseFloat(item.unit_price);
+                    
+                    // Aturan Bisnis: Jika tipe EXP (Internal Expense), subtotal dihitung 0 pada omset
+                    let displaySub = header.sale_type === 'EXP' ? 0 : sub;
+                    grandTotal += displaySub;
 
-    let modeInput = document.createElement("input");
-    modeInput.setAttribute("type", "hidden");
-    modeInput.setAttribute("name", "mode");
-    modeInput.setAttribute("value", "view");
-    form.appendChild(modeInput);
+                    modalTbody.append(`
+                        <tr>
+                            <td class="text-center">${idx + 1}</td>
+                            <td class="fw-bold text-secondary">${item.item_code}</td>
+                            <td>${item.item_name}</td>
+                            <td class="text-center"><span class="badge bg-light text-dark border">${item.item_uom}</span></td>
+                            <td class="text-center fw-bold">${item.item_qty}</td>
+                            <td class="text-end">${parseFloat(item.unit_price).toLocaleString('id-ID')}</td>
+                            <td class="text-end fw-bold text-dark">${displaySub.toLocaleString('id-ID')}</td>
+                        </tr>
+                    `);
+                });
 
-    document.body.appendChild(form);
-    form.submit();
+                // 3. Tampilkan Akumulasi Grand Total
+                $("#mdGrandTotal").text('Rp ' + grandTotal.toLocaleString('id-ID'));
+
+                // 4. Set Link Tombol Reprint Langsung Mengarah Ke Engine PDF Asli
+                // $("#mdBtnReprint").attr('href', 'index.php?page=pos&action=print_invoice&id=' + header.id);
+                $("#mdBtnReprint").attr('href', 'index.php?page=pos&action=print_invoice_pdf&id=' + header.id);
+
+                // 5. Luncurkan Modal ke Layar Browser Kasir
+                $("#modalDetailSales").modal('show');
+            } else {
+                if (typeof showNotification === "function") showNotification(res.message, 'danger');
+            }
+        },
+        error: function() {
+            if (typeof showNotification === "function") showNotification('Gagal menghubungi server database.', 'danger');
+        }
+    });
 }
 
+// =========================================================================
+// LOGIKA UTAMA HALAMAN RIWAYAT (JQUERY DOCUMENT READY)
+// =========================================================================
 $(document).ready(function() {
-	
+    
     let tbody = $("#historyTable tbody");
 
     let currentPage = 1;
@@ -34,7 +85,7 @@ $(document).ready(function() {
 
     function loadFilteredHistory(page = 1) {
         currentPage = page;
-		
+        
         tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><br>Memuat data riwayat ...</td></tr>');
 
         $.ajax({
@@ -123,39 +174,39 @@ $(document).ready(function() {
     });
 
     function clearTable() {
-		tbody.empty();
-		tbody.append(`
-			<tr>
-				<td colspan="7" class="text-center py-5 text-muted">
-					<i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
-					Pencarian dibersihkan
-				</td>
-			</tr>
-		`);
+        tbody.empty();
+        tbody.append(`
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-magnifying-glass fs-2 mb-3 d-block opacity-25"></i>
+                    Pencarian dibersihkan
+                </td>
+            </tr>
+        `);
         renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
-	}
+    }
 
     $("#search").on("keyup", clearTable);
     $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", clearTable);
-	
-	$("#btnFilter").click(function() {
-		loadFilteredHistory(1);
-	});
+    
+    $("#btnFilter").click(function() {
+        loadFilteredHistory(1);
+    });
 
     $("#btnClearSearch").click(function() {
         $("#search").val("");
-		clearTable();
+        clearTable();
     });
 
     $("#btnResetAll").click(function() {
-		let before = new Date();
-		let now = new Date();
-		before.setDate(before.getDate() - 14);
-		
-		let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
-		let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
+        let before = new Date();
+        let now = new Date();
+        before.setDate(before.getDate() - 14);
+        
+        let beforeLokal = before.getFullYear() + '-' + String(before.getMonth() + 1).padStart(2, '0') + '-' + String(before.getDate()).padStart(2, '0');
+        let nowLokal = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); 
         let firstWarehouseVal = $("#filterWarehouse option:first").val();
-		
+        
         $("#search").val("");
         $("#filterWarehouse").val(firstWarehouseVal);
         $("#filterType").val("");
@@ -166,17 +217,25 @@ $(document).ready(function() {
     });
 
     $("#btnExportExcel").click(function() {
+        let sDateVal = $("#startDate").val() || "";
+        let eDateVal = $("#endDate").val() || "";
+
         let payload = {
             action: 'export_xls',
             search: $("#search").val() || "",
-            start_date: $("#startDate").val() || "",
-            end_date: $("#endDate").val() || "",
+            start_date: sDateVal,
+            end_date: eDateVal,
             warehouse: $("#filterWarehouse").val() || "",
-            type: $("#filterType").val() || "",
+            type: $("#filterType").val() || "" 
         };
 
+        let fStart = sDateVal.replace(/-/g, "");
+        let fEnd = eDateVal.replace(/-/g, "");
+        let dynamicFileName = 'Laporan_Penjualan_Detail_' + fStart + '_sd_' + fEnd;
+
         if (typeof downloadExcelAjax === "function") {
-            downloadExcelAjax(this, BASE_URL +'/index.php?page=pos', payload, 'Laporan_Penjualan');
+            downloadExcelAjax(this, window.location.href, payload, dynamicFileName);
         }
     });
+    
 });

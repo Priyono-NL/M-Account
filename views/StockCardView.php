@@ -15,19 +15,16 @@ class StockCardView {
             <div class="card-body p-3">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-2">
-                        <label class="form-label text-muted small fw-bold mb-1">GUDANG ASAL <span class="text-danger">*</span></label>
                         <?php 
                         Component::warehouseSelect($warehouses, $current_warehouse, $is_locked, 'filterWarehouse', false); 
                         ?>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-muted small fw-bold mb-1">PILIH BARANG <span class="text-danger">*</span></label>
                         <select id="filterItem" class="form-select form-select-sm shadow-none">
                             <option value="">-- Pilih Barang --</option>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label text-muted small fw-bold mb-1">PERIODE TANGGAL</label>
                         <div class="input-group input-group-sm">
                             <input type="date" class="form-control" id="startDate" value="<?= date('Y-m-01') ?>">
                             <span class="input-group-text bg-light border-start-0 border-end-0">s/d</span>
@@ -35,9 +32,18 @@ class StockCardView {
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <button type="button" id="btnCariCard" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm">
-                            <i class="fa-solid fa-magnifying-glass me-1"></i> Tarik Data
-                        </button>
+                        <div class="row g-1">
+                            <div class="col-6">
+                                <button type="button" id="btnCariCard" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm" title="Tarik Data">
+                                    <i class="fa-solid fa-magnifying-glass me-1"></i> Cari
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" id="btnExportCardExcel" class="btn btn-success btn-sm w-100 fw-bold py-2 shadow-sm" title="Export Excel">
+                                    <i class="fa-solid fa-file-excel me-1"></i> Excel
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -73,7 +79,7 @@ class StockCardView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/stockCard.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/stockCard-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

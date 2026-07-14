@@ -219,6 +219,62 @@ class StockInController extends BaseController {
         if ($isExists) return $this->jsonSuccess("Dokumen sudah ada", ['status' => 'exists']);
         else return $this->jsonSuccess("Dokumen tersedia", ['status' => 'available']);
     }
+
+    public function export_xls() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
+
+        // Tarik data detail pecahan item dari model baru
+        $data = $this->stockInModel->getDetailedFiltered($search, $warehouse, $startDate, $endDate);
+        $total_qty = 0;
+
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Tanggal Terima</b>',
+            '<b>Gudang Tujuan</b>', 
+            '<b>Nomor Dokumen</b>',  
+            '<b>Penerima / Petugas</b>',
+            '<b>Kode Barang</b>',
+            '<b>Nama Barang</b>',
+            '<b>UOM</b>',
+            '<b>Qty Masuk</b>'
+        ]];
+
+        foreach ($data as $index => $item) {
+            $tanggal = date('d-M-Y', strtotime($item['date_receive']));
+            $qty = (float)$item['item_qty'];
+            $total_qty += $qty;
+
+            $rows[] = [
+                $index + 1,
+                $tanggal,
+                $item['warehouse_name'] ?? $item['warehouse'],
+                $item['doc_number'],
+                $item['received_by'],
+                $item['item_code'],
+                $item['item_name'],
+                $item['item_uom'],
+                $qty
+            ];
+        }
+
+        // Baris Penutup: Akumulasi Jumlah Fisik Barang Masuk
+        $rows[] = [
+            '', '', '', '', '', '', '',
+            '<b>TOTAL QUANTITY</b>',
+            '<b>' . $total_qty . '</b>'
+        ];
+
+        // Format nama file dinamis dengan menyertakan rentang tanggal harian
+        $tglAwal  = date('Ymd', strtotime($startDate));
+        $tglAkhir = date('Ymd', strtotime($endDate));
+        $fileName = "Laporan_Penerimaan_Detail_" . $tglAwal . "_sd_" . $tglAkhir . ".xlsx";
+        
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
+    }
     
 }
 ?>

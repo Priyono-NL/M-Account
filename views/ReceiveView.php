@@ -10,11 +10,11 @@ class ReceiveView {
                 <h5 class="fw-bold mb-0">Transaksi Masuk Detail</h5>
                 <p class="text-muted small mb-0">Penerimaan Barang.</p>
             </div>
-            <!-- <div>
+            <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
                     <i class="fa-solid fa-file-excel me-2"></i> Export Excel
                 </button>
-            </div> -->
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">
@@ -107,6 +107,53 @@ class ReceiveView {
 				
             </div>
         </div>
+
+        <div class="modal fade" id="modalDetailReceive" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-light">
+                        <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-truck-ramp-box text-success me-2"></i>Detail Penerimaan Barang Masuk</h6>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" style="font-size: 13px;">
+                        <div class="row mb-3 pb-3 border-bottom text-muted">
+                            <div class="col-6">
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tr><td class="p-0 py-1" width="40%">Gudang</td><td class="p-0 py-1 fw-bold text-dark" id="mdRcWarehouse">-</td></tr>
+                                    <tr><td class="p-0 py-1">Tanggal Transaksi</td><td class="p-0 py-1 text-dark" id="mdRcDate">-</td></tr>
+                                    <tr><td class="p-0 py-1">Document Number</td><td class="p-0 py-1 fw-bold text-primary" id="mdRcDocNo">-</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tr><td class="p-0 py-1" width="35%">Nama Penerima</td><td class="p-0 py-1 fw-bold text-dark" id="mdRcReceivedBy">-</td></tr>
+                                    <tr><td class="p-0 py-1">Catatan</td><td class="p-0 py-1 text-secondary fst-italic" id="mdRcNotes">-</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle" id="mdRcTableItems">
+                                <thead class="bg-light text-center small fw-bold text-muted">
+                                    <tr>
+                                        <th width="5%">No</th>
+                                        <th>Kode Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th width="15%">UOM</th>
+                                        <th width="20%">Qty Masuk</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top-0">
+                        <button type="button" class="btn btn-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php
         $content = ob_get_clean();
         $extra_js = '<script src="' . BASE_URL . '/assets/js/r_history-min.js"></script>';

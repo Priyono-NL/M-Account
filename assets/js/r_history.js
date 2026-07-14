@@ -1,28 +1,55 @@
 function viewDetail(id) {
-    let form = document.createElement("form");
-    form.setAttribute("method", "post");
-    form.setAttribute("action", "index.php?page=receive");
+    // Siapkan body modal kosong / loading state
+    let modalTbody = $("#mdRcTableItems tbody");
+    modalTbody.html('<tr><td colspan="5" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Mengurai berkas masuk...</td></tr>');
+    $("#mdRcWarehouse, #mdRcDate, #mdRcDocNo, #mdRcReceivedBy, #mdRcNotes").text("-");
 
-    let actionInput = document.createElement("input");
-    actionInput.setAttribute("type", "hidden");
-    actionInput.setAttribute("name", "action");
-    actionInput.setAttribute("value", "index");
-    form.appendChild(actionInput);
+    // Kirim AJAX POST request ke StockInController
+    $.ajax({
+        url: 'index.php?page=receive',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'search_receive_detail',
+            id: id
+        },
+        success: function(res) {
+            if (res.status === 'success') {
+                modalTbody.empty();
+                let header = res.data.header;
+                let items  = res.data.items || [];
 
-    let invoiceInput = document.createElement("input");
-    invoiceInput.setAttribute("type", "hidden");
-    invoiceInput.setAttribute("name", "id");
-    invoiceInput.setAttribute("value", id);
-    form.appendChild(invoiceInput);
+                $("#mdRcWarehouse").text(header.warehouse_name || 'Gudang BS');
 
-    let modeInput = document.createElement("input");
-    modeInput.setAttribute("type", "hidden");
-    modeInput.setAttribute("name", "mode");
-    modeInput.setAttribute("value", "view");
-    form.appendChild(modeInput);
+                let dateObj = new Date(header.date_receive);
+                let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                $("#mdRcDate").text(formattedDate);
+                
+                $("#mdRcDocNo").text(header.doc_number);
+                $("#mdRcReceivedBy").text(header.received_by || '-');
+                $("#mdRcNotes").text(header.notes || 'Tidak ada catatan detail dokumen.');
 
-    document.body.appendChild(form);
-    form.submit();
+                items.forEach(function(item, idx) {
+                    modalTbody.append(`
+                        <tr>
+                            <td class="text-center">${idx + 1}</td>
+                            <td class="fw-bold text-secondary">${item.item_code}</td>
+                            <td>${item.item_name}</td>
+                            <td class="text-center"><span class="badge bg-light text-secondary border">${item.item_uom}</span></td>
+                            <td class="text-center fw-bold text-success fs-6">+${item.item_qty}</td>
+                        </tr>
+                    `);
+                });
+
+                $("#modalDetailReceive").modal('show');
+            } else {
+                if (typeof showNotification === "function") showNotification(res.message, 'danger');
+            }
+        },
+        error: function() {
+            if (typeof showNotification === "function") showNotification('Gagal mengambil data penerimaan dari server.', 'danger');
+        }
+    });
 }
 
 $(document).ready(function() {
@@ -155,16 +182,25 @@ $(document).ready(function() {
     });
 
     $("#btnExportExcel").click(function() {
+        let sDateVal = $("#startDate").val() || "";
+        let eDateVal = $("#endDate").val() || "";
+
         let payload = {
             action: 'export_xls',
             search: $("#search").val() || "",
-            start_date: $("#startDate").val() || "",
-            end_date: $("#endDate").val() || "",
-            warehouse: $("#filterWarehouse").val() || "",
+            start_date: sDateVal,
+            end_date: eDateVal,
+            warehouse: $("#filterWarehouse").val() || ""
         };
 
+        // Konversi penamaan file dinamis untuk penanganan di browser helper
+        let fStart = sDateVal.replace(/-/g, "");
+        let fEnd = eDateVal.replace(/-/g, "");
+        let dynamicFileName = 'Laporan_Penerimaan_Detail_' + fStart + '_sd_' + fEnd;
+
         if (typeof downloadExcelAjax === "function") {
-            downloadExcelAjax(this, BASE_URL +'/index.php?page=receive', payload, 'Laporan_Penerimaan');
+            downloadExcelAjax(this, window.location.href, payload, dynamicFileName);
         }
     });
+    
 });

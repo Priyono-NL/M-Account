@@ -9,15 +9,15 @@ class StocksView {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h5 class="fw-bold mb-0">
-                    <i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Informasi Stok Bulanan
+                    <i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Informasi Stok
                 </h5>
                 <p class="text-muted small mb-0">Pantau stok awal, pergerakan, dan stok akhir barang.</p>
             </div>
-            <!-- <div>
+            <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
                     <i class="fa-solid fa-file-excel me-2"></i> Export Excel
                 </button>
-            </div> -->
+            </div>
         </div>
 
         <div id="statusBannerContainer"></div>
@@ -26,7 +26,7 @@ class StocksView {
             <div class="card-body p-3">
                 <div class="row g-2 align-items-center">
                     
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
@@ -38,10 +38,11 @@ class StocksView {
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-calendar me-1"></i> Bulan</span>
-                            <input type="month" class="form-control shadow-none" id="closeMonth" value="<?php echo date('Y-m'); ?>">
+                            <input type="date" class="form-control" id="startDate" value="<?= date('Y-m-01') ?>">
+                            <span class="input-group-text bg-light border-end-0">s/d</span>
+                            <input type="date" class="form-control" id="endDate" value="<?= date('Y-m-d') ?>">
                         </div>
                     </div>
 
@@ -116,7 +117,7 @@ class StocksView {
 
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocks-min.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/stocks.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

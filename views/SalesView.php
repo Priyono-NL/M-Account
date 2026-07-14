@@ -10,11 +10,11 @@ class SalesView {
                 <h5 class="fw-bold mb-0">Transaksi Keluar Detail</h5>
                 <p class="text-muted small mb-0">Penjualan Barang Details.</p>
             </div>
-            <!-- <div>
+            <div>
                 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
                     <i class="fa-solid fa-file-excel me-2"></i> Export Excel
                 </button>
-            </div> -->
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm mb-3 bg-white">
@@ -118,9 +118,63 @@ class SalesView {
 				
             </div>
         </div>
+
+        <div class="modal fade" id="modalDetailSales" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-light">
+                        <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-invoice text-primary me-2"></i>Detail Transaksi Penjualan</h6>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" style="font-size: 13px;">
+                        <div class="row mb-3 pb-3 border-bottom text-muted">
+                            <div class="col-6">
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tr><td class="p-0 py-1" width="35%">No. Invoice</td><td class="p-0 py-1 fw-bold text-dark" id="mdInvNo">-</td></tr>
+                                    <tr><td class="p-0 py-1">Buyer</td><td class="p-0 py-1 fw-bold text-dark" id="mdBuyer">-</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tr><td class="p-0 py-1" width="35%">Tanggal</td><td class="p-0 py-1 text-dark" id="mdDate">-</td></tr>
+                                    <tr><td class="p-0 py-1">Gudang</td><td class="p-0 py-1 text-dark" id="mdWarehouse">-</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered align-middle" id="mdTableItems">
+                                <thead class="bg-light text-center small fw-bold text-muted">
+                                    <tr>
+                                        <th width="5%">No</th>
+                                        <th>Kode Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th width="10%">UOM</th>
+                                        <th width="12%">Qty</th>
+                                        <th width="15%">Harga</th>
+                                        <th width="18%">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end align-items-center bg-light p-3 rounded border">
+                            <span class="fw-bold text-muted me-3">TOTAL:</span>
+                            <span class="fs-5 fw-bold text-primary" id="mdGrandTotal">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top-0">
+                        <button type="button" class="btn btn-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Tutup</button>
+                        <a href="#" target="_blank" id="mdBtnReprint" class="btn btn-success btn-sm fw-bold px-3">
+                            <i class="fa-solid fa-print me-1"></i> Reprint
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php
         $content = ob_get_clean();
-        $extra_js = '<script src="' . BASE_URL . '/assets/js/sales-min.js"></script>';
+        $extra_js = '<script src="' . BASE_URL . '/assets/js/sales.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

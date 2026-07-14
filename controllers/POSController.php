@@ -266,6 +266,73 @@ class POSController extends BaseController {
             ['pagination' => $paginationMeta]
         );
     }
+
+    public function export_xls() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
+        $type      = $this->getPost('type', '');
+
+        // Mengambil data pecahan item detail dari model baru
+        $data = $this->salesModel->getDetailedFiltered($search, $warehouse, $startDate, $endDate, $type);
+        $grand_total = 0;
+
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Tanggal Transaksi</b>',
+            '<b>Gudang</b>', 
+            '<b>Tipe Transaksi</b>', 
+            '<b>No. Invoice</b>',  
+            '<b>Pelanggan / Buyer</b>',
+            '<b>Kode Barang</b>',
+            '<b>Nama Barang</b>',
+            '<b>UOM</b>',
+            '<b>Qty Terjual</b>',
+            '<b>Harga Satuan</b>',
+            '<b>Subtotal</b>'
+        ]];
+
+        foreach ($data as $index => $item) {
+            $tipeTransaksi = ($item['sale_type'] === 'SLS') ? 'Normal Sales' : 'Expense Sales';
+            $tanggal = date('d-M-Y', strtotime($item['sales_date']));
+
+            // Sesuai aturan bisnis: Jika tipe EXP (Internal Expense), nominal dihitung 0 pada omset
+            $price    = ($item['sale_type'] === 'EXP') ? 0 : (float)$item['unit_price'];
+            $subtotal = ($item['sale_type'] === 'EXP') ? 0 : (float)$item['subtotal'];
+            $grand_total += $subtotal;
+
+            $rows[] = [
+                $index + 1,
+                $tanggal,
+                $item['warehouse_name'] ?? $item['warehouse'],
+                $tipeTransaksi,
+                $item['invoice_no'],
+                $item['buyer_name'],
+                $item['item_code'],
+                $item['item_name'],
+                $item['item_uom'],
+                (float)$item['item_qty'],
+                '<style nf="#,##0">' . $price . '</style>',
+                '<style nf="#,##0">' . $subtotal . '</style>'
+            ];
+        }
+
+        // Baris Penutup: Grand Total Omset
+        $rows[] = [
+            '', '', '', '', '', '', '', '', '', '',
+            '<b>GRAND TOTAL</b>',
+            '<style nf="#,##0"><b>' . $grand_total . '</b></style>'
+        ];
+
+        // Format nama file dinamis dengan rentang tanggal harian
+        $tglAwal  = date('Ymd', strtotime($startDate));
+        $tglAkhir = date('Ymd', strtotime($endDate));
+        $fileName = "Laporan_Penjualan_Detail_" . $tglAwal . "_sd_" . $tglAkhir . ".xlsx";
+        
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
+    }
     
 }
 ?>

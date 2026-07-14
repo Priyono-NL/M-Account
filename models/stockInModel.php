@@ -230,5 +230,40 @@ class StockInModel extends DatabaseHelper {
         $result = $this->query_one($sql, ['doc_number' => $doc_number]);        
         return $result ? true : false;
     }
+
+    public function getDetailedFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '') {
+        $sql = "SELECT 
+                    r.date_receive,
+                    r.doc_number,
+                    r.received_by,
+                    w.warehouse_name,
+                    i.item_code,
+                    i.item_name,
+                    i.item_uom,
+                    rd.item_qty
+                FROM receivement_detail rd
+                JOIN receivement r ON rd.receive_id = r.id
+                LEFT JOIN items i ON rd.item_id = i.id
+                LEFT JOIN warehouse w ON r.warehouse = w.id
+                WHERE 1=1";
+        $params = [];
+        
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql .= " AND r.date_receive BETWEEN :startDate AND :endDate";
+            $params['startDate'] = $startDate . ' 00:00:00';
+            $params['endDate'] = $endDate . ' 23:59:59';
+        }
+        if ($warehouse !== '') {
+            $sql .= " AND r.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+        if (!empty($search)) {
+            $sql .= " AND (r.doc_number LIKE :search OR r.received_by LIKE :search OR i.item_name LIKE :search OR i.item_code LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        
+        $sql .= " ORDER BY r.date_receive ASC, r.doc_number ASC, i.item_name ASC";
+        return $this->query_all($sql, $params);
+    }
 }
 ?>

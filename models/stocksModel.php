@@ -229,5 +229,86 @@ class StocksModel extends DatabaseHelper {
         $sql .= " ORDER BY executed_at DESC";
         return $this->query_all($sql, $params);
     }
+
+    /**
+     * REVISI BACKEND: QUERY MUTASI STOK BERDASARKAN RENTANG TANGGAL HARIAN (HIGH PERFORMANCE)
+     */
+    public function getDailyStockReportPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
+        $start_dt = $startDate . ' 00:00:00';
+        $end_dt   = $endDate . ' 23:59:59';
+        $stock_date_snapshot = substr($startDate, 0, 8) . '01'; 
+
+        $sql = "SELECT 
+                    i.id AS item_id, 
+                    i.item_code, 
+                    i.item_name, 
+                    s.warehouse, 
+                    w.warehouse_name,
+                    -- Mengambil saldo awal dari kolom 'qty' berdasarkan 'stock_date' snapshot awal bulan
+                    COALESCE((
+                        SELECT sp.qty 
+                        FROM stocks_period sp 
+                        WHERE sp.item_id = i.id 
+                          AND sp.warehouse = s.warehouse 
+                          AND sp.stock_date = :stock_date
+                    ), 0) AS qty_open,
+                    -- Qty In dihitung dinamis dalam rentang tanggal harian terpilih
+                    COALESCE((
+                        SELECT SUM(rd.item_qty) 
+                        FROM receivement_detail rd 
+                        JOIN receivement r ON rd.receive_id = r.id 
+                        WHERE rd.item_id = i.id 
+                          AND r.warehouse = s.warehouse 
+                          AND r.date_receive BETWEEN :start_date1 AND :end_date1
+                    ), 0) AS qty_in,
+                    -- Qty Out dihitung dinamis dalam rentang tanggal harian terpilih
+                    COALESCE((
+                        SELECT SUM(sd.item_qty) 
+                        FROM sales_detail sd 
+                        JOIN sales ps ON sd.sale_id = ps.id 
+                        WHERE sd.item_id = i.id 
+                          AND ps.warehouse = s.warehouse 
+                          AND ps.sales_date BETWEEN :start_date2 AND :end_date2
+                    ), 0) AS qty_out,
+                    -- Qty Onhand tetap mengambil fisik riil saat ini dari tabel stocks
+                    COALESCE(s.qty_total, 0) AS qty_onhand
+                FROM items i
+                JOIN stocks s ON i.id = s.item_id
+                LEFT JOIN warehouse w ON s.warehouse = w.id
+                WHERE 1=1";
+
+        $params = [
+            'stock_date'  => $stock_date_snapshot,
+            'start_date1' => $start_dt,
+            'start_date2' => $start_dt,
+            'end_date1'   => $end_dt,
+            'end_date2'   => $end_dt
+        ];
+
+        if (!empty($search)) {
+            $sql .= " AND (i.item_code LIKE :search OR i.item_name LIKE :search)";
+            $params['search'] = "%{$search}%";
+        }
+        if ($warehouse !== '') {
+            $sql .= " AND s.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+
+        $sql .= " ORDER BY i.item_name ASC, s.warehouse ASC";
+        $result = $this->query_paginated($sql, $params, $limit, $offset);
+
+        // Rekalkulasi matematis akhir dan selisih fisik riil
+        foreach ($result['data'] as &$row) {
+            $row['qty_open']   = (float)$row['qty_open'];
+            $row['qty_in']     = (float)$row['qty_in'];
+            $row['qty_out']    = (float)$row['qty_out'];
+            $row['qty_close']  = $row['qty_open'] + $row['qty_in'] - $row['qty_out'];
+            $row['qty_onhand'] = (float)$row['qty_onhand'];
+            $row['selisih']    = $row['qty_close'] - $row['qty_onhand'];
+        }
+        unset($row);
+
+        return $result;
+    }
 }
 ?>

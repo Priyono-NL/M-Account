@@ -114,4 +114,38 @@ $(document).ready(function() {
             }
         });
     });
+
+    $('#btnExportCardExcel').click(function() {
+        let itemId = $('#filterItem').val();
+        let whId = $('#filterWarehouse').val();
+        let sDate = $('#startDate').val();
+        let eDate = $('#endDate').val();
+        let itemText = $('#filterItem option:selected').text().trim();
+
+        // Validasi wajib pilih barang sebelum unduh data
+        if (!itemId) {
+            showNotification('Harap pilih barang terlebih dahulu sebelum melakukan ekspor!', 'warning');
+            return;
+        }
+
+        let payload = {
+            action: 'export_card_xls',
+            item_id: itemId,
+            warehouse: whId,
+            start_date: sDate,
+            end_date: eDate
+        };
+
+        // Buat nama file dinamis untuk penanganan di helper browser
+        let fStart = sDate.replace(/-/g, "");
+        let fEnd = eDate.replace(/-/g, "");
+        
+        // Bersihkan nama barang dari karakter aneh agar tidak merusak string nama file
+        let cleanItemCode = itemText.split('-')[0].trim(); 
+        let dynamicFileName = 'Laporan_Kartu_Stok_' + cleanItemCode + '_' + fStart + '_sd_' + fEnd;
+
+        if (typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, dynamicFileName);
+        }
+    });
 });
