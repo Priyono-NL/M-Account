@@ -63,7 +63,7 @@ class InvoiceViewPdf {
                     <td colspan="2">Buyer <?= htmlspecialchars($header['buyer_code'] ?? '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($header['buyer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
                 <tr>
-                    <td colspan="2">Remark</td>
+                    <td colspan="2">Remark <?= htmlspecialchars($header['remark'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
             </table>
 

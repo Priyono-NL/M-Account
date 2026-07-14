@@ -131,6 +131,7 @@ class SalesView {
                             <div class="col-6">
                                 <table class="table table-borderless table-sm mb-0">
                                     <tr><td class="p-0 py-1" width="35%">No. Invoice</td><td class="p-0 py-1 fw-bold text-dark" id="mdInvNo">-</td></tr>
+                                    <tr><td class="p-0 py-1" width="35%">Sales Type</td><td class="p-0 py-1 text-dark" id="mdSaleType">-</td></tr>
                                     <tr><td class="p-0 py-1">Buyer</td><td class="p-0 py-1 fw-bold text-dark" id="mdBuyer">-</td></tr>
                                 </table>
                             </div>
@@ -138,6 +139,7 @@ class SalesView {
                                 <table class="table table-borderless table-sm mb-0">
                                     <tr><td class="p-0 py-1" width="35%">Tanggal</td><td class="p-0 py-1 text-dark" id="mdDate">-</td></tr>
                                     <tr><td class="p-0 py-1">Gudang</td><td class="p-0 py-1 text-dark" id="mdWarehouse">-</td></tr>
+                                    <tr><td class="p-0 py-1">Catatan</td><td class="p-0 py-1 text-dark" id="mdRemark">-</td></tr>
                                 </table>
                             </div>
                         </div>

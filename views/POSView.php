@@ -78,7 +78,7 @@ class POSView {
                             </div>
                         </div>
 
-                        <div class="row g-3">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">PELANGGAN (BUYER) <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-sm">
@@ -109,6 +109,15 @@ class POSView {
                                         $sso_warehouse
                                     ); 
                                 ?>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label text-muted mb-1" style="font-size: 11px; font-weight: 600;">CATATAN</label>
+                                <input type="text" class="form-control form-control-sm" id="remark" 
+                                        value="<?= $isViewMode ? htmlspecialchars($transactionData['header']['remark']) : '' ?>"
+                                        <?= $isViewMode ? 'disabled' : '' ?>>
                             </div>
                         </div>
                     </div>

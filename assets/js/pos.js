@@ -161,6 +161,7 @@ $(document).ready(function() {
                         $('#salesDate').val(header.sales_date).prop('disabled', true);
                         $('#warehouseSelect').val(header.warehouse).prop('disabled', true);
                         $('#salesType').val(header.sale_type).prop('disabled', true);
+                        $('#remark').val(header.remark).prop('disabled', true);
                         $('#btnClearBuyer').hide();
                         $('#btnFindBuyer').hide();
 
@@ -701,6 +702,7 @@ $(document).ready(function() {
                     warehouse: $('#warehouseSelect').val(), 
                     sales_date: $('#salesDate').val(),
                     sales_type: $('#salesType').val(), 
+                    remark: $('#remark').val(), 
                     cart: JSON.stringify(cart),
                     is_edit_mode: isEditMode ? 1 : 0,
                     sale_id: editingSaleId,

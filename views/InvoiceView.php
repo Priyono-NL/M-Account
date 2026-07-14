@@ -30,6 +30,7 @@ class InvoiceView {
         $valDoc   = $header['invoice_no'] ?? '-';
         $valPrint = ($header['is_reprint'] == false) ? '' : $header['reprint'];
         $valBuyer = trim(($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-'));
+        $valRemark = $header['remark'] ?? '';
         
         $kiriDate = "Date      " . $valDate;
         $kananPrint = "Print#" . $valPrint;
@@ -39,7 +40,7 @@ class InvoiceView {
         $rawText .= $dateLine . $LN;
         $rawText .= "Doc. No   " . $valDoc . $LN;
         $rawText .= "Buyer     " . $valBuyer . $LN;
-        $rawText .= "Remark    " . $LN . $LN;
+        $rawText .= "Remark    " . $valRemark . $LN . $LN;
         
         // Tabel Header (Total Pas 51 Kolom)
         $th_nama = str_pad("Deskripsi", 26);

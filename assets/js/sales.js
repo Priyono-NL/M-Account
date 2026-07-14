@@ -29,9 +29,11 @@ function viewDetail(id) {
                 
                 // 1. Isi Profil Atas Nota pada Modal
                 $("#mdInvNo").text(header.invoice_no);
+                $("#mdSaleType").text(header.sale_type);
                 $("#mdBuyer").text(buyer);
                 $("#mdDate").text(formattedDate);
                 $("#mdWarehouse").text(header.warehouse_name);
+                $("#mdRemark").text(header.remark || '');
 
                 // 2. Urai Baris Pecahan Item Barang Terjual
                 items.forEach(function(item, idx) {

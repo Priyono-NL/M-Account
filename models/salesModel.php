@@ -32,7 +32,7 @@ class SalesModel extends DatabaseHelper {
     /**
      * TRANSACTION MUTATION: Menyimpan data POS Penjualan & Memotong Stok
      */
-    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $is_edit_mode = 0, $sale_id = null, $last_updated_at = null) {
+    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $remark, $is_edit_mode = 0, $sale_id = null, $last_updated_at = null) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
             $this->beginTransaction();
@@ -120,6 +120,7 @@ class SalesModel extends DatabaseHelper {
                     'buyer'      => $buyer_id,
                     'warehouse'  => $warehouse,
                     'sales_date' => $sales_date,
+                    'remark'     => $remark,
                 ];
                 
                 $sale_id = $this->insert('sales', $saleData);
