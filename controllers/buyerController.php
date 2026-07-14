@@ -27,11 +27,14 @@ class BuyerController extends BaseController {
     }
 
     public function add() {
+        $username = $_SESSION['user']['username'] ?? 'System';
         $data = $this->sanitize([
             'buyer_code'    => $this->getPost('buyer_code'),
             'buyer_name'    => $this->getPost('buyer_name'),
             'buyer_status'  => $this->getPost('buyer_status'),
-            'buyer_address' => $this->getPost('buyer_address')
+            'buyer_address' => $this->getPost('buyer_address'),
+            'created_by'    => $username,
+            'updated_by'    => null
         ]);
 
         if (empty($data['buyer_code']) || empty($data['buyer_name'])) {
@@ -49,10 +52,12 @@ class BuyerController extends BaseController {
             return $this->jsonError("ID Pelanggan tidak valid.");
         }
 
+        $username = $_SESSION['user']['username'] ?? 'System';
         $data = $this->sanitize([
             'buyer_name'    => $this->getPost('buyer_name'),
             'buyer_status'  => $this->getPost('buyer_status'),
-            'buyer_address' => $this->getPost('buyer_address')
+            'buyer_address' => $this->getPost('buyer_address'),
+            'updated_by'    => $username,
         ]);
 
         // Pengecekan 7: Amankan klausul update buyer
@@ -98,10 +103,12 @@ class BuyerController extends BaseController {
 
             if ($xlsx = \Shuchkin\SimpleXLSX::parse($file['tmp_name'])) {
                 $rows = $xlsx->rows();
-                $header = array_shift($rows);
+                array_shift($rows);
 
                 $successCount = 0;
                 $errorCount = 0;
+
+                $username = $_SESSION['user']['username'] ?? 'System';
 
                 foreach ($rows as $row) {
                     $code    = trim($row[0] ?? '');
@@ -117,7 +124,9 @@ class BuyerController extends BaseController {
                         'buyer_code'    => $code,
                         'buyer_name'    => $name,
                         'buyer_status'  => $status,
-                        'buyer_address' => $address
+                        'buyer_address' => $address,
+                        'created_by'    => $username,
+                        'updated_by'    => null
                     ]);
                     
                     $res = $this->model->insert('buyer', $data);                    

@@ -81,44 +81,43 @@ class BaseController {
 
             if ($currentModule) {
                 $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
-                $rule = $currentModule['rule'] ?? 'public';
+                $rule     = $currentModule['rule'] ?? 'public';
 
                 $unauthorized = false;
                 
-                // 1. Validasi Level Dasar Hak Akses Role Dasar
                 if ($rule === 'superadmin' && $rolename !== 'superadmin') {
                     $unauthorized = true;
                 }
-                if ($rule === 'admin' && !in_array($rolename, ['admin', 'superadmin'])) {
-                    $unauthorized = true;
-                }
 
-                // 2. Validasi Modul Berdasarkan Mapping Permission Path Sesi (Kecuali Superadmin)
                 if (!$unauthorized && $rolename !== 'superadmin') {
                     $my_paths = $_SESSION['user']['paths'] ?? [];
-                    
-                    // Definisikan toleransi jalur induk-anak agar AJAX API filter_api tidak terblokir
-                    $allowed_paths = ['/' . $targetKey];
+
+                    $requested_path = '/' . $targetKey;
+                    $allowed_paths  = [$requested_path];
+
                     if ($targetKey === 'pos') {
+                        $allowed_paths[] = '/sales';
                         $allowed_paths[] = '/sales_detail';
                     } elseif ($targetKey === 'receive') {
                         $allowed_paths[] = '/receive_history';
+                    } elseif ($targetKey === 'stocks') {
+                        $allowed_paths[] = '/stockCard'; // Tambahan jembatan toleransi untuk Kartu Stok
                     }
 
                     $has_access = false;
-                    foreach ($allowed_paths as $ap) {
-                        if (in_array($ap, $my_paths)) {
+                    foreach ($allowed_paths as $path) {
+                        if (in_array($path, $my_paths)) {
                             $has_access = true;
                             break;
                         }
                     }
+                    
 
                     if (!$has_access) {
                         $unauthorized = true;
                     }
                 }
-
-                // Jika terbukti tidak memiliki otorisasi, langsung putus request ke server secara tegas!
+ 
                 if ($unauthorized) {
                     if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                         header('Content-Type: application/json');

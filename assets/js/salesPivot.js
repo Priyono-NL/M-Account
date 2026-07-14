@@ -209,7 +209,8 @@ $(document).ready(function() {
     });
 
     $("#btnExportExcel").on("click", function() {
-        let pivotTable = document.querySelector(".pvtTable");
+        let pivotTable = document.querySelector(".pvtTable");        
+
         if (!pivotTable) {
             showNotification("Tabel pivot kosong! Silakan atur pivot terlebih dahulu.", "warning");
             return;
@@ -218,7 +219,14 @@ $(document).ready(function() {
             action: 'export_xls',
             tabel_html: pivotTable.outerHTML
         };
-        downloadExcelAjax(this, window.location.href, requestData, 'hasil_pivot');
+
+        let sDateVal = $("#startDate").val() || "";
+        let eDateVal = $("#endDate").val() || "";
+        let fStart = sDateVal.replace(/-/g, "");
+        let fEnd = eDateVal.replace(/-/g, "");
+        let dynamicFileName = 'Laporan_Sales_Pivot_' + fStart + '_sd_' + fEnd;
+
+        downloadExcelAjax(this, window.location.href, requestData, dynamicFileName);
     });
 
 });

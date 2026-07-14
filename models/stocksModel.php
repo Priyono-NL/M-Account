@@ -236,7 +236,9 @@ class StocksModel extends DatabaseHelper {
     public function getDailyStockReportPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
         $start_dt = $startDate . ' 00:00:00';
         $end_dt   = $endDate . ' 23:59:59';
+        
         $stock_date_snapshot = substr($startDate, 0, 8) . '01'; 
+        $start_period_dt     = $stock_date_snapshot . ' 00:00:00';
 
         $sql = "SELECT 
                     i.id AS item_id, 
@@ -244,15 +246,41 @@ class StocksModel extends DatabaseHelper {
                     i.item_name, 
                     s.warehouse, 
                     w.warehouse_name,
-                    -- Mengambil saldo awal dari kolom 'qty' berdasarkan 'stock_date' snapshot awal bulan
-                    COALESCE((
-                        SELECT sp.qty 
-                        FROM stocks_period sp 
-                        WHERE sp.item_id = i.id 
-                          AND sp.warehouse = s.warehouse 
-                          AND sp.stock_date = :stock_date
-                    ), 0) AS qty_open,
-                    -- Qty In dihitung dinamis dalam rentang tanggal harian terpilih
+                    -- =================================================================
+                    -- DYNAMIC QTY OPEN: Saldo Tgl 1 + Mutasi (Tgl 1 s/d H-1 sebelum rentang aktif)
+                    -- =================================================================
+                    (
+                        COALESCE((
+                            SELECT sp.qty 
+                            FROM stocks_period sp 
+                            WHERE sp.item_id = i.id 
+                              AND sp.warehouse = s.warehouse 
+                              AND sp.stock_date = :stock_date
+                        ), 0)
+                        +
+                        COALESCE((
+                            SELECT SUM(rd.item_qty) 
+                            FROM receivement_detail rd 
+                            JOIN receivement r ON rd.receive_id = r.id 
+                            WHERE rd.item_id = i.id 
+                              AND r.warehouse = s.warehouse 
+                              AND r.date_receive >= :start_period1
+                              AND r.date_receive < :start_date_active1
+                        ), 0)
+                        -
+                        COALESCE((
+                            SELECT SUM(sd.item_qty) 
+                            FROM sales_detail sd 
+                            JOIN sales ps ON sd.sale_id = ps.id 
+                            WHERE sd.item_id = i.id 
+                              AND ps.warehouse = s.warehouse 
+                              AND ps.sales_date >= :start_period2
+                              AND ps.sales_date < :start_date_active2
+                        ), 0)
+                    ) AS qty_open,
+                    -- =================================================================
+                    -- RENTANG AKTIF: Qty In & Qty Out dinamis sesuai filter harian user
+                    -- =================================================================
                     COALESCE((
                         SELECT SUM(rd.item_qty) 
                         FROM receivement_detail rd 
@@ -261,7 +289,6 @@ class StocksModel extends DatabaseHelper {
                           AND r.warehouse = s.warehouse 
                           AND r.date_receive BETWEEN :start_date1 AND :end_date1
                     ), 0) AS qty_in,
-                    -- Qty Out dihitung dinamis dalam rentang tanggal harian terpilih
                     COALESCE((
                         SELECT SUM(sd.item_qty) 
                         FROM sales_detail sd 
@@ -270,7 +297,7 @@ class StocksModel extends DatabaseHelper {
                           AND ps.warehouse = s.warehouse 
                           AND ps.sales_date BETWEEN :start_date2 AND :end_date2
                     ), 0) AS qty_out,
-                    -- Qty Onhand tetap mengambil fisik riil saat ini dari tabel stocks
+                    -- Qty Onhand fisik saat ini (Real-time live stock)
                     COALESCE(s.qty_total, 0) AS qty_onhand
                 FROM items i
                 JOIN stocks s ON i.id = s.item_id
@@ -278,11 +305,15 @@ class StocksModel extends DatabaseHelper {
                 WHERE 1=1";
 
         $params = [
-            'stock_date'  => $stock_date_snapshot,
-            'start_date1' => $start_dt,
-            'start_date2' => $start_dt,
-            'end_date1'   => $end_dt,
-            'end_date2'   => $end_dt
+            'stock_date'          => $stock_date_snapshot,
+            'start_period1'       => $start_period_dt,
+            'start_period2'       => $start_period_dt,
+            'start_date_active1'  => $start_dt,
+            'start_date_active2'  => $start_dt,
+            'start_date1'         => $start_dt,
+            'start_date2'         => $start_dt,
+            'end_date1'           => $end_dt,
+            'end_date2'           => $end_dt
         ];
 
         if (!empty($search)) {
@@ -297,7 +328,7 @@ class StocksModel extends DatabaseHelper {
         $sql .= " ORDER BY i.item_name ASC, s.warehouse ASC";
         $result = $this->query_paginated($sql, $params, $limit, $offset);
 
-        // Rekalkulasi matematis akhir dan selisih fisik riil
+        // Rekalkulasi matematis akhir untuk grid view tabel
         foreach ($result['data'] as &$row) {
             $row['qty_open']   = (float)$row['qty_open'];
             $row['qty_in']     = (float)$row['qty_in'];

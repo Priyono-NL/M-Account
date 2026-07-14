@@ -42,7 +42,7 @@ class StockInModel extends DatabaseHelper {
     /**
      * TRANSACTION MUTATION: Menyimpan data penerimaan dan memperbarui stok
      */
-    public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes, $is_edit_mode = 0, $receive_id = null, $last_updated_at = '') {
+    public function saveReceivement($cart, $doc_number, $received_by, $warehouse, $date_receive, $notes, $is_edit_mode = 0, $receive_id = null, $last_updated_at = '', $username = 'System') {
         try {
             $this->satpamGembok($date_receive, $warehouse);
             $this->beginTransaction();
@@ -65,23 +65,20 @@ class StockInModel extends DatabaseHelper {
 
                 $current_receive_id = $receive_id;
 
-                // 1. Ambil data item lama dan BATALKAN jumlah barang masuknya (penerimaan batal = -)
                 $oldItems = $this->query_all("SELECT item_id, item_qty FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
                 foreach ($oldItems as $old) {
                     $this->adjustStock($old['item_id'], $warehouse, -((float)$old['item_qty']));
                 }
 
-                // 2. WIPE (HAPUS BERSIH) DETAIL & LOG LAMA
                 $this->query("DELETE FROM receivement_detail WHERE receive_id = :id", ['id' => $receive_id]);
 
-                // 3. UPDATE HEADER
-                $this->query("UPDATE receivement SET received_by = :received_by, notes = :notes, updated_at = NOW() WHERE id = :id", [
+                $this->query("UPDATE receivement SET received_by = :received_by, notes = :notes, updated_by = :updated_by, updated_at = NOW() WHERE id = :id", [
                     'received_by' => $received_by,
-                    'notes' => $notes,
-                    'id' => $receive_id
+                    'notes'       => $notes,
+                    'updated_by'  => $username,
+                    'id'          => $receive_id
                 ]);
 
-                // 4. GABUNGKAN ITEM KERANJANG BARU (Cegah Duplikat Baris)
                 $aggregatedCart = [];
                 foreach ($cart as $item) {
                     $iid = $item['id'];
@@ -89,7 +86,6 @@ class StockInModel extends DatabaseHelper {
                     else $aggregatedCart[$iid]['qty'] += (float)$item['qty'];
                 }
 
-                // 5. MASUKKAN LOG BARU & TAMBAHKAN STOK BARU (+)
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
@@ -125,11 +121,13 @@ class StockInModel extends DatabaseHelper {
                 $doc_number = $searchPrefix . $formattedNum;
 
                 $receiveData = [
-                    'doc_number'    => $doc_number,
-                    'received_by'   => $received_by,
-                    'warehouse'     => $warehouse,
-                    'date_receive'  => $date_receive,
-                    'notes'         => $notes
+                    'doc_number'   => $doc_number,
+                    'received_by'  => $received_by,
+                    'warehouse'    => $warehouse,
+                    'date_receive' => $date_receive,
+                    'notes'        => $notes,
+                    'created_by'   => $username,
+                    'updated_by'   => null
                 ];
                 
                 $receive_id = $this->insert('receivement', $receiveData);

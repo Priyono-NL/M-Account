@@ -132,6 +132,7 @@ class StockInController extends BaseController {
         $is_edit_mode    = (int)$this->getPost('is_edit_mode', 0);
         $receive_id      = $this->getPost('receive_id');
         $last_updated_at = $this->getPost('last_updated_at');
+        $username  = $_SESSION['user']['username'] ?? 'System';
 
         if (empty($cartRaw)) return $this->jsonError("Keranjang belanja kosong.");
 
@@ -147,16 +148,8 @@ class StockInController extends BaseController {
 
         // UPDATE PEMANGGILAN MODEL
         $result = $this->stockInModel->saveReceivement(
-            $cart, 
-            $doc_number, 
-            $received_by, 
-            $warehouse, 
-            $date_receive, 
-            $notes, 
-            $is_edit_mode, 
-            $receive_id, 
-            $last_updated_at
-        );
+            $cart, $doc_number, $received_by, $warehouse, $date_receive, $notes, 
+            $is_edit_mode, $receive_id, $last_updated_at, $username);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             $returnId = $result['receive_id'] ?? null;

@@ -36,6 +36,7 @@ class ItemsController extends BaseController {
     }
 
     public function add() {
+        $username = $_SESSION['user']['username'] ?? 'System';
         $data = $this->sanitize([
             'item_code'  => $this->getPost('item_code'),
             'item_name'  => $this->getPost('item_name'),
@@ -47,6 +48,9 @@ class ItemsController extends BaseController {
             'weight_uom'  => $this->getPost('weight_uom'),
             'origin_code'  => $this->getPost('origin_code'),
             'origin_name'  => $this->getPost('origin_name'),
+            'created_by'      => $username,
+            'updated_by'      => null
+            
         ]);
 
         if (empty($data['item_code']) || empty($data['item_name'])) {
@@ -68,6 +72,7 @@ class ItemsController extends BaseController {
             return $this->jsonError("ID Barang tidak valid.");
         }
 
+        $username = $_SESSION['user']['username'] ?? 'System';
         $data = $this->sanitize([
             'item_name'  => $this->getPost('item_name'),
             'organization_id'   => $this->getPost('organization_id'),
@@ -78,6 +83,7 @@ class ItemsController extends BaseController {
             'weight_uom'  => $this->getPost('weight_uom'),
             'origin_code'  => $this->getPost('origin_code'),
             'origin_name'  => $this->getPost('origin_name'),
+            'updated_by'      => $username
         ]);
 
         // Pengecekan 7: Amankan klausul update master barang
@@ -98,24 +104,35 @@ class ItemsController extends BaseController {
     }
 
     public function download_template() {
-        $rows = [[ 
-            '<b>Kode Barang</b>', 
-            '<b>Nama Barang</b>',
-            '<b>Organization Id</b>',
-            '<b>UoM</b>',
-            '<b>Harga Jual</b>',
-            '<b>Harga Cost</b>',
-        ]];
-        $rows[] = [ 
-            'C123456', 
-            'TEST NAMA',
-            'BS 1/BS 2',
-            'Bal/Box/Kg/Ea/Tin/Zak',
-            '1000',
-            '1000',
+        // Susun baris instruksi yang sangat jelas agar user tidak bingung mengisi kolom select
+        $rows = [
+            [ 
+                '<b>Kode Barang</b>', 
+                '<b>Nama Barang</b>',
+                '<b>Organization Id</b>',
+                '<b>UoM (Satuan)</b>',
+                '<b>Harga Jual</b>',
+                '<b>Harga Cost</b>',
+            ],
+            [
+                '<style color="#FF0000"><i>*Wajib Diisi (Unik)</i></style>',
+                '<style color="#FF0000"><i>*Wajib Diisi</i></style>',
+                '<style color="#008000"><i>Pilihan: 1 / 2</i></style>',
+                '<style color="#008000"><i>Pilihan: Bal/Box/Kg/Ea/Tin/Zak</i></style>',
+                '<style color="#808080"><i>*Angka saja</i></style>',
+                '<style color="#808080"><i>*Angka saja</i></style>',
+            ],
+            [ 
+                'C123456', 
+                'Contoh Nama Barang',
+                '1',
+                'Box',
+                '1000',
+                '1000',
+            ]
         ];
 
-        $fileName = "Format Barang.xlsx";
+        $fileName = "Format_Master_Barang.xlsx";
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }
@@ -134,10 +151,13 @@ class ItemsController extends BaseController {
 
             if ($xlsx = \Shuchkin\SimpleXLSX::parse($file['tmp_name'])) {
                 $rows = $xlsx->rows();
-                $header = array_shift($rows);
+                array_shift($rows); 
+                array_shift($rows);
 
                 $successCount = 0;
                 $errorCount = 0;
+
+                $username = $_SESSION['user']['username'] ?? 'System';
 
                 foreach ($rows as $row) {
                     $item_code  = trim($row[0] ?? '');
@@ -157,7 +177,9 @@ class ItemsController extends BaseController {
                         'organization_id'   => $organization_id,
                         'item_uom'   => $item_uom,
                         'unit_price' => $unit_price,
-                        'unit_cost'  => $unit_cost
+                        'unit_cost'  => $unit_cost,
+                        'created_by' => $username,
+                        'updated_by' => null
                     ]);
                     
                     $res = $this->model->insert('items', $data);

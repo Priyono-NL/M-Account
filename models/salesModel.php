@@ -32,7 +32,7 @@ class SalesModel extends DatabaseHelper {
     /**
      * TRANSACTION MUTATION: Menyimpan data POS Penjualan & Memotong Stok
      */
-    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $remark, $is_edit_mode = 0, $sale_id = null, $last_updated_at = null) {
+    public function saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $remark, $is_edit_mode = 0, $sale_id = null, $username = 'System', $last_updated_at = null) {
         try {
             $this->satpamGembok($sales_date, $warehouse);
             $this->beginTransaction();
@@ -66,9 +66,13 @@ class SalesModel extends DatabaseHelper {
                 // 2. WIPE (HAPUS BERSIH DATA LAMA)
                 $this->query("DELETE FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
 
-                // 3. UPDATE HEADER
-                $this->query("UPDATE sales SET buyer = :buyer, sales_date = :sales_date, warehouse = :warehouse, updated_at = NOW() WHERE id = :id", [
-                    'buyer' => $buyer_id, 'sales_date' => $sales_date, 'warehouse' => $warehouse, 'id' => $sale_id
+                // 3. UPDATE HEADER (Ditambahkan kolom updated_by)
+                $this->query("UPDATE sales SET buyer = :buyer, sales_date = :sales_date, warehouse = :warehouse, updated_by = :updated_by, updated_at = NOW() WHERE id = :id", [
+                    'buyer' => $buyer_id, 
+                    'sales_date' => $sales_date, 
+                    'warehouse' => $warehouse, 
+                    'updated_by' => $username,
+                    'id' => $sale_id
                 ]);
 
                 // 4. GABUNGKAN ITEM KERANJANG BARU
@@ -121,6 +125,8 @@ class SalesModel extends DatabaseHelper {
                     'warehouse'  => $warehouse,
                     'sales_date' => $sales_date,
                     'remark'     => $remark,
+                    'created_by' => $username,
+                    'updated_by' => null
                 ];
                 
                 $sale_id = $this->insert('sales', $saleData);

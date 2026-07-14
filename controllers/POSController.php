@@ -122,6 +122,7 @@ class POSController extends BaseController {
         $sales_type = $this->getPost('sales_type');
         $remark = $this->getPost('remark');
         $last_updated_at = $this->getPost('last_updated_at');
+        $username  = $_SESSION['user']['username'] ?? 'System';
 
         $is_edit_mode = (int)$this->getPost('is_edit_mode');
         $sale_id      = $this->getPost('sale_id');
@@ -137,7 +138,9 @@ class POSController extends BaseController {
         $rolename = strtolower($_SESSION['user']['rolename'] ?? '');
         if ($sales_type === 'EXP' && $rolename !== 'all') return $this->jsonError("Akses Ditolak! Tipe penjualan EXP hanya boleh dilakukan oleh pengguna dengan hak akses ALL.");
 
-        $result = $this->salesModel->saveTransaction($cart, $buyer_id, $warehouse, $sales_date, $sales_type, $remark, $is_edit_mode, $sale_id, $last_updated_at);
+        $result = $this->salesModel->saveTransaction(
+            $cart, $buyer_id, $warehouse, $sales_date, $sales_type, $remark, 
+            $is_edit_mode, $sale_id, $username, $last_updated_at);
         
         if ($result && isset($result['status']) && $result['status'] === 'success') {
             return $this->jsonSuccess($result['message'], ['sale_id' => $result['sale_id']]);
