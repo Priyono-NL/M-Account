@@ -109,7 +109,8 @@ $controllers = [
     'company' => 'CompanyController',
     'users' => 'UsersController',
     'permission' => 'PermissionController',
-    'origins' => 'OriginController'
+    'origins' => 'OriginController',
+    'receivePivot' => 'ReceivePivotController'
 ];
 
 $controllerName = $controllers[$page] ?? 'DashboardController';

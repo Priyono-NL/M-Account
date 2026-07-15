@@ -1,22 +1,34 @@
 <?php
 require_once 'BaseController.php';
 
-class SalesPivotController extends BaseController {
+class ReceivePivotController extends BaseController {
     private $model;
 
     public function __construct() {
         parent::__construct();
         
-        $this->model = new SalesModel();
+        $this->model = new StockInModel();
     }
 
     public function index() {
         $warehouseContext = $this->getWarehouseContext();
-        SalesPivotView::render([
+        ReceivePivotView::render([
             'warehouses'=> $warehouseContext['warehouses'],
             'current_warehouse' => $warehouseContext['current_warehouse'],
             'is_locked' => $warehouseContext['is_locked']
         ]);
+    }
+
+    public function filter_api() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $type      = $this->getPost('type', '');
+        $startDate = $this->getPost('start_date', '');
+        $endDate   = $this->getPost('end_date', '');
+
+        $items = $this->model->getFiltered($search, $warehouse, $startDate, $endDate, $type);
+        
+        return $this->jsonSuccess("Data Filtered", $items);
     }
 
     public function export_xls() {

@@ -267,6 +267,17 @@ class StockInController extends BaseController {
         \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
         exit;
     }
+
+    public function pivot_api() {
+        $search    = $this->getPost('search', '');
+        $warehouse = $this->getPost('warehouse', '');
+        $startDate = $this->getPost('start_date', date('Y-m-01'));
+        $endDate   = $this->getPost('end_date', date('Y-m-d'));
+
+        $data = $this->stockInModel->getDetailedFiltered($search, $warehouse, $startDate, $endDate);
+        
+        return $this->jsonSuccess("Data Pivot Filtered", $data);
+    }
     
 }
 ?>

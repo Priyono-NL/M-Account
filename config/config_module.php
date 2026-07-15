@@ -123,8 +123,18 @@ return [
             'key'         => 'sales',
             'name'        => 'Laporan Penjualan',
             'desc'        => 'Melihat rekapitulasi dan omset penjualan.',
-            'icon'        => 'fa-solid fa-file-invoice-dollar',
+            'icon'        => 'fa-solid fa-file-export',
             'url'         => 'index.php?page=sales',
+            'rule'        => 'public',
+            'active_rule' => 'default'
+        ],
+        [
+            'type'        => 'link',
+            'key'         => 'receivePivot',
+            'name'        => 'Laporan Penerimaan',
+            'desc'        => 'Melihat rekapitulasi dan jumlah Penerimaan.',
+            'icon'        => 'fa-solid fa-file-import',
+            'url'         => 'index.php?page=receivePivot',
             'rule'        => 'public',
             'active_rule' => 'default'
         ],
