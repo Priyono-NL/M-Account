@@ -85,7 +85,6 @@ $(document).ready(function() {
                         let item = {                             
                             "Tgl Penerimaan": row.date_receive,
                             "No. Dokumen": row.doc_number,
-                            "Gudang": row.warehouse_name,
                             "Nama Barang": row.item_name || "",
                             "Kode Barang": row.item_code || "",
                             "Satuan": row.item_uom || "Pcs",

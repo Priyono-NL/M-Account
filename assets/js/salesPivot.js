@@ -89,7 +89,6 @@ $(document).ready(function() {
                         let item = {                             
                             "Tipe Penjualan": row.sale_type || row.sales_type || "SLS",
                             "No. Invoice": row.invoice_no,
-                            "Gudang": row.warehouse_name,
                             "Tgl Penjualan": row.sales_date,
                             "Nama Pembeli": row.buyer_name,
                             "Kode Pembeli": row.buyer_code,
@@ -127,6 +126,7 @@ $(document).ready(function() {
                         rows: ["Tgl Penjualan", "No. Invoice", "Nama Pembeli", "Kode Pembeli", "Nama Barang", "Kode Barang", "Qty"], 
                         cols: [], 
                         vals: ["Total"],
+                        unusedAttrsVertical: false,
                         aggregators: {
                             "Sum Total Nominal": function() { 
                                 return tpl.sum(pivotRupiahFormatter)(["Total"]) 
