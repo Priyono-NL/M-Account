@@ -4,30 +4,51 @@ $(document).ready(function() {
     let currentPage = 1;
     let limit = 25;
 
-    function renderStatusBanner(status) {
-        let bannerHtml = '';
-        if (status === 'ONGOING') {
-            bannerHtml = `
-                <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-3">
-                    <i class="fa-solid fa-triangle-exclamation fs-3 text-warning me-3"></i>
-                    <div>
-                        <strong>Status: SEDANG BERJALAN (DRAFT)</strong><br>
-                        <span class="small">Angka di bawah adalah akumulasi kalkulasi mutasi stok harian berjalan.</span>
-                    </div>
-                </div>
-            `;
-        } else {
-            bannerHtml = `
-                <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-3">
-                    <i class="fa-solid fa-lock fs-3 text-success me-3"></i>
-                    <div>
-                        <strong>Status: DIKUNCI (CLOSED)</strong><br>
-                        <span class="small">Periode stok ini sudah ditutup secara permanen.</span>
-                    </div>
-                </div>
-            `;
+    // KUNCI 1: Variabel penampung data di memory & status sort aktif
+    let localStocksData = [];
+    let currentSortColumn = "";
+    let currentSortOrder = "desc"; // Klik pertama otomatis dari angka terbesar
+
+    // KUNCI 2: Fungsi khusus merender baris data (bisa dipanggil berulang kali saat disortir)
+    function renderStockRows(itemsArray) {
+        tbody.empty();
+
+        if (itemsArray.length === 0) {
+            tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada transaksi ditemukan pada tanggal ini.</td></tr>');
+            renderPagination({ total: 0, totalPages: 0, page: 1 });
+            return;
         }
-        $('#statusBannerContainer').html(bannerHtml);
+
+        itemsArray.forEach(function(t) {
+            let qtyOpen = t.qty_open || 0;
+            let qtyIn = t.qty_in || 0;
+            let qtyOut = t.qty_out || 0;
+            let qtyClose = t.qty_close || 0;
+            let qtyOnhand = t.qty_onhand || 0;
+            let selisih = t.selisih || 0;
+
+            let qtyInStr = qtyIn > 0 ? `<span class="text-success">+${qtyIn}</span>` : '0';
+            let qtyOutStr = qtyOut > 0 ? `<span class="text-danger">-${qtyOut}</span>` : '0';
+            
+            let onhandDisplay = qtyOnhand;
+            let selisihDisplay = (selisih != 0 ? `<span class="text-danger fw-bold">${selisih}</span>` : selisih);
+
+            let tr = `
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">${t.item_name}</div>
+                        <small class="text-muted" style="font-size: 11px;">${t.item_code}</small>
+                    </td>
+                    <td class="text-center fw-medium text-muted">${qtyOpen}</td>
+                    <td class="text-center fw-bold">${qtyInStr}</td>
+                    <td class="text-center fw-bold">${qtyOutStr}</td>
+                    <td class="text-center fw-bold text-primary">${qtyClose}</td>
+                    <td class="text-center fw-bold text-success">${onhandDisplay}</td>
+                    <td class="text-center fw-bold">${selisihDisplay}</td>
+                </tr>
+            `;
+            tbody.append(tr);
+        });
     }
 
     function loadFilteredHistory(page = 1) {
@@ -39,17 +60,6 @@ $(document).ready(function() {
         if (!sDateVal || !eDateVal) {
             if (typeof showNotification === "function") showNotification("Gagal memuat data! Rentang tanggal filter tidak boleh kosong.", "danger");
             clearTable("Rentang tanggal filter wajib diisi.", true);
-            return;
-        }
-
-        // Trik Ekstrak Bulan & Tahun untuk Komparasi
-        let startMonth = sDateVal.substring(0, 7); // Hasil: YYYY-MM
-        let endMonth = eDateVal.substring(0, 7);   // Hasil: YYYY-MM
-        if (startMonth !== endMonth) {
-            if (typeof showNotification === "function") {
-                showNotification("Gagal memuat data! Pencarian lintas bulan tidak diizinkan. Harap filter tanggal dalam bulan yang sama.", "danger");
-            }
-            clearTable("Filter tidak valid (Pencarian harus dalam 1 periode bulan yang sama).", true);
             return;
         }
 
@@ -91,50 +101,16 @@ $(document).ready(function() {
             },
             success: function(res) {
                 if (res.status === "success") {                    
-                    tbody.empty();
+                    
+                    // KUNCI 3: Simpan data dari server ke variabel lokal memory utama
+                    localStocksData = res.data || [];
 
-                    let currentStatus = res.data.status;
-                    renderStatusBanner(currentStatus);
+                    // Reset indikator arah sort panah visual di komponen tabel header
+                    currentSortColumn = "";
+                    $("#stockTable th i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort text-muted");
 
-                    let itemsArray = res.data.stocks || [];
-
-                    if (itemsArray.length === 0) {
-                        $('#statusBannerContainer').empty();
-                        tbody.append('<tr><td colspan="7" class="text-center py-5 text-muted fst-italic">Tidak ada transaksi ditemukan pada tanggal ini.</td></tr>');
-                        renderPagination({ total: 0, totalPages: 0, page: 1 });
-                        return;
-                    }
-
-                    itemsArray.forEach(function(t) {
-                        let qtyOpen = t.qty_open || 0;
-                        let qtyIn = t.qty_in || 0;
-                        let qtyOut = t.qty_out || 0;
-                        let qtyClose = t.qty_close || 0;
-                        let qtyOnhand = t.qty_onhand || 0;
-                        let selisih = t.selisih || 0;
-
-                        let qtyInStr = qtyIn > 0 ? `<span class="text-success">+${qtyIn}</span>` : '0';
-                        let qtyOutStr = qtyOut > 0 ? `<span class="text-danger">-${qtyOut}</span>` : '0';
-                        
-                        let onhandDisplay = qtyOnhand;
-                        let selisihDisplay = (selisih != 0 ? `<span class="text-danger fw-bold">${selisih}</span>` : selisih);
-
-                        let tr = `
-                            <tr>
-                                <td>
-                                    <div class="fw-bold text-dark">${t.item_name}</div>
-                                    <small class="text-muted" style="font-size: 11px;">${t.item_code}</small>
-                                </td>
-                                <td class="text-center fw-medium text-muted">${qtyOpen}</td>
-                                <td class="text-center fw-bold">${qtyInStr}</td>
-                                <td class="text-center fw-bold">${qtyOutStr}</td>
-                                <td class="text-center fw-bold text-primary">${qtyClose}</td>
-                                <td class="text-center fw-bold text-success">${onhandDisplay}</td>
-                                <td class="text-center fw-bold">${selisihDisplay}</td>
-                            </tr>
-                        `;
-                        tbody.append(tr);
-                    });
+                    // Panggil fungsi render data
+                    renderStockRows(localStocksData);
 
                     if (res.pagination) {
                         renderPagination(res.pagination);
@@ -147,6 +123,41 @@ $(document).ready(function() {
         });
     }
 
+    // KUNCI 4: Event Listener Klik Header untuk Mengurutkan Angka Qty di Memory
+    $(document).on("click", "#stockTable th.sortable", function() {
+        let th = $(this);
+        let column = th.data("column");
+
+        if (localStocksData.length === 0) return;
+
+        // Toggle arah sortir (Ascending <-> Descending)
+        if (currentSortColumn === column) {
+            currentSortOrder = (currentSortOrder === "asc") ? "desc" : "asc";
+        } else {
+            currentSortColumn = column;
+            currentSortOrder = "desc"; 
+        }
+
+        // Proses komparasi algoritma sort JavaScript
+        localStocksData.sort(function(a, b) {
+            let valA = parseFloat(a[column]) || 0;
+            let valB = parseFloat(b[column]) || 0;
+            return (currentSortOrder === "asc") ? valA - valB : valB - valA;
+        });
+
+        // Perbarui visual status ikon FontAwesome secara dinamis
+        $("#stockTable th i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort text-muted");
+        let icon = th.find("i");
+        if (currentSortOrder === "asc") {
+            icon.removeClass("fa-sort text-muted").addClass("fa-sort-up text-dark");
+        } else {
+            icon.removeClass("fa-sort text-muted").addClass("fa-sort-down text-dark");
+        }
+
+        // Render ulang baris tabel secara instan
+        renderStockRows(localStocksData);
+    });
+
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
         let $parent = $(this).parent();
@@ -157,8 +168,8 @@ $(document).ready(function() {
     });
 
     function clearTable(pesan = "Pencarian dibersihkan", isValidationError = false) {
-        $('#statusBannerContainer').empty();
         tbody.empty();
+        localStocksData = []; // Bersihkan data di memory saat reset
         
         let iconHtml = isValidationError 
             ? `<i class="fa-solid fa-triangle-exclamation fs-2 mb-3 d-block text-danger opacity-50"></i>`
@@ -172,7 +183,6 @@ $(document).ready(function() {
         renderPagination({ total: 0, totalPages: 0, page: 1, limit: limit });
     }
     
-    // Memicu pencarian berdasarkan tombol filter asli Anda (#btnFilter)
     $("#btnFilter").click(function() {
         loadFilteredHistory(1);
     });
@@ -185,7 +195,6 @@ $(document).ready(function() {
         clearTable();
     });
 
-    // Mengembalikan filter reset harian ke tanggal 1 awal bulan s/d hari ini
     $("#btnResetAll").click(function() {
         let d = new Date();
         let tahun = d.getFullYear();
@@ -204,7 +213,6 @@ $(document).ready(function() {
         clearTable();
     });
 
-    // Memasang proteksi input keyboard bypass kalender HTML5
     $("#startDate, #endDate").on("keydown", function(e) {
         if (e.key === "Backspace" || e.key === "Delete") {
             e.preventDefault();

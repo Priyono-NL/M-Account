@@ -28,29 +28,28 @@ class StocksController extends BaseController {
         $search    = $this->getPost('search', '');
         $warehouse = $this->getPost('warehouse', '');
         
-        // Menangkap parameter rentang harian baru dari POST JS
+        // Menangkap parameter rentang tanggal bebas lintas bulan
         $startDate = $this->getPost('start_date', date('Y-m-01'));
         $endDate   = $this->getPost('end_date', date('Y-m-d'));
 
-        // 1. Ambil parameter halaman dan offset dari BaseController (Limit 25)
+        // 1. Ambil parameter halaman dan offset (Limit 10)
         $paging = $this->getPaginationParams(10);
 
-        // 2. Trik Adaptasi: Ekstrak YYYY-MM dari endDate untuk cek status closing bulanan asli Anda
-        $targetClosingMonth = substr($endDate, 0, 7); 
-        $isClosed = $this->model->isPeriodClosed($targetClosingMonth, $warehouse);
-        $status = $isClosed ? 'CLOSED' : 'ONGOING';
-
-        // 3. Tarik data terpaginasi dari model harian baru (Kalkulasi realtime di memory)
-        $result = $this->model->getDailyStockReportPaginated($search, $warehouse, $startDate, $endDate, $paging['limit'], $paging['offset']);
+        // 2. Tarik data terpaginasi dari model harian
+        $result = $this->model->getDailyStockReportPaginated(
+            $search, 
+            $warehouse, 
+            $startDate, 
+            $endDate, 
+            $paging['limit'], 
+            $paging['offset']
+        );
                 
-        // 4. Susun meta data paginasi berdasarkan jumlah data riil
+        // 3. Susun meta data paginasi
         $paginationMeta = $this->buildPaginationMeta($result['total'], $paging['page'], $paging['limit']);
         
-        // 5. Balas dengan menyisipkan objek array 'pagination' ke komponen AJAX global
-        return $this->jsonSuccess("Data Filtered", [
-            'status' => $status,
-            'stocks' => $result['data']
-        ], ['pagination' => $paginationMeta]);
+        // 4. Balas langsung melempar array data murni (Tanpa bungkus status)
+        return $this->jsonSuccess("Data Filtered", $result['data'], ['pagination' => $paginationMeta]);
     }
 
     /**

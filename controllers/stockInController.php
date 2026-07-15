@@ -79,9 +79,8 @@ class StockInController extends BaseController {
      */
     public function get_receive_list() {
         $keyword = trim($this->getPost('keyword', ''));
-        
-        // Pastikan Anda membuat method searchReceiveList di StockInModel
-        $receives = $this->stockInModel->searchReceiveList($keyword);
+        $warehouse = $this->getPost('warehouse');
+        $receives = $this->stockInModel->searchReceiveList($keyword, $warehouse);
         
         echo json_encode([
             'status' => 'success',

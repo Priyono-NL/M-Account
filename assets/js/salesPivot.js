@@ -1,7 +1,6 @@
 // 1. Fungsi Loader Script Berbasis Promise
 function loadPivotScript(url) {
     return new Promise((resolve, reject) => {
-        // Cek apakah script sudah pernah dimuat sebelumnya untuk menghindari duplikasi
         if (document.querySelector(`script[src="${url}"]`)) {
             resolve();
             return;
@@ -43,13 +42,11 @@ $(document).ready(function() {
     }
 
     function loadFilteredHistory() {
-        // PROTEKSI: Jika library belum selesai diunduh tapi user sudah klik filter
         if (!window.pivotLibrariesLoaded) {
             $("#pivot_loading").show();
             $("#pivot_loading span").text("Menyiapkan komponen visualisasi (Mohon tunggu)...");
             $("#pivot_output").hide();
             
-            // Cek ulang setiap 300ms sampai library siap
             setTimeout(loadFilteredHistory, 300);
             return;
         }
@@ -63,7 +60,7 @@ $(document).ready(function() {
             type: "POST",
             dataType: "json",
             data: {
-                action: "pivot_api",
+                action: "pivot_api", 
                 search: $("#search").val(),
                 warehouse: $("#filterWarehouse").val(),
                 type: $("#filterType").val(),
@@ -82,17 +79,26 @@ $(document).ready(function() {
                     let totalUniqueValues = {};
                     let sets = {}; 
 
+                    // KUNCI PERUBAHAN: Memetakan kolom detail barang dari getDetailedFiltered
                     let mappedData = res.data.map(function(row) {
-                        let totalVal = row.sale_type === 'EXP' ? 0 : parseFloat(row.total);
+                        let isExpense = (row.sale_type === 'EXP' || row.sales_type === 'EXP');
+                        let subtotalVal = isExpense ? 0 : parseFloat(row.subtotal || 0);
+                        let hargaSatuan = isExpense ? 0 : parseFloat(row.unit_price || 0);
+                        let qtyVal = parseFloat(row.item_qty || 0);
                         
                         let item = {                             
-                            "Tipe Penjualan": row.sale_type,
+                            "Tipe Penjualan": row.sale_type || row.sales_type || "SLS",
                             "No. Invoice": row.invoice_no,
                             "Gudang": row.warehouse_name,
                             "Tgl Penjualan": row.sales_date,
                             "Nama Pembeli": row.buyer_name,
                             "Kode Pembeli": row.buyer_code,
-                            "Total": totalVal
+                            "Kode Barang": row.item_code || "",
+                            "Nama Barang": row.item_name || "",
+                            "Satuan": row.item_uom || "Pcs",
+                            "Qty": qtyVal,
+                            "Harga Satuan": hargaSatuan,
+                            "Total": subtotalVal
                         };
 
                         for (let key in item) {
@@ -117,15 +123,16 @@ $(document).ready(function() {
                     let $pivotOutput = $("#pivot_output");
 
                     $pivotOutput.removeData("pivotUIOptions").empty().show().pivotUI(mappedData, {
-                        rows: ["Tgl Penjualan", "No. Invoice", "Nama Pembeli"], 
+                        // Secara default langsung mem-breakdown data per detail Nama Barang
+                        rows: ["Tgl Penjualan", "No. Invoice", "Nama Pembeli", "Kode Pembeli", "Nama Barang", "Kode Barang", "Qty"], 
                         cols: [], 
                         vals: ["Total"],
                         aggregators: {
-                            "Sum Total": function() { 
+                            "Sum Total Nominal": function() { 
                                 return tpl.sum(pivotRupiahFormatter)(["Total"]) 
                             }
                         },
-                        aggregatorName: "Sum Total",
+                        aggregatorName: "Sum Total Nominal",
                         renderers: $.pivotUtilities.renderers,
                         rendererName: "Table", 
                         
@@ -208,6 +215,7 @@ $(document).ready(function() {
         clearPivot();
     });
 
+    // VERSI ASLI: Fungsi tombol ekspor murni mengambil outerHTML sesuai permintaan
     $("#btnExportExcel").on("click", function() {
         let pivotTable = document.querySelector(".pvtTable");        
 
@@ -224,7 +232,7 @@ $(document).ready(function() {
         let eDateVal = $("#endDate").val() || "";
         let fStart = sDateVal.replace(/-/g, "");
         let fEnd = eDateVal.replace(/-/g, "");
-        let dynamicFileName = 'Laporan_Sales_Pivot_' + fStart + '_sd_' + fEnd;
+        let dynamicFileName = 'Laporan_Penjualan_' + fStart + '_sd_' + fEnd;
 
         downloadExcelAjax(this, window.location.href, requestData, dynamicFileName);
     });

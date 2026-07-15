@@ -2,14 +2,14 @@
 // INISIALISASI & GLOBAL VARIABLE
 // ==========================================
 let cart = [];
+// const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
+const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;
 
 function printReceipt(id) {
     if (!id) {
         alert("ID Transaksi tidak ditemukan.");
         return;
     }
-    // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
-    const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
     window.open(printUrl, '_blank');
 }
 
@@ -70,7 +70,7 @@ $(document).ready(function() {
             $('#invoiceTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik nomor invoice atau nama pelanggan...</td></tr>`);
         }
 
-        function loadModalInvoices(keyword = '') {
+        function loadModalInvoices(keyword = '', warehouse = '') {
             let tbody = $('#invoiceTableBody');
             tbody.html('<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i> Mencari Invoice...</td></tr>');
             
@@ -78,7 +78,7 @@ $(document).ready(function() {
                 url: 'index.php?page=pos',
                 type: "POST",
                 dataType: 'json',
-                data: { action: 'get_invoice_list', keyword: keyword }, 
+                data: { action: 'get_invoice_list', keyword: keyword, warehouse: warehouse }, 
                 success: function(response) {
                     tbody.empty();
                     let data = response.data || [];
@@ -123,10 +123,11 @@ $(document).ready(function() {
         $('#modalSearchInvoice').on('input', function() {
             clearTimeout(invoiceTimeout);
             let keyword = $(this).val().trim();
+            let warehouse = $('#warehouseSelect').val();
             if (keyword.length > 0) $('#btnClearInvoiceSearch').show(); else $('#btnClearInvoiceSearch').hide();
             if (keyword === '') { setInvoiceEmpty(); return; }
             
-            invoiceTimeout = setTimeout(() => loadModalInvoices(keyword), jedaMengetik);
+            invoiceTimeout = setTimeout(() => loadModalInvoices(keyword, warehouse), jedaMengetik);
         });
 
         $('#btnClearInvoiceSearch').click(function() {
@@ -147,6 +148,27 @@ $(document).ready(function() {
                     if (res.status === 'success' && res.data) {                        
                         const header = res.data.header;
                         const items = res.data.items;
+
+                        let today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        let yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        yesterday.setHours(0, 0, 0, 0);
+                        
+                        let dateParts = header.sales_date.split('-');
+                        let invoiceDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                        invoiceDate.setHours(0, 0, 0, 0);
+                        
+                        if (invoiceDate < yesterday) {
+                            $('#invoiceModal').modal('hide'); // Tutup modal pencarian
+                            if (typeof showNotification !== 'undefined') {
+                                showNotification('Akses Ditolak! Anda hanya diizinkan mengedit transaksi hari ini atau kemarin.', 'danger');
+                            } else {
+                                alert('Akses Ditolak! Anda hanya diizinkan mengedit transaksi hari ini atau kemarin.');
+                            }
+                            return;
+                        }
                         
                         isEditMode = true;
                         editingSaleId = header.id;
@@ -728,9 +750,7 @@ $(document).ready(function() {
         });
         
         $('#btnPrintInvoice').click(function() {
-            if (currentSaleId) {
-                // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
-                const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;
+            if (currentSaleId) {                
                 window.open(printUrl, '_blank');
                 if(modalCheckoutSuccess) modalCheckoutSuccess.hide();
                 currentSaleId = null;

@@ -51,7 +51,7 @@ $(document).ready(function() {
             $('#receiveTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik Nomor Dokumen atau Nama Penerima...</td></tr>`);
         }
 
-        function loadModalReceivement(keyword = '') {
+        function loadModalReceivement(keyword = '', warehouse = '') {
             let tbody = $('#receiveTableBody');
             tbody.html('<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i> Mencari Dokumen...</td></tr>');
             
@@ -59,7 +59,7 @@ $(document).ready(function() {
                 url: 'index.php?page=receive',
                 type: 'POST',
                 dataType: 'json',
-                data: { action: 'get_receive_list', keyword: keyword },
+                data: { action: 'get_receive_list', keyword: keyword, warehouse: warehouse },
                 success: function(response) {
                     tbody.empty();
                     let data = response.data || [];
@@ -105,10 +105,11 @@ $(document).ready(function() {
         $('#modalSearchReceive').on('input', function() {
             clearTimeout(receiveSearchTimeout);
             let keyword = $(this).val().trim();
+            let warehouse = $('#warehouseSelect').val();
             if (keyword.length > 0) $('#btnClearReceiveSearch').show(); else $('#btnClearReceiveSearch').hide();
             if (keyword === '') { setReceiveModalEmpty(); return; }
             
-            receiveSearchTimeout = setTimeout(() => loadModalReceivement(keyword), jedaMengetik);
+            receiveSearchTimeout = setTimeout(() => loadModalReceivement(keyword, warehouse), jedaMengetik);
         });
 
         $('#btnClearReceiveSearch').click(function() {
@@ -129,6 +130,27 @@ $(document).ready(function() {
                     if (res.status === 'success' && res.data) {
                         const header = res.data.header;
                         const items = res.data.items;
+
+                        let today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        let yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        yesterday.setHours(0, 0, 0, 0);
+
+                        let dateParts = header.date_receive.split('-');
+                        let receiveDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                        receiveDate.setHours(0, 0, 0, 0);
+
+                        if (receiveDate < yesterday) {
+                            $('#receiveModal').modal('hide');
+                            if (typeof showNotification === "function") {
+                                showNotification('Akses Ditolak! Dokumen penerimaan yang sudah melewati H-1 tidak boleh diedit.', 'danger');
+                            } else {
+                                alert('Akses Ditolak! Dokumen penerimaan yang sudah melewati H-1 tidak boleh diedit.');
+                            }
+                            return;
+                        }
 
                         isEditMode = true;
                         editingReceiveId = header.id;

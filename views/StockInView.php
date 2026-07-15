@@ -9,7 +9,7 @@ class StockInView {
         $isViewMode = ($transactionData !== null);
         $selected_id = $isViewMode ? ($transactionData['header']['warehouse'] ?? null) : ($current_warehouse ?? '');
 
-        $allowed_roles = ['all', 'superadmin'];                                    
+        $allowed_roles = ['all'];                                    
         $is_allowed_edit = in_array(strtolower($user_role), $allowed_roles);
 
         ob_start();
@@ -232,7 +232,7 @@ class StockInView {
                     <div class="modal-body">
                         <div class="input-group mb-3">
                             <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchReceive" placeholder="Ketik No Dokumen atau Nama Penerima...">
+                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchReceive" placeholder="Ketik No Dokumen atau Nama Penerima Tanggal Transaksi (dd-mm-yyyy)...">
                             <button class="btn btn-outline-secondary" type="button" id="btnClearReceiveSearch" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         

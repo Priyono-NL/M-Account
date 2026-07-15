@@ -67,8 +67,9 @@ class POSController extends BaseController {
     }
 
     public function get_invoice_list() {
-        $keyword = trim($_POST['keyword'] ?? '');
-        $invoices = $this->salesModel->searchInvoiceList($keyword);
+        $keyword = trim($this->getPost('keyword') ?? '');
+        $warehouse = $this->getPost('warehouse');
+        $invoices = $this->salesModel->searchInvoiceList($keyword, $warehouse);
         
         echo json_encode([
             'status' => 'success',
@@ -278,7 +279,7 @@ class POSController extends BaseController {
         $startDate = $this->getPost('start_date', date('Y-m-01'));
         $endDate   = $this->getPost('end_date', date('Y-m-d'));
 
-        $data = $this->salesModel->getFiltered($search, $warehouse, $startDate, $endDate, $type);
+        $data = $this->salesModel->getDetailedFiltered($search, $warehouse, $startDate, $endDate, $type);
         
         return $this->jsonSuccess("Data Pivot Filtered", $data);
     }

@@ -7,16 +7,6 @@ class StockInModel extends DatabaseHelper {
         parent::__construct();
     }
 
-    public function searchReceiveList($keyword) {
-        $sql = "SELECT id, doc_number, date_receive, received_by, notes 
-                FROM receivement 
-                WHERE doc_number LIKE :keyword OR received_by LIKE :keyword
-                ORDER BY date_receive DESC, id DESC 
-                LIMIT 20";
-        
-        return $this->query_all($sql, ['keyword' => "%$keyword%"]);
-    }
-
     /**
      * OPTIMASI POIN 1: DELTA ADJUSTMENT (HIGH PERFORMANCE)
      * Mengubah nilai stok secara instan tanpa perlu scan view mutasi bulanan.
@@ -56,9 +46,13 @@ class StockInModel extends DatabaseHelper {
                 $oldHeader = $this->query_one("SELECT doc_number, updated_at FROM receivement WHERE id = :id FOR UPDATE", ['id' => $receive_id]);
                 if (!$oldHeader) throw new Exception("Data penerimaan lama tidak ditemukan.");
 
+                $limitDate = date('Y-m-d', strtotime('-1 day'));                
+                if ($oldHeader['date_receive'] < $limitDate) {
+                    throw new Exception("Gagal menyimpan! Dokumen penerimaan ini sudah dikunci karena melewati batas waktu edit (Maksimal H-1).");
+                }
+
                 $db_updated_at = (string)($oldHeader['updated_at'] ?? '');
                 $js_updated_at = (string)($last_updated_at ?? '');
-
                 if ($js_updated_at !== '' && $db_updated_at !== '' && $db_updated_at !== $js_updated_at) {
                     throw new Exception("Gagal menyimpan! Dokumen ini baru saja diedit oleh user lain. Silakan cari ulang data.");
                 }
@@ -212,6 +206,26 @@ class StockInModel extends DatabaseHelper {
         $query = $this->buildFilterQuery($search, $warehouse, $startDate, $endDate);
         $sql = $query['sql'] . " ORDER BY r.date_receive DESC, r.id DESC";
         return $this->query_paginated($sql, $query['params'], $limit, $offset);
+    }
+    
+    public function searchReceiveList($keyword, $warehouse = '') {
+        $sql = "SELECT id, doc_number, date_receive, received_by, notes 
+                FROM receivement 
+                WHERE doc_number LIKE :keyword 
+                    OR received_by LIKE :keyword
+                    OR date_receive  LIKE :keyword
+                    OR DATE_FORMAT(date_receive, '%d-%m-%Y') LIKE :keyword";
+        
+        $params = ['keyword' => "%$keyword%"];
+        
+        if ($warehouse !== '') {
+            $sql .= " AND warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+
+        $sql .= " ORDER BY date_receive DESC, id DESC";
+        
+        return $this->query_all($sql, $params);
     }
 
     public function getTransactionItems($receive_id) {

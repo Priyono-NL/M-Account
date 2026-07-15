@@ -83,13 +83,13 @@ class StocksView {
                     <table class="table table-hover align-middle mb-0" id="stockTable">
                         <thead class="bg-light text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
                             <tr>
-                                <th>Barang</th>
-                                <th class="text-center">Qty Open</th>
-                                <th class="text-center">Qty In</th>
-                                <th class="text-center">Qty Out</th>
-                                <th class="text-center pe-4 text-primary">Qty Close</th>
-                                <th class="text-center pe-4 text-success">Qty OnHand</th>
-                                <th class="text-center pe-4 text-danger">Selisih</th>
+                                <th>Nama Barang</th>
+                                <th class="sortable text-center" data-column="qty_open" style="cursor: pointer;">Qty Open <i class="fa-solid fa-sort text-muted ms-1"></i></th>
+                                <th class="sortable text-center" data-column="qty_in" style="cursor: pointer;">Qty In <i class="fa-solid fa-sort text-muted ms-1"></i></th>
+                                <th class="sortable text-center" data-column="qty_out" style="cursor: pointer;">Qty Out <i class="fa-solid fa-sort text-muted ms-1"></i></th>
+                                <th class="sortable text-center" data-column="qty_close" style="cursor: pointer;">Qty Close <i class="fa-solid fa-sort text-muted ms-1"></i></th>
+                                <th class="sortable text-center" data-column="qty_onhand" style="cursor: pointer;">Qty On Hand <i class="fa-solid fa-sort text-muted ms-1"></i></th>
+                                <th class="sortable text-center" data-column="selisih" style="cursor: pointer;">Selisih <i class="fa-solid fa-sort text-muted ms-1"></i></th>
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">

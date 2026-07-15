@@ -1,6 +1,9 @@
 // =========================================================================
 // FUNGSI GLOBAL: MENAMPILKAN DETAIL TRANSAKSI & REPRINT VIA MODAL
 // =========================================================================
+// const print_url = 'index.php?page=pos&action=print_invoice&id=';
+const print_url = 'index.php?page=pos&action=print_invoice_pdf&id=';
+
 function viewDetail(id) {
     // Siapkan body modal kosong / loading state
     let modalTbody = $("#mdTableItems tbody");
@@ -59,9 +62,8 @@ function viewDetail(id) {
                 // 3. Tampilkan Akumulasi Grand Total
                 $("#mdGrandTotal").text('Rp ' + grandTotal.toLocaleString('id-ID'));
 
-                // 4. Set Link Tombol Reprint Langsung Mengarah Ke Engine PDF Asli
-                // $("#mdBtnReprint").attr('href', 'index.php?page=pos&action=print_invoice&id=' + header.id);
-                $("#mdBtnReprint").attr('href', 'index.php?page=pos&action=print_invoice_pdf&id=' + header.id);
+                // 4. Set Link Tombol Reprint Langsung Mengarah Ke Engine printer
+                $("#mdBtnReprint").attr('href', print_url + header.id);
 
                 // 5. Luncurkan Modal ke Layar Browser Kasir
                 $("#modalDetailSales").modal('show');

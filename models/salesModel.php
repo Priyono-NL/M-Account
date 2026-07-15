@@ -43,13 +43,16 @@ class SalesModel extends DatabaseHelper {
                 // ==========================================
                 // EDIT INVOICE LAMA (WIPE & REPLACE)
                 // ==========================================
-                $oldHeader = $this->query_one("SELECT invoice_no, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);
-                
+                $oldHeader = $this->query_one("SELECT invoice_no, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);                
                 if (!$oldHeader) throw new Exception("Data transaksi lama tidak ditemukan.");
 
+                $limitDate = date('Y-m-d', strtotime('-1 day'));                
+                if ($oldHeader['sales_date'] < $limitDate) {
+                    throw new Exception("Gagal menyimpan! Invoice ini sudah melewati batas waktu edit (maksimal H-1 dari hari ini).");
+                }
+
                 $js_updated_at = (string)($last_updated_at ?? '');
-                $db_updated_at = (string)($oldHeader['updated_at'] ?? '');
-                
+                $db_updated_at = (string)($oldHeader['updated_at'] ?? '');                
                 if ($js_updated_at !== '' && $db_updated_at !== '' && $db_updated_at !== $js_updated_at) {
                     throw new Exception("Gagal menyimpan! Invoice ini baru saja diedit oleh user lain. Silakan tutup dan buka ulang.");
                 }
@@ -242,18 +245,28 @@ class SalesModel extends DatabaseHelper {
         return $this->query_all($sql, ['sale_id' => (int)$sale_id, 'warehouse_id' => (int)$warehouse_id]);
     }
 
-    public function searchInvoiceList($keyword) {
+    public function searchInvoiceList($keyword, $warehouse = '') {
         $sql = "SELECT s.id, s.invoice_no, s.sales_date, b.buyer_name, b.buyer_code,
                        (SELECT SUM(sd.item_qty * i.unit_price) 
                         FROM sales_detail sd JOIN items i ON sd.item_id = i.id 
                         WHERE sd.sale_id = s.id) as grand_total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
-                WHERE s.invoice_no LIKE :keyword OR b.buyer_name LIKE :keyword
-                ORDER BY s.sales_date DESC, s.id DESC 
-                LIMIT 20";
+                WHERE (s.invoice_no LIKE :keyword 
+                   OR b.buyer_name LIKE :keyword
+                   OR s.sales_date LIKE :keyword 
+                   OR DATE_FORMAT(s.sales_date, '%d-%m-%Y') LIKE :keyword)";
         
-        return $this->query_all($sql, ['keyword' => "%$keyword%"]);
+        $params = ['keyword' => "%$keyword%"];
+
+        if ($warehouse !== '') {
+            $sql .= " AND s.warehouse = :warehouse";
+            $params['warehouse'] = $warehouse;
+        }
+
+        $sql .= " ORDER BY s.sales_date DESC, s.id DESC";
+        
+        return $this->query_all($sql, $params);
     }
 
     public function incrementPrintCount($sales_id) {
@@ -268,6 +281,7 @@ class SalesModel extends DatabaseHelper {
                     s.sale_type,
                     w.warehouse_name,
                     b.buyer_name,
+                    b.buyer_code,
                     i.item_code,
                     i.item_name,
                     i.item_uom,

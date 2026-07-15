@@ -345,7 +345,7 @@ class POSView {
                     <div class="modal-body">
                         <div class="input-group mb-3">
                             <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchInvoice" placeholder="Ketik No Invoice atau Nama Pelanggan...">
+                            <input type="text" class="form-control form-control-sm border-start-0 border-end-0"  id="modalSearchInvoice" placeholder="Ketik No Invoice atau Nama Pelanggan atau Tanggal Transaksi (dd-mm-yyyy)...">
                             <button class="btn btn-outline-secondary" type="button" id="btnClearInvoiceSearch" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         
