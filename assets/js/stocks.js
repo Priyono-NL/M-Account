@@ -3,13 +3,12 @@ $(document).ready(function() {
 
     let currentPage = 1;
     let limit = 25;
-
-    // KUNCI 1: Variabel penampung data di memory & status sort aktif
-    let localStocksData = [];
+    
+    // Status urutan aktif (Kosong di awal agar mengikuti penarikan data default database)
     let currentSortColumn = "";
-    let currentSortOrder = "desc"; // Klik pertama otomatis dari angka terbesar
+    let currentSortOrder = ""; 
 
-    // KUNCI 2: Fungsi khusus merender baris data (bisa dipanggil berulang kali saat disortir)
+    // Fungsi merender baris data
     function renderStockRows(itemsArray) {
         tbody.empty();
 
@@ -56,28 +55,24 @@ $(document).ready(function() {
         let sDateVal = $("#startDate").val();
         let eDateVal = $("#endDate").val();
 
-        // 1. Validasi jika Periode/Tanggal Kosong
         if (!sDateVal || !eDateVal) {
             if (typeof showNotification === "function") showNotification("Gagal memuat data! Rentang tanggal filter tidak boleh kosong.", "danger");
             clearTable("Rentang tanggal filter wajib diisi.", true);
             return;
         }
 
-        // Dapatkan string tanggal hari ini (Format YYYY-MM-DD)
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
         let dd = String(today.getDate()).padStart(2, '0');
         let todayStr = yyyy + '-' + mm + '-' + dd;
 
-        // 2. Validasi jika Tanggal Awal Melebihi Tanggal Akhir
         if (sDateVal > eDateVal) {
             if (typeof showNotification === "function") showNotification("Gagal memuat data! Tanggal awal tidak boleh melebihi tanggal akhir.", "danger");
             clearTable("Format tanggal salah (Tanggal awal melampaui tanggal akhir).", true);
             return;
         }
 
-        // 3. Validasi jika Periode Melebihi Hari Ini (Aman untuk hari ini berjalan)
         if (eDateVal > todayStr) {
             if (typeof showNotification === "function") showNotification("Gagal memuat data! Pilihan rentang tanggal tidak boleh melewati hari ini.", "danger");
             clearTable("Periode tidak valid (Melebihi tanggal hari ini berjalan).", true);
@@ -97,20 +92,14 @@ $(document).ready(function() {
                 start_date: sDateVal,
                 end_date: eDateVal,
                 page: currentPage,
-                limit: limit
+                limit: limit,
+                sort_col: currentSortColumn,
+                sort_dir: currentSortOrder
             },
             success: function(res) {
                 if (res.status === "success") {                    
-                    
-                    // KUNCI 3: Simpan data dari server ke variabel lokal memory utama
-                    localStocksData = res.data || [];
-
-                    // Reset indikator arah sort panah visual di komponen tabel header
-                    currentSortColumn = "";
-                    $("#stockTable th i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort text-muted");
-
-                    // Panggil fungsi render data
-                    renderStockRows(localStocksData);
+                    // KUNCI: Data dari server langsung dioper ke fungsi render tanpa disimpan di memori global
+                    renderStockRows(res.data || []);
 
                     if (res.pagination) {
                         renderPagination(res.pagination);
@@ -123,14 +112,11 @@ $(document).ready(function() {
         });
     }
 
-    // KUNCI 4: Event Listener Klik Header untuk Mengurutkan Angka Qty di Memory
+    // Event Listener Klik Header untuk Mengaktifkan Server-Side Sort
     $(document).on("click", "#stockTable th.sortable", function() {
         let th = $(this);
         let column = th.data("column");
 
-        if (localStocksData.length === 0) return;
-
-        // Toggle arah sortir (Ascending <-> Descending)
         if (currentSortColumn === column) {
             currentSortOrder = (currentSortOrder === "asc") ? "desc" : "asc";
         } else {
@@ -138,24 +124,15 @@ $(document).ready(function() {
             currentSortOrder = "desc"; 
         }
 
-        // Proses komparasi algoritma sort JavaScript
-        localStocksData.sort(function(a, b) {
-            let valA = parseFloat(a[column]) || 0;
-            let valB = parseFloat(b[column]) || 0;
-            return (currentSortOrder === "asc") ? valA - valB : valB - valA;
-        });
-
-        // Perbarui visual status ikon FontAwesome secara dinamis
-        $("#stockTable th i").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort text-muted");
+        $("#stockTable th.sortable i").removeClass("fa-sort-up fa-sort-down text-dark").addClass("fa-sort opacity-50");
         let icon = th.find("i");
         if (currentSortOrder === "asc") {
-            icon.removeClass("fa-sort text-muted").addClass("fa-sort-up text-dark");
+            icon.removeClass("fa-sort opacity-50").addClass("fa-sort-up text-dark");
         } else {
-            icon.removeClass("fa-sort text-muted").addClass("fa-sort-down text-dark");
+            icon.removeClass("fa-sort opacity-50").addClass("fa-sort-down text-dark");
         }
 
-        // Render ulang baris tabel secara instan
-        renderStockRows(localStocksData);
+        loadFilteredHistory(1);
     });
 
     $(document).on('click', '.page-link', function(e) {
@@ -169,7 +146,11 @@ $(document).ready(function() {
 
     function clearTable(pesan = "Pencarian dibersihkan", isValidationError = false) {
         tbody.empty();
-        localStocksData = []; // Bersihkan data di memory saat reset
+        
+        // Kembalikan ke penarikan data awal jika filter diubah/direset
+        currentSortColumn = "";
+        currentSortOrder = "";
+        $("#stockTable th.sortable i").removeClass("fa-sort-up fa-sort-down text-dark").addClass("fa-sort opacity-50");
         
         let iconHtml = isValidationError 
             ? `<i class="fa-solid fa-triangle-exclamation fs-2 mb-3 d-block text-danger opacity-50"></i>`

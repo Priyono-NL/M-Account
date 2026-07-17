@@ -32,17 +32,25 @@ class StocksController extends BaseController {
         $startDate = $this->getPost('start_date', date('Y-m-01'));
         $endDate   = $this->getPost('end_date', date('Y-m-d'));
 
+        // =========================================================================
+        // TAHAP 3: Tangkap parameter sorting yang dikirim oleh jQuery AJAX
+        // =========================================================================
+        $sortCol   = $this->getPost('sort_col', ''); // Default kosong (mengikuti penarikan awal)
+        $sortDir   = $this->getPost('sort_dir', ''); // Default kosong
+
         // 1. Ambil parameter halaman dan offset (Limit 10)
         $paging = $this->getPaginationParams(10);
 
-        // 2. Tarik data terpaginasi dari model harian
+        // 2. Tarik data terpaginasi dari model harian (Sisipkan parameter sort baru)
         $result = $this->model->getDailyStockReportPaginated(
             $search, 
             $warehouse, 
             $startDate, 
             $endDate, 
             $paging['limit'], 
-            $paging['offset']
+            $paging['offset'],
+            $sortCol, // Ditambahkan
+            $sortDir  // Ditambahkan
         );
                 
         // 3. Susun meta data paginasi

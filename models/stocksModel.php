@@ -144,7 +144,6 @@ class StocksModel extends DatabaseHelper {
             throw new Exception("Periode {$monthPeriod} sudah dikunci permanen!");
         }
 
-        // Pengecekan 9: Deteksi gudang terdampak secara ringan tanpa me-load seluruh baris produk ke memory RAM PHP
         $sqlCheck = "SELECT DISTINCT warehouse FROM vw_laporan_stok WHERE period = :monthPeriod";
         $checkParams = ['monthPeriod' => $monthPeriod];
         if ($warehouse !== '') {
@@ -157,14 +156,12 @@ class StocksModel extends DatabaseHelper {
             throw new Exception("Tidak ada data stok pada periode ini untuk di-closing.");
         }
 
-        // Tanggal 1 bulan depan (Untuk record saldo awal bulan depan)
         $nextMonthDate = date('Y-m-01', strtotime($monthPeriod . '-01 +1 month'));
         $insertedCount = 0;
 
         try {
             $this->beginTransaction();
             
-            // Hapus data awal bulan depan jika sebelumnya pernah ada error parsial (Mencegah duplikat)
             $sqlDel = "DELETE FROM stocks_period WHERE stock_date = :nextMonthDate";
             $delParams = ['nextMonthDate' => $nextMonthDate];
             if ($warehouse !== '') {
@@ -174,7 +171,6 @@ class StocksModel extends DatabaseHelper {
             $stmtDel = $this->db->prepare($sqlDel);
             $stmtDel->execute($delParams);
 
-            // Pengecekan 9: Bulk Insert langsung di level database MySQL (INSERT INTO ... SELECT)
             $sqlInsert = "INSERT INTO stocks_period (item_id, warehouse, stock_date, qty)
                           SELECT item_id, warehouse, :nextMonthDate, qty_close 
                           FROM vw_laporan_stok 
@@ -192,9 +188,8 @@ class StocksModel extends DatabaseHelper {
 
             $stmtInsert = $this->db->prepare($sqlInsert);
             $stmtInsert->execute($insertParams);
-            $insertedCount = $stmtInsert->rowCount(); // Tangkap jumlah baris data yang sukses terproses
+            $insertedCount = $stmtInsert->rowCount();
                         
-            // Catat log closing untuk masing-masing gudang yang sukses terproses
             foreach ($warehousesToLog as $wh) {
                 $this->insert('stock_closing_log', [
                     'periode'     => $monthPeriod,
@@ -231,9 +226,11 @@ class StocksModel extends DatabaseHelper {
     }
 
     /**
-     * REVISI BACKEND: QUERY MUTASI STOK BERDASARKAN RENTANG TANGGAL HARIAN (HIGH PERFORMANCE)
+     * =========================================================================
+     * MUTASI STOK HARIAN + SERVER-SIDE SORTING & WHITELIST
+     * =========================================================================
      */
-    public function getDailyStockReportPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0) {
+    public function getDailyStockReportPaginated($search = '', $warehouse = '', $startDate = '', $endDate = '', $limit = 25, $offset = 0, $sortCol = '', $sortDir = '') {
         $start_dt = $startDate . ' 00:00:00';
         $end_dt   = $endDate . ' 23:59:59';
         
@@ -325,7 +322,23 @@ class StocksModel extends DatabaseHelper {
             $params['warehouse'] = $warehouse;
         }
 
-        $sql .= " ORDER BY i.item_name ASC, s.warehouse ASC";
+        $allowedColumns = [
+            'qty_open'   => 'qty_open',
+            'qty_in'     => 'qty_in',
+            'qty_out'    => 'qty_out',
+            'qty_close'  => '(qty_open + qty_in - qty_out)',
+            'qty_onhand' => 'qty_onhand',
+            'selisih'    => '((qty_open + qty_in - qty_out) - qty_onhand)'
+        ];
+
+        if (!empty($sortCol) && array_key_exists($sortCol, $allowedColumns)) {
+            $orderByDir = (strtoupper($sortDir) === 'ASC') ? 'ASC' : 'DESC';
+            $sql .= " ORDER BY " . $allowedColumns[$sortCol] . " " . $orderByDir . ", i.item_name ASC, s.warehouse ASC";
+        } else {
+            $sql .= " ORDER BY i.item_name ASC, s.warehouse ASC";
+        }
+
+        // Eksekusi paginasi data
         $result = $this->query_paginated($sql, $params, $limit, $offset);
 
         // Rekalkulasi matematis akhir untuk grid view tabel

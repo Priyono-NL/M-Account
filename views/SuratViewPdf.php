@@ -36,7 +36,7 @@ class SuratViewPdf {
                 <strong style="font-size: 10pt;">¤¤ FAKTUR PENJUALAN ¤¤</strong>
             </div>
 
-            <table style="margin-top: 5px;">
+            <table style="margin-top: 20px;">
                 <tr>
                     <td style="width: 55%">Tanggal : <?= isset($header['sales_date']) ? htmlspecialchars(strtoupper(date('d-M-Y', strtotime($header['sales_date']))), ENT_QUOTES, 'UTF-8') : '-' ?></td>
                     <td style="width: 35%">Nomor Faktur : <?= htmlspecialchars($header['invoice_no'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
@@ -53,9 +53,9 @@ class SuratViewPdf {
                 <thead>
                     <tr class="table-header">
                         <th class="text-left" style="width: 50%;">Nama Barang</th>
-                        <th class="text-center" style="width: 10%;">Jumlah</th>
-                        <th class="text-center" style="width: 20%;">Harga</th>
-                        <th class="text-center" style="width: 20%;">Total</th>
+                        <th class="text-left" style="width: 10%;">Jumlah</th>
+                        <th class="text-right" style="width: 20%;">Harga</th>
+                        <th class="text-right" style="width: 20%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,14 +69,34 @@ class SuratViewPdf {
                         <td class="text-right"><?= $isExp ? '-' : number_format($subtotal, 0, ',', '.') ?></td>
                     </tr>
                     <?php endforeach; ?>
+                    <tr>
+                        <td colspan="4" style="padding: 4px 0; border: none;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="width: 1%; white-space: nowrap; padding: 0 0 0 0; font-weight: bold; vertical-align: middle;">
+                                        ¤¤¤¤¤
+                                    </td>
+                                    <td style="padding: 0; vertical-align: middle; width: 99%;">
+                                        <div style="border-top: 1px dashed #000; height: 0; line-height: 0; font-size: 0;"></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+					<tr>
+						<td class="text-right" colspan="3">Grand Total:</td>
+						<td class="text-right">
+							<?= $isExp ? '-' : number_format($header['total'] ?? 0, 0, ',', '.') ?>
+						</td>
+					</tr>
                 </tbody>
             </table>
 
             <table style="margin-top: 20px;">
                 <tr>
-                    <td class="text-center" style="width: 35%;">Yang Menyerahkan</td>
-                    <td style="width:30%"></td>
-                    <td class="text-center" style="width: 35%;">Penerima</td>
+                    <td class="text-center" style="width: 48%;">Yang Menyerahkan</td>
+                    <td style="width:4%"></td>
+                    <td class="text-center" style="width: 48%;">Penerima</td>
                 </tr>
                 <tr>
                     <td style="height: 50px;"></td>
