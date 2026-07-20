@@ -43,7 +43,7 @@ class SalesModel extends DatabaseHelper {
                 // ==========================================
                 // EDIT INVOICE LAMA (WIPE & REPLACE)
                 // ==========================================
-                $oldHeader = $this->query_one("SELECT invoice_no, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);                
+                $oldHeader = $this->query_one("SELECT invoice_no, sales_date, updated_at FROM sales WHERE id = :id FOR UPDATE", ['id' => $sale_id]);                
                 if (!$oldHeader) throw new Exception("Data transaksi lama tidak ditemukan.");
 
                 $limitDate = date('Y-m-d', strtotime('-1 day'));                

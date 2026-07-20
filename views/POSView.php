@@ -386,7 +386,7 @@ class POSView {
         $extra_js .= 'const USER_ROLE = "' . $user_role . '";';
         $extra_js .= '</script>';
         
-        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos.js"></script>';
+        $extra_js .= '<script src="' . BASE_URL . '/assets/js/pos-min.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
 }

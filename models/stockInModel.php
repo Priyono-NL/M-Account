@@ -43,7 +43,7 @@ class StockInModel extends DatabaseHelper {
                 // ==========================================
                 // EDIT PENERIMAAN (WIPE & REPLACE)
                 // ==========================================
-                $oldHeader = $this->query_one("SELECT doc_number, updated_at FROM receivement WHERE id = :id FOR UPDATE", ['id' => $receive_id]);
+                $oldHeader = $this->query_one("SELECT doc_number, date_receive, updated_at FROM receivement WHERE id = :id FOR UPDATE", ['id' => $receive_id]);
                 if (!$oldHeader) throw new Exception("Data penerimaan lama tidak ditemukan.");
 
                 $limitDate = date('Y-m-d', strtotime('-1 day'));                

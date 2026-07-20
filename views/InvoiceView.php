@@ -23,7 +23,12 @@ class InvoiceView {
         
         $simbol = "$$"; 
         $judul = $simbol . " PASS KELUAR " . $simbol;
+
+        $rawText .= $ESC . "E";
+        $rawText .= $ESC . "G";
         $rawText .= str_pad($judul, 51, " ", STR_PAD_BOTH) . $LN . $LN;
+        $rawText .= $ESC . "H";
+        $rawText .= $ESC . "F";
         
         // Header Info
         $valDate  = isset($header['sales_date']) ? strtoupper(date('d-M-Y', strtotime($header['sales_date']))) : '-';
@@ -44,7 +49,7 @@ class InvoiceView {
         
         // Tabel Header (Total Pas 51 Kolom)
         $th_nama = str_pad("Deskripsi", 26);
-        $th_hrg  = str_pad("Harga", 9, " ", STR_PAD_LEFT);
+        $th_hrg  = str_pad("Harga", 9, " ", STR_PAD_BOTH);
         $th_qty  = str_pad("Qty", 4, " ", STR_PAD_LEFT);        
         $th_tot  = str_pad("Subtotal", 12, " ", STR_PAD_LEFT);
         $rawText .= $th_nama . $th_hrg . $th_qty . $th_tot . $LN;
@@ -80,10 +85,14 @@ class InvoiceView {
         $notice3 = "-------------------------------------------";
         $notice4 = "DILARANG MENGGUNAKAN MERK DAGANG PERUSAHAAN";
 
+        $rawText .= $ESC . "E";
+        $rawText .= $ESC . "G";
         $rawText .= str_pad($notice1, 51, " ", STR_PAD_BOTH) . $LN;
         $rawText .= str_pad($notice2, 51, " ", STR_PAD_BOTH) . $LN;
         $rawText .= str_pad($notice3, 51, " ", STR_PAD_BOTH) . $LN;
         $rawText .= str_pad($notice4, 51, " ", STR_PAD_BOTH) . $LN;
+        $rawText .= $ESC . "H";
+        $rawText .= $ESC . "F";
         
         // --- 3. PELATUK FORM FEED ---
         $rawText .= "\x0C";
