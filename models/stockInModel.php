@@ -97,22 +97,24 @@ class StockInModel extends DatabaseHelper {
                 // ==========================================
                 $prefix = 'IN-';
                 $year = date('Y');
+                $wh_digit = $warehouse - 1;
 
-                $searchPrefix = $prefix . $year . '-';
+                $searchPrefix = $prefix . $year . '-' . $wh_digit; 
                 $lastRecord = $this->query_one(
                     "SELECT doc_number FROM receivement WHERE doc_number LIKE :prefix ORDER BY id DESC LIMIT 1 FOR UPDATE", 
                     ['prefix' => $searchPrefix . '%']
                 );
 
-                $nextNum = 1;
                 if ($lastRecord) {
-                    $parts = explode('-', $lastRecord['doc_number']);                    
+                    $parts = explode('-', $lastRecord['doc_number']);
                     $lastNum = (int) end($parts);
-                    $nextNum = $lastNum + 1; 
+                    $nextNum = $lastNum + 1;
+                } else {
+                    $nextNum = ($wh_digit * 10000) + 1;
                 }                
                 $formattedNum = str_pad($nextNum, 5, '0', STR_PAD_LEFT);
 
-                $doc_number = $searchPrefix . $formattedNum;
+                $doc_number = $prefix . $year . '-' . $formattedNum;
 
                 $receiveData = [
                     'doc_number'   => $doc_number,

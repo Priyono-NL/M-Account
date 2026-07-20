@@ -104,22 +104,24 @@ class SalesModel extends DatabaseHelper {
                 // ==========================================
                 $prefix = ($sales_type == 'EXP') ? 'EXP-' : 'SLS-';            
                 $year = date('Y');
+                $wh_digit = $warehouse - 1; 
 
-                $searchPrefix = $prefix . $year . '-';                
+                $searchPrefix = $prefix . $year . '-' . $wh_digit;               
                 $lastRecord = $this->query_one(
                     "SELECT invoice_no FROM sales WHERE invoice_no LIKE :prefix ORDER BY id DESC LIMIT 1 FOR UPDATE", 
                     ['prefix' => $searchPrefix . '%']
                 );
 
-                $nextNum = 1;
                 if ($lastRecord) {
-                    $parts = explode('-', $lastRecord['invoice_no']);                    
+                    $parts = explode('-', $lastRecord['invoice_no']);
                     $lastNum = (int) end($parts);
                     $nextNum = $lastNum + 1; 
+                } else {
+                    $nextNum = ($wh_digit * 10000) + 1;
                 }                
                 $formattedNum = str_pad($nextNum, 5, '0', STR_PAD_LEFT);
 
-                $invoice_no = $searchPrefix . $formattedNum;
+                $invoice_no = $prefix . $year . '-' . $formattedNum;
 
                 $saleData = [
                     'sale_type'  => $sales_type,
