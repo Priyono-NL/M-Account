@@ -3,66 +3,14 @@
 // ==========================================
 let cart = [];
 
-/**
- * FUNGSI TERPUSAT DIRECT PRINT VIA AJAX PHP
- */
-function executeDirectPrint(saleId, callback = null) {
-    if (!saleId) {
-        if (typeof showNotification !== 'undefined') {
-            showNotification("ID Transaksi tidak ditemukan.", "danger");
-        } else {
-            alert("ID Transaksi tidak ditemukan.");
-        }
+function printReceipt(id) {
+    if (!id) {
+        alert("ID Transaksi tidak ditemukan.");
         return;
     }
-
-    if (typeof showNotification !== 'undefined') {
-        showNotification("Mengirim perintah cetak ke printer Windows...", "info");
-    }
-
-    $.ajax({
-        url: 'index.php?page=pos',
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            action: 'printDirectApi',
-            id: saleId
-        },
-        success: function(res) {
-            if (res.status === 'success' || res.status === true) {
-                if (typeof showNotification !== 'undefined') {
-                    showNotification(res.message || "Dokumen berhasil dikirim ke printer!", "success");
-                } else {
-                    alert(res.message || "Dokumen berhasil dikirim ke printer!");
-                }
-            } else {
-                if (typeof showNotification !== 'undefined') {
-                    showNotification(res.message || "Gagal mencetak ke printer.", "danger");
-                } else {
-                    alert(res.message || "Gagal mencetak ke printer.");
-                }
-            }
-            if (typeof callback === 'function') callback(res);
-        },
-        error: function(xhr) {
-            let err = 'Terjadi kesalahan koneksi ke server cetak.';
-            if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
-
-            if (typeof showNotification !== 'undefined') {
-                showNotification(err, "danger");
-            } else {
-                alert(err);
-            }
-            if (typeof callback === 'function') callback({ status: false, message: err });
-        }
-    });
-}
-
-/**
- * Global function untuk cetak receipt (dipanggil dari luar)
- */
-function printReceipt(id) {
-    executeDirectPrint(id);
+    // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + id;
+    const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + id;
+    window.open(printUrl, '_blank');
 }
 
 $(document).ready(function() {
@@ -98,9 +46,9 @@ $(document).ready(function() {
         $('#warehouseSelect').prop('disabled', false).val('1');
         $('#salesType').prop('disabled', false).val('SLS');
         $('#invoiceNo').prop('disabled', false).val('');
-        $('#btnFindInvoice').show();
-        $('#btnFindBuyer').show();
-        $('#info-state').empty();
+		$('#btnFindInvoice').show();
+		$('#btnFindBuyer').show();
+		$('#info-state').empty();
         
         $('#btnCancelEditInvoice').hide();
         $('#btnClearBuyer').hide();
@@ -139,7 +87,7 @@ $(document).ready(function() {
                         return;
                     }
                     data.forEach(item => {
-                        let total = typeof formatRupiah !== 'undefined' ? formatRupiah(parseFloat(item.grand_total || 0)) : item.grand_total;
+                        let total = formatRupiah ? formatRupiah(parseFloat(item.grand_total || 0)) : item.grand_total;
                         tbody.append(`
                             <tr style="font-size: 13px;">
                                 <td class="ps-3">
@@ -213,7 +161,7 @@ $(document).ready(function() {
                         invoiceDate.setHours(0, 0, 0, 0);
                         
                         if (invoiceDate < yesterday) {
-                            $('#invoiceModal').modal('hide');
+                            $('#invoiceModal').modal('hide'); // Tutup modal pencarian
                             if (typeof showNotification !== 'undefined') {
                                 showNotification('Akses Ditolak! Anda hanya diizinkan mengedit transaksi hari ini atau kemarin.', 'danger');
                             } else {
@@ -259,8 +207,8 @@ $(document).ready(function() {
 
                         renderCart();
                         $('#invoiceModal').modal('hide');
-                        $('#info-state').html(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`);
-                        $('#btnFindInvoice').hide();
+						$('#info-state').html(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`);
+						$('#btnFindInvoice').hide();
                         if(typeof showNotification !== 'undefined') showNotification(`Mode Edit Aktif untuk Invoice: ${header.invoice_no}. Informasi header dikunci.`, 'info');
                     } else {
                         if(typeof showNotification !== 'undefined') showNotification('Gagal memuat detail data invoice.', 'danger');
@@ -280,7 +228,7 @@ $(document).ready(function() {
     // 1. VALIDASI TANGGAL & GUDANG
     // ==========================================
     $('#salesDate').on('input change', function() {
-        if (isEditMode) return;
+        if (isEditMode) return; // Jika edit, abaikan validasi karena field disabled
         clearTimeout(dateTimeout);
         const selectedDateStr = $(this).val();
         if (!selectedDateStr) return; 
@@ -648,15 +596,18 @@ $(document).ready(function() {
             let addedCount = 0;
 
             itemDraft.forEach(draft => {
+                // 1. Cek apakah barang sudah ada di keranjang (cart) utama
                 let existingItemInCart = cart.find(c => c.id == draft.id);
                 
+                // 2. Jika SUDAH ADA, blokir dan berikan notifikasi ke user
                 if (existingItemInCart) {
                     if (typeof showNotification !== 'undefined') {
                         showNotification(`Barang ${draft.nama} sudah ada di keranjang utama!`, 'danger');
                     }
-                    return; 
+                    return; // Skip item ini, lanjut ke item berikutnya di dalam draft loop
                 }
 
+                // 3. Jika BELUM ADA, jalankan pengecekan stok normal
                 let maxStok = draft.stok;
 
                 if (draft.qty > maxStok) {
@@ -664,6 +615,7 @@ $(document).ready(function() {
                         showNotification(`Gagal: ${draft.nama} melebihi batas stok maksimal (${maxStok}).`, 'warning');
                     }
                 } else {
+                    // Masukkan sebagai item baru di cart
                     cart.push({
                         ...draft,
                         harga: (currentSalesType === 'EXP') ? 0 : draft.harga_asli
@@ -757,8 +709,8 @@ $(document).ready(function() {
 
             let currentSalesType = $('#salesType').val(); 
             if (currentSalesType === 'EXP' && !isUserAllowed) {
-                if (typeof showNotification !== 'undefined') showNotification('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.', 'danger'); else alert('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.');
-                return;
+                if (typeof showNotification !== 'undefined') showNotification('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.', 'danger');else alert('Akses ditolak! Tipe penjualan EXP khusus untuk hak akses ALL.');
+                return; // Menghentikan AJAX
             }
 
             let btn = $(this);
@@ -797,22 +749,13 @@ $(document).ready(function() {
             });
         });
         
-        // ==========================================
-        // FITUR CETAK DIRECT VIA WINDOWS SPOOLER
-        // ==========================================
         $('#btnPrintInvoice').click(function() {
             if (currentSaleId) {
-                let $btn = $(this);
-                let originalHtml = $btn.html();
-                
-                // Ubah status tombol jadi loading
-                $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Mencetak...');
-
-                executeDirectPrint(currentSaleId, function(res) {
-                    $btn.prop('disabled', false).html(originalHtml);
-                    if (modalCheckoutSuccess) modalCheckoutSuccess.hide();
-                    currentSaleId = null;
-                });
+                // const printUrl = 'index.php?page=pos&action=print_invoice&id=' + currentSaleId;
+                const printUrl = 'index.php?page=pos&action=print_invoice_pdf&id=' + currentSaleId;                
+                window.open(printUrl, '_blank');
+                if(modalCheckoutSuccess) modalCheckoutSuccess.hide();
+                currentSaleId = null;
             }
         });
 
@@ -851,6 +794,7 @@ $(document).ready(function() {
             // F4 - Simpan Transaksi (Save)
             if (e.key === "F4") {
                 e.preventDefault();
+                // Jalankan checkout hanya jika tidak ada modal yang sedang terbuka
                 if ($('.modal.show').length === 0) $('#btnCheckout').click();
             }
             // ESCAPE - Tutup Modal atau Clear Form
@@ -863,8 +807,11 @@ $(document).ready(function() {
             }
         });
 
+        // Otomatis Pindahkan Kursor (Fokus) ke Input Pencarian saat Modal Terbuka
         $('#itemModal').on('shown.bs.modal', function () { $('#modalSearchItem').focus(); });
+
         $('#buyerModal').on('shown.bs.modal', function () { $('#modalSearchBuyer').focus(); });
+
         $('#invoiceModal').on('shown.bs.modal', function () { $('#modalSearchInvoice').focus(); });
 
         // ========================================================
@@ -874,26 +821,29 @@ $(document).ready(function() {
             let $modal = $(this).closest('.modal');
             let $tbody = $modal.find('tbody');
             
+            // Ambil hanya baris data asli (abaikan baris loading / text-center)
             let $rows = $tbody.find('tr').filter(function() {
                 return !$(this).attr('id') && !$(this).hasClass('text-center') && $(this).find('td').length > 1;
             });
 
             if ($rows.length === 0) return;
 
+            // Cari baris yang saat ini sedang aktif di-highlight biru
             let $activeRow = $tbody.find('tr.table-primary');
             let activeIndex = $rows.index($activeRow);
 
             // 1. TOMBOL PANAH BAWAH (↓)
             if (e.key === "ArrowDown") {
                 e.preventDefault(); 
-                $rows.removeClass('table-primary');
+                $rows.removeClass('table-primary'); // Bersihkan warna biru lama
                 
                 if (activeIndex === -1 || activeIndex === $rows.length - 1) {
-                    $rows.first().addClass('table-primary');
+                    $rows.first().addClass('table-primary'); // Jika belum ada atau di paling akhir, balik ke baris pertama
                 } else {
-                    $rows.eq(activeIndex + 1).addClass('table-primary');
+                    $rows.eq(activeIndex + 1).addClass('table-primary'); // Turun 1 baris
                 }
                 
+                // Jalankan auto-scroll ke baris baru yang aktif
                 scrollToRow($tbody.find('tr.table-primary'));
             } 
             
@@ -903,11 +853,12 @@ $(document).ready(function() {
                 $rows.removeClass('table-primary');
                 
                 if (activeIndex === -1 || activeIndex === 0) {
-                    $rows.last().addClass('table-primary');
+                    $rows.last().addClass('table-primary'); // Jika belum ada atau di paling atas, lompat ke baris paling bawah
                 } else {
-                    $rows.eq(activeIndex - 1).addClass('table-primary');
+                    $rows.eq(activeIndex - 1).addClass('table-primary'); // Naik 1 baris
                 }
                 
+                // Jalankan auto-scroll ke baris baru yang aktif
                 scrollToRow($tbody.find('tr.table-primary'));
             } 
             
@@ -919,8 +870,10 @@ $(document).ready(function() {
                     
                     if ($selectBtn.length > 0) {
                         if ($selectBtn.is(':checkbox')) {
+                            // Khusus modal barang: Enter untuk Centang/Uncentang checkbox
                             $selectBtn.prop('checked', !$selectBtn.prop('checked')).trigger('change');
                         } else {
+                            // Khusus modal Buyer & Invoice: Langsung pilih/eksekusi
                             $selectBtn.click();
                         }
                     }
@@ -928,25 +881,32 @@ $(document).ready(function() {
             }
         });
 
+        // RESET HIGHLIGHT SAAT KASIR MENGETIK ULANG KEYWORD BARU
         $('#modalSearchBuyer, #modalSearchItem, #modalSearchInvoice').on('input', function() {
             $(this).closest('.modal').find('tbody tr').removeClass('table-primary');
         });
 
+        // FUNGSI UTAMA AUTO-SCROLL (BERDASARKAN KOORDINAT OFFSET)
         function scrollToRow($row) {
             if ($row.length === 0) return;
 
+            // Deteksi container mana yang memicu scrollbar (biasanya .table-responsive atau .modal-body)
             let $container = $row.closest('.table-responsive').length ? $row.closest('.table-responsive') : $row.closest('.modal-body');
             if (!$container.length) return;
 
+            // Ambil batas koordinat container penampung scroll
             let containerTop = $container.offset().top;
             let containerBottom = containerTop + $container.innerHeight();
 
+            // Ambil batas koordinat baris tabel (.table-primary) yang dituju
             let rowTop = $row.offset().top;
             let rowBottom = rowTop + $row.outerHeight();
 
+            // JIKA BARIS BERADA DI BAWAH BATAS VIEWPORT (Scroll Turun)
             if (rowBottom > containerBottom) {
                 $container.scrollTop($container.scrollTop() + (rowBottom - containerBottom));
             }
+            // JIKA BARIS BERADA DI ATAS BATAS VIEWPORT (Scroll Naik)
             else if (rowTop < containerTop) {
                 $container.scrollTop($container.scrollTop() - (containerTop - rowTop));
             }

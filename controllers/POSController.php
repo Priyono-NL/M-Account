@@ -230,6 +230,58 @@ class POSController extends BaseController {
         ]);
         exit;     
     }
+
+    /**
+     * PRINT DIRECT WINDOWS: Cetak via windows spooler langsung ke printer Dot Matrix
+     */
+    public function printDirectApi() {
+        header('Content-Type: application/json');
+
+        // 1. Tangkap ID secara fleksibel (baik dikirim sebagai 'id' maupun 'sales_id')
+        $sales_id = (int)($this->getPost('sales_id') ?: $this->getPost('id') ?: 0);
+
+        if ($sales_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'ID Transaksi tidak valid.']);
+            exit;
+        }
+
+        // 2. Ambil data dari MySQL
+        $header = $this->salesModel->getSalesHeader($sales_id);
+        $items  = $this->salesModel->getTransactionItems($sales_id);
+
+        if (!$header) {
+            echo json_encode(['status' => 'error', 'message' => 'Data faktur tidak ditemukan.']);
+            exit;
+        }
+
+        // 3. Logika Counter Reprint (Sama seperti pada PDF & View HTML)
+        if ($header['print_count'] == 0) {
+            $header['is_reprint'] = false;
+            $header['reprint'] = 0;
+        } else {
+            $header['is_reprint'] = true;
+            $header['reprint'] = $header['print_count'];
+        }
+        
+        // Update jumlah cetak di database sales
+        $this->salesModel->incrementPrintCount($sales_id);
+
+        // 4. Load File Helper & Formatter
+        require_once 'helpers/DirectPrintService.php';
+        if ($header['warehouse'] == 1) {
+            require_once 'views/formatters/InvoiceFormatter.php';
+            $rawContent = \Views\Formatters\InvoiceFormatter::buildPassKeluarRaw($header, $items);
+        } else {
+            require_once 'views/formatters/SuratFormatter.php';
+            $rawContent = \Views\Formatters\SuratFormatter::buildInvoiceRaw($header, $items);
+        }
+
+        // 5. Tembak Langsung ke Spooler Printer Windows (Pastikan Share Name 'EPSON_LQ310' sesuai)
+        $printResult = DirectPrintService::sendToPrinter($rawContent, 'EPSON_LQ310');
+
+        echo json_encode($printResult);
+        exit;
+    }
 	
 	/**
      * HALAMAN LIST RIWAYAT: Menampilkan Tabel Riwayat Transaksi Penjualan

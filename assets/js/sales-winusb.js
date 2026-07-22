@@ -1,60 +1,9 @@
 // =========================================================================
-// FUNGSI GLOBAL: DIRECT PRINT VIA AJAX WINDOWS SPOOLER
-// =========================================================================
-function directPrintSales(saleId, $btnInstance = null) {
-    if (!saleId) {
-        if (typeof showNotification === "function") showNotification("ID Transaksi tidak valid.", 'danger');
-        else alert("ID Transaksi tidak valid.");
-        return;
-    }
-
-    let originalText = "";
-    if ($btnInstance && $btnInstance.length) {
-        originalText = $btnInstance.html();
-        $btnInstance.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Mencetak...');
-    }
-
-    $.ajax({
-        url: 'index.php?page=pos',
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            action: 'printDirectApi',
-            id: saleId
-        },
-        success: function(res) {
-            if (res.status === 'success' || res.status === true) {
-                if (typeof showNotification === "function") {
-                    showNotification(res.message || "Faktur berhasil dikirim ke printer!", 'success');
-                } else {
-                    alert(res.message || "Faktur berhasil dikirim ke printer!");
-                }
-            } else {
-                if (typeof showNotification === "function") {
-                    showNotification(res.message || "Gagal mencetak ke printer.", 'danger');
-                } else {
-                    alert(res.message || "Gagal mencetak ke printer.");
-                }
-            }
-        },
-        error: function(xhr) {
-            let err = 'Terjadi kesalahan saat terhubung ke server printer.';
-            if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
-
-            if (typeof showNotification === "function") showNotification(err, 'danger');
-            else alert(err);
-        },
-        complete: function() {
-            if ($btnInstance && $btnInstance.length) {
-                $btnInstance.prop('disabled', false).html(originalText);
-            }
-        }
-    });
-}
-
-// =========================================================================
 // FUNGSI GLOBAL: MENAMPILKAN DETAIL TRANSAKSI & REPRINT VIA MODAL
 // =========================================================================
+// const print_url = 'index.php?page=pos&action=print_invoice&id=';
+const print_url = 'index.php?page=pos&action=print_invoice_pdf&id=';
+
 function viewDetail(id) {
     // Siapkan body modal kosong / loading state
     let modalTbody = $("#mdTableItems tbody");
@@ -113,8 +62,8 @@ function viewDetail(id) {
                 // 3. Tampilkan Akumulasi Grand Total
                 $("#mdGrandTotal").text('Rp ' + grandTotal.toLocaleString('id-ID'));
 
-                // 4. KUNCI PERUBAHAN: Set data-id untuk Direct Print alih-alih set href
-                $("#mdBtnReprint").data('id', header.id).attr('data-id', header.id).removeAttr('href');
+                // 4. Set Link Tombol Reprint Langsung Mengarah Ke Engine printer
+                $("#mdBtnReprint").attr('href', print_url + header.id);
 
                 // 5. Luncurkan Modal ke Layar Browser Kasir
                 $("#modalDetailSales").modal('show');
@@ -137,13 +86,6 @@ $(document).ready(function() {
 
     let currentPage = 1;
     let limit = 10; 
-
-    // HANDLER EVENT REPRINT VIA DIRECT WINDOWS PRINT SPOOLER
-    $(document).on('click', '#mdBtnReprint', function(e) {
-        e.preventDefault();
-        let saleId = $(this).data('id');
-        directPrintSales(saleId, $(this));
-    });
 
     function loadFilteredHistory(page = 1) {
         currentPage = page;
