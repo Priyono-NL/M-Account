@@ -1,125 +1,71 @@
 <?php
-// Load Formatter Terpusat
-require_once __DIR__ . '/formatters/SuratFormatter.php';
+namespace Views;
+
 use Views\Formatters\SuratFormatter;
 
 class SuratView {
+
+    /**
+     * Render Tampilan HTML untuk Browser / Generic Text Print (Kertas Lebar)
+     */
     public static function render($header, $items) {
-        
-        // --- 1. PHP MEMANGGIL FORMATTER TERPUSAT ---
-        $rawText = SuratFormatter::buildInvoiceRaw($header, $items);
-        
-        // Encode ke Hex untuk kebutuhan WebUSB JS
-        $hexData = bin2hex($rawText);
+        // Ambil string teks ASCII yang sudah diformat rapi (113 kolom)
+        $textContent = SuratFormatter::buildInvoiceText($header, $items);
         ?>
         <!DOCTYPE html>
-        <html>
+        <html lang="id">
         <head>
-            <title>Mencetak <?= $header['invoice_no'] ?? 'INV' ?>...</title>
+            <meta charset="UTF-8">
+            <title>Faktur Penjualan - <?= htmlspecialchars($header['invoice_no'] ?? '') ?></title>
+            <link rel="stylesheet" href="assets/css/bootstrap.min.css">
             <style>
-                body { font-family: sans-serif; padding: 40px; text-align: center; background: #eef2f7; }
-                .box { background: white; padding: 40px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 500px;}
-                button { padding: 12px 30px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; background: #198754; color: white; margin-top: 20px;}
-                button:hover { background: #157347; }
-                #status { font-size: 18px; color: #333; margin-bottom: 10px; font-weight: bold;}
-                #manual-print-area { display: none; }
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f8f9fa;
+                }
+                .print-container {
+                    background: #fff;
+                    padding: 15px;
+                    margin: 20px auto;
+                    max-width: 900px;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                }
+                pre.text-receipt {
+                    font-family: 'Courier New', Courier, monospace !important;
+                    font-size: 9pt !important;
+                    line-height: 1.2 !important;
+                    white-space: pre !important;
+                    margin: 0;
+                }
+                @media print {
+                    body { background: transparent; }
+                    .no-print { display: none !important; }
+                    .print-container {
+                        box-shadow: none;
+                        margin: 0;
+                        padding: 0;
+                        max-width: 100%;
+                    }
+                    @page { margin: 0; size: auto; }
+                }
             </style>
         </head>
         <body>
-            <div class="box">
-                <div id="status">Memeriksa koneksi printer...</div>
-                
-                <div id="manual-print-area">
-                    <p style="color: #6c757d; font-size: 14px;">Izin ke printer diperlukan untuk mencetak dokumen.</p>
-                    <button onclick="printManual()">IZINKAN & CETAK SEKARANG</button>
-                </div>
+
+            <div class="text-center my-3 no-print">
+                <button onclick="window.print()" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-print me-1"></i> Cetak Surat Angkut
+                </button>
+                <button onclick="window.close()" class="btn btn-secondary btn-sm ms-2">
+                    Tutup
+                </button>
             </div>
 
-            <script>
-                const dataHex = "<?= $hexData ?>";
-                
-                function hexToBytes(hex) {
-                    let bytes = new Uint8Array(hex.length / 2);
-                    for (let i = 0; i < hex.length; i += 2) {
-                        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-                    }
-                    return bytes;
-                }
+            <div class="print-container">
+                <pre class="text-receipt"><?= htmlspecialchars($textContent) ?></pre>
+            </div>
 
-                // Fungsi inti eksekusi printer WebUSB
-                async function eksekusiCetak(device) {
-                    try {
-                        document.getElementById('status').innerText = "Mencetak struk Pass Keluar...";
-                        document.getElementById('manual-print-area').style.display = 'none';
-
-                        await device.open();
-                        await device.selectConfiguration(1);
-                        await device.claimInterface(0); 
-                        
-                        const interfaceObj = device.configuration.interfaces[0];
-                        const alternate = interfaceObj.alternates[0];
-                        const endpoint = alternate.endpoints.find(e => e.direction === 'out');
-                        
-                        if (!endpoint) {
-                            throw new Error("Endpoint OUT tidak ditemukan pada printer ini.");
-                        }
-                        const endpointNumber = endpoint.endpointNumber;
-
-                        const dataBytes = hexToBytes(dataHex);
-                        
-                        // Chunking per 64 byte
-                        const chunkSize = 64;
-                        for (let i = 0; i < dataBytes.length; i += chunkSize) {
-                            const chunk = dataBytes.subarray(i, i + chunkSize);
-                            await device.transferOut(endpointNumber, chunk);
-                        }
-                        
-                        await device.releaseInterface(0);
-                        await device.close();
-                        
-                        setTimeout(() => {
-                            window.close();
-                        }, 500);
-
-                    } catch (error) {
-                        console.error(error);
-                        document.getElementById('status').innerText = "Gagal mencetak: " + error.message;
-                    }
-                }
-
-                async function autoPrint() {
-                    if (!("usb" in navigator)) {
-                        document.getElementById('status').innerText = "Browser tidak mendukung WebUSB.";
-                        return;
-                    }
-
-                    try {
-                        const devices = await navigator.usb.getDevices();
-                        const epsonDevice = devices.find(d => d.vendorId === 0x04b8);
-
-                        if (epsonDevice) {
-                            await eksekusiCetak(epsonDevice);
-                        } else {
-                            document.getElementById('status').innerText = "Menunggu Izin Printer";
-                            document.getElementById('manual-print-area').style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error("Auto-print error:", error);
-                    }
-                }
-
-                async function printManual() {
-                    try {
-                        const device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x04b8 }] });
-                        await eksekusiCetak(device);
-                    } catch (error) {
-                        console.error(error);
-                        alert("Gagal mendapatkan izin printer.");
-                    }
-                }
-
-                window.onload = autoPrint;
-            </script>
         </body>
         </html>
         <?php

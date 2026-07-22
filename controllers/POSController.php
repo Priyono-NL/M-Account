@@ -152,7 +152,7 @@ class POSController extends BaseController {
     }
 	
 	/**
-     * PRINT INVOICE HTML: Menampilkan struk belanja cetak via browser
+     * 1. PRINT INVOICE HTML: Menampilkan struk belanja cetak via browser
      */
     public function print_invoice() {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
@@ -162,8 +162,8 @@ class POSController extends BaseController {
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
         if (!$header) die("Data transaksi tidak ditemukan.");
-		
-		if ($header['print_count'] == 0 ) {
+        
+        if ($header['print_count'] == 0) {
             $header['is_reprint'] = false;
             $header['reprint'] = 0;
         } else {
@@ -180,7 +180,7 @@ class POSController extends BaseController {
     }
 
     /**
-     * PRINT INVOICE PDF: Menghasilkan berkas PDF cetak thermal/surat jalan otomatis via Dompdf
+     * 2. PRINT INVOICE PDF: Menghasilkan berkas PDF cetak thermal/surat jalan otomatis via Dompdf
      */
     public function print_invoice_pdf() {
         $sales_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
@@ -191,7 +191,7 @@ class POSController extends BaseController {
 
         if (!$header) die("Data transaksi tidak ditemukan.");
 
-        if ($header['print_count'] == 0 ) {
+        if ($header['print_count'] == 0) {
             $header['is_reprint'] = false;
             $header['reprint'] = 0;
         } else {
@@ -200,7 +200,7 @@ class POSController extends BaseController {
         }
         $this->salesModel->incrementPrintCount($sales_id);
 
-        require_once 'vendors/dompdf/autoload.inc.php'; 
+        require_once __DIR__ . '/../vendors/dompdf/autoload.inc.php'; 
     
         $options = new \Dompdf\Options();
         $options->set('isHtml5ParserEnabled', true);
@@ -232,29 +232,27 @@ class POSController extends BaseController {
     }
 
     /**
-     * PRINT DIRECT WINDOWS: Cetak via windows spooler langsung ke printer Dot Matrix
+     * 3. GET PRINT TEXT API: Endpoint JSON untuk Driver "Generic / Text Only" (window.print)
      */
-    public function printDirectApi() {
+    public function getPrintTextApi() {
         header('Content-Type: application/json');
 
-        // 1. Tangkap ID secara fleksibel (baik dikirim sebagai 'id' maupun 'sales_id')
         $sales_id = (int)($this->getPost('sales_id') ?: $this->getPost('id') ?: 0);
 
         if ($sales_id <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'ID Transaksi tidak valid.']);
+            echo json_encode(['status' => false, 'message' => 'ID Transaksi tidak valid.']);
             exit;
         }
 
-        // 2. Ambil data dari MySQL
         $header = $this->salesModel->getSalesHeader($sales_id);
         $items  = $this->salesModel->getTransactionItems($sales_id);
 
         if (!$header) {
-            echo json_encode(['status' => 'error', 'message' => 'Data faktur tidak ditemukan.']);
+            echo json_encode(['status' => false, 'message' => 'Data faktur tidak ditemukan.']);
             exit;
         }
 
-        // 3. Logika Counter Reprint (Sama seperti pada PDF & View HTML)
+        // Logic Counter Reprint
         if ($header['print_count'] == 0) {
             $header['is_reprint'] = false;
             $header['reprint'] = 0;
@@ -262,24 +260,21 @@ class POSController extends BaseController {
             $header['is_reprint'] = true;
             $header['reprint'] = $header['print_count'];
         }
-        
-        // Update jumlah cetak di database sales
         $this->salesModel->incrementPrintCount($sales_id);
 
-        // 4. Load File Helper & Formatter
-        require_once 'helpers/DirectPrintService.php';
+        // Load Formatter Text-Only
         if ($header['warehouse'] == 1) {
-            require_once 'views/formatters/InvoiceFormatter.php';
-            $rawContent = \Views\Formatters\InvoiceFormatter::buildPassKeluarRaw($header, $items);
+            require_once __DIR__ . '/../views/formatters/InvoiceFormatter.php';
+            $textContent = \Views\Formatters\InvoiceFormatter::buildPassKeluarText($header, $items);
         } else {
-            require_once 'views/formatters/SuratFormatter.php';
-            $rawContent = \Views\Formatters\SuratFormatter::buildInvoiceRaw($header, $items);
+            require_once __DIR__ . '/../views/formatters/SuratFormatter.php';
+            $textContent = \Views\Formatters\SuratFormatter::buildInvoiceText($header, $items);
         }
 
-        // 5. Tembak Langsung ke Spooler Printer Windows (Pastikan Share Name 'EPSON_LQ310' sesuai)
-        $printResult = DirectPrintService::sendToPrinter($rawContent, 'EPSON_LQ310');
-
-        echo json_encode($printResult);
+        echo json_encode([
+            'status'   => true,
+            'raw_text' => $textContent
+        ]);
         exit;
     }
 	

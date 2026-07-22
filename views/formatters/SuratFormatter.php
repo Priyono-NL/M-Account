@@ -2,6 +2,10 @@
 namespace Views\Formatters;
 
 class SuratFormatter {
+
+    /**
+     * Version 1: RAW ESC/POS (Untuk Direct Socket TCP Port 9100 / SMB Stream)
+     */
     public static function buildInvoiceRaw($header, $items) {
         $isExp = (isset($header['sale_type']) && $header['sale_type'] === 'EXP');
         
@@ -71,5 +75,64 @@ class SuratFormatter {
         $rawText .= "\x0C";
 
         return $rawText;
+    }
+
+    /**
+     * Version 2: TEXT-ONLY / ASCII POLOS (Untuk Driver Generic / Text Only & Browser window.print)
+     */
+    public static function buildInvoiceText($header, $items) {
+        $isExp = (isset($header['sale_type']) && $header['sale_type'] === 'EXP');
+        $LN    = "\n";
+        $width = 120;
+        
+        $text = "";
+        
+        // --- 1. JUDUL FAKTUR ---
+        $simbol = "¤¤"; 
+        $judul  = $simbol . " FAKTUR PENJUALAN " . $simbol;
+        $text  .= str_pad($judul, $width, " ", STR_PAD_BOTH) . $LN . $LN;
+        
+        // --- 2. HEADER INFO ---
+        $tgl    = "Tanggal : " . (isset($header['sales_date']) ? strtoupper(date('d-M-Y', strtotime($header['sales_date']))) : '-');
+        $kepada = "Kepada  : " . ($header['buyer_code'] ?? '') . " " . ($header['buyer_name'] ?? '-');
+        $print  = "Print#" . (($header['is_reprint'] == false) ? '' : $header['reprint']);
+        $no_inv = "Nomor Faktur : " . ($header['invoice_no'] ?? '-');
+        $gudang = "Kode Gudang  : " . ($header['warehouse'] ?? '-');                
+
+        $col1 = 65; $col2 = 45; $col3 = 10; 
+
+        $text .= str_pad($tgl, $col1) . str_pad($no_inv, $col2) . str_pad($print, $col3, " ", STR_PAD_LEFT) . $LN;
+        $text .= str_pad($kepada, $col1) . str_pad($gudang, $col2 + $col3) . $LN;
+        
+        // --- 3. TABEL HEADER ---
+        $text .= str_repeat("=", $width) . $LN;
+        $text .= str_pad("Nama Barang", 78) . str_pad("Jumlah", 12) . str_pad("Harga", 15, " ", STR_PAD_LEFT) . str_pad("Total", 15, " ", STR_PAD_LEFT) . $LN;
+        $text .= str_repeat("-", $width) . $LN;
+        
+        // --- 4. LOOPING BARANG ---
+        if (!empty($items)) {
+            foreach ($items as $item) {
+                $subtotal = ($item['unit_price'] ?? 0) * ($item['item_qty'] ?? 0);
+                
+                $nama  = str_pad(substr($item['item_name'], 0, 77), 78);
+                $qty   = str_pad(($item['item_qty'] ?? 0) . " " . ($item['item_uom'] ?? ''), 12);
+                $harga = str_pad($isExp ? '-' : number_format($item['unit_price'], 0, ',', '.'), 15, " ", STR_PAD_LEFT);
+                $total = str_pad($isExp ? '-' : number_format($subtotal, 0, ',', '.'), 15, " ", STR_PAD_LEFT);
+                
+                $text .= $nama . $qty . $harga . $total . $LN;
+            }
+        }
+        
+        // --- 5. TOTAL & GRAND TOTAL ---
+        $text .= "¤¤¤¤¤" . str_repeat("-", 115) . $LN;
+        
+        $grandTotal = $isExp ? '-' : number_format($header['total'] ?? 0, 0, ',', '.');
+        $text .= str_pad("Grand Total:", 105, " ", STR_PAD_LEFT) . str_pad($grandTotal, 15, " ", STR_PAD_LEFT) . $LN . $LN;
+        
+        // --- 6. TANDA TANGAN ---
+        $text .= str_pad("Yang Menyerahkan", 60, " ", STR_PAD_BOTH) . str_pad("Penerima", 60, " ", STR_PAD_BOTH) . $LN . $LN . $LN . $LN;
+        $text .= str_pad("________________", 60, " ", STR_PAD_BOTH) . str_pad("________________", 60, " ", STR_PAD_BOTH);
+
+        return $text;
     }
 }

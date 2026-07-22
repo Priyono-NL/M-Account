@@ -4,9 +4,9 @@
 let cart = [];
 
 /**
- * FUNGSI TERPUSAT DIRECT PRINT VIA AJAX PHP
+ * FUNGSI TERPUSAT GENERIC TEXT PRINT (DRIVER GENERIC / TEXT ONLY VIA BROWSER)
  */
-function executeDirectPrint(saleId, callback = null) {
+function executeGenericPrint(saleId, callback = null) {
     if (!saleId) {
         if (typeof showNotification !== 'undefined') {
             showNotification("ID Transaksi tidak ditemukan.", "danger");
@@ -17,7 +17,7 @@ function executeDirectPrint(saleId, callback = null) {
     }
 
     if (typeof showNotification !== 'undefined') {
-        showNotification("Mengirim perintah cetak ke printer Windows...", "info");
+        showNotification("Memuat format cetak faktur...", "info");
     }
 
     $.ajax({
@@ -25,27 +25,40 @@ function executeDirectPrint(saleId, callback = null) {
         type: 'POST',
         dataType: 'json',
         data: {
-            action: 'printDirectApi',
+            action: 'getPrintTextApi',
             id: saleId
         },
         success: function(res) {
-            if (res.status === 'success' || res.status === true) {
-                if (typeof showNotification !== 'undefined') {
-                    showNotification(res.message || "Dokumen berhasil dikirim ke printer!", "success");
+            if (res.status === true && res.raw_text) {
+                // Buat container print rahasia jika belum ada di HTML
+                if ($('#print-area').length === 0) {
+                    $('body').append('<div id="print-area"><pre id="print-text-content"></pre></div>');
                 } else {
-                    alert(res.message || "Dokumen berhasil dikirim ke printer!");
+                    // KUNCI: Pindahkan #print-area ke paling bawah tag <body> agar lepas dari div wrapper layout POS
+                    $('#print-area').appendTo('body');
+                }
+                let cleanText = res.raw_text.trimEnd();
+                $('#print-text-content').text(cleanText);
+
+                setTimeout(function() {
+                    window.print();
+                }, 100);
+
+                if (typeof showNotification !== 'undefined') {
+                    showNotification("Perintah cetak dikirim ke printer.", "success");
                 }
             } else {
+                let msg = res.message || "Gagal memuat format cetak.";
                 if (typeof showNotification !== 'undefined') {
-                    showNotification(res.message || "Gagal mencetak ke printer.", "danger");
+                    showNotification(msg, "danger");
                 } else {
-                    alert(res.message || "Gagal mencetak ke printer.");
+                    alert(msg);
                 }
             }
             if (typeof callback === 'function') callback(res);
         },
         error: function(xhr) {
-            let err = 'Terjadi kesalahan koneksi ke server cetak.';
+            let err = 'Terjadi kesalahan koneksi saat memuat data cetak.';
             if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
 
             if (typeof showNotification !== 'undefined') {
@@ -59,10 +72,10 @@ function executeDirectPrint(saleId, callback = null) {
 }
 
 /**
- * Global function untuk cetak receipt (dipanggil dari luar)
+ * Global function untuk cetak receipt (dipanggil dari luar / tabel histori)
  */
 function printReceipt(id) {
-    executeDirectPrint(id);
+    executeGenericPrint(id);
 }
 
 $(document).ready(function() {
@@ -239,7 +252,7 @@ $(document).ready(function() {
                         $('#btnClearBuyer').hide();
                         $('#btnFindBuyer').hide();
 
-                        // Setup Cart (Dengan penyesuaian stok lama)
+                        // Setup Cart
                         cart = items.map(function(item) {
                             let hargaAsli = parseFloat(item.unit_price || 0);
                             let qtyLama = parseFloat(item.item_qty || 0);
@@ -798,17 +811,16 @@ $(document).ready(function() {
         });
         
         // ==========================================
-        // FITUR CETAK DIRECT VIA WINDOWS SPOOLER
+        // FITUR CETAK FAKTUR MODAL CHECKOUT
         // ==========================================
         $('#btnPrintInvoice').click(function() {
             if (currentSaleId) {
                 let $btn = $(this);
                 let originalHtml = $btn.html();
                 
-                // Ubah status tombol jadi loading
                 $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Mencetak...');
 
-                executeDirectPrint(currentSaleId, function(res) {
+                executeGenericPrint(currentSaleId, function(res) {
                     $btn.prop('disabled', false).html(originalHtml);
                     if (modalCheckoutSuccess) modalCheckoutSuccess.hide();
                     currentSaleId = null;

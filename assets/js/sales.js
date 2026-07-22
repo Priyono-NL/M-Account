@@ -1,7 +1,7 @@
 // =========================================================================
-// FUNGSI GLOBAL: DIRECT PRINT VIA AJAX WINDOWS SPOOLER
+// 1. FUNGSI GLOBAL: GENERIC TEXT PRINT (DRIVER GENERIC / TEXT ONLY VIA BROWSER)
 // =========================================================================
-function directPrintSales(saleId, $btnInstance = null) {
+function genericPrintSales(saleId, $btnInstance = null) {
     if (!saleId) {
         if (typeof showNotification === "function") showNotification("ID Transaksi tidak valid.", 'danger');
         else alert("ID Transaksi tidak valid.");
@@ -11,7 +11,7 @@ function directPrintSales(saleId, $btnInstance = null) {
     let originalText = "";
     if ($btnInstance && $btnInstance.length) {
         originalText = $btnInstance.html();
-        $btnInstance.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Mencetak...');
+        $btnInstance.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat...');
     }
 
     $.ajax({
@@ -19,26 +19,37 @@ function directPrintSales(saleId, $btnInstance = null) {
         type: 'POST',
         dataType: 'json',
         data: {
-            action: 'printDirectApi',
+            action: 'getPrintTextApi',
             id: saleId
         },
         success: function(res) {
-            if (res.status === 'success' || res.status === true) {
+            if (res.status === true && res.raw_text) {
+                // Sediakan container print otomatis jika belum ada di DOM HTML
+                if ($('#print-area').length === 0) {
+                    $('body').append(`
+                        <div id="print-area" class="d-none">
+                            <pre id="print-text-content" style="font-family: 'Courier New', Courier, monospace; font-size: 10pt; white-space: pre;"></pre>
+                        </div>
+                    `);
+                }
+
+                // Render teks polos ASCII hasil dari Formatter
+                $('#print-text-content').text(res.raw_text);
+
+                // Panggil Dialog Cetak Browser
+                window.print();
+
                 if (typeof showNotification === "function") {
-                    showNotification(res.message || "Faktur berhasil dikirim ke printer!", 'success');
-                } else {
-                    alert(res.message || "Faktur berhasil dikirim ke printer!");
+                    showNotification("Perintah cetak dikirim ke printer.", 'success');
                 }
             } else {
-                if (typeof showNotification === "function") {
-                    showNotification(res.message || "Gagal mencetak ke printer.", 'danger');
-                } else {
-                    alert(res.message || "Gagal mencetak ke printer.");
-                }
+                let msg = res.message || "Gagal memuat data cetakan.";
+                if (typeof showNotification === "function") showNotification(msg, 'danger');
+                else alert(msg);
             }
         },
         error: function(xhr) {
-            let err = 'Terjadi kesalahan saat terhubung ke server printer.';
+            let err = 'Terjadi kesalahan saat terhubung ke server.';
             if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
 
             if (typeof showNotification === "function") showNotification(err, 'danger');
@@ -53,15 +64,13 @@ function directPrintSales(saleId, $btnInstance = null) {
 }
 
 // =========================================================================
-// FUNGSI GLOBAL: MENAMPILKAN DETAIL TRANSAKSI & REPRINT VIA MODAL
+// 3. FUNGSI GLOBAL: MENAMPILKAN DETAIL TRANSAKSI & REPRINT VIA MODAL
 // =========================================================================
 function viewDetail(id) {
-    // Siapkan body modal kosong / loading state
     let modalTbody = $("#mdTableItems tbody");
     modalTbody.html('<tr><td colspan="7" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Mengambil detail nota...</td></tr>');
     $("#mdInvNo, #mdBuyer, #mdDate, #mdWarehouse, #mdGrandTotal").text("-");
 
-    // Tembak API detail bawaan POSController via AJAX
     $.ajax({
         url: 'index.php?page=pos',
         type: 'POST',
@@ -81,7 +90,7 @@ function viewDetail(id) {
                 let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 let buyer = header.buyer_name + ' (' + header.buyer_code + ')';
                 
-                // 1. Isi Profil Atas Nota pada Modal
+                // Isi Profil Atas Nota pada Modal
                 $("#mdInvNo").text(header.invoice_no);
                 $("#mdSaleType").text(header.sale_type);
                 $("#mdBuyer").text(buyer);
@@ -89,11 +98,11 @@ function viewDetail(id) {
                 $("#mdWarehouse").text(header.warehouse_name);
                 $("#mdRemark").text(header.remark || '');
 
-                // 2. Urai Baris Pecahan Item Barang Terjual
+                // Urai Baris Pecahan Item Barang Terjual
                 items.forEach(function(item, idx) {
                     let sub = parseFloat(item.item_qty) * parseFloat(item.unit_price);
                     
-                    // Aturan Bisnis: Jika tipe EXP (Internal Expense), subtotal dihitung 0 pada omset
+                    // Aturan Bisnis: Tipe EXP (Internal Expense) subtotal dihitung 0
                     let displaySub = header.sale_type === 'EXP' ? 0 : sub;
                     grandTotal += displaySub;
 
@@ -110,13 +119,13 @@ function viewDetail(id) {
                     `);
                 });
 
-                // 3. Tampilkan Akumulasi Grand Total
+                // Tampilkan Akumulasi Grand Total
                 $("#mdGrandTotal").text('Rp ' + grandTotal.toLocaleString('id-ID'));
 
-                // 4. KUNCI PERUBAHAN: Set data-id untuk Direct Print alih-alih set href
+                // Set data-id untuk Reprint Modal
                 $("#mdBtnReprint").data('id', header.id).attr('data-id', header.id).removeAttr('href');
 
-                // 5. Luncurkan Modal ke Layar Browser Kasir
+                // Tampilkan Modal
                 $("#modalDetailSales").modal('show');
             } else {
                 if (typeof showNotification === "function") showNotification(res.message, 'danger');
@@ -134,15 +143,17 @@ function viewDetail(id) {
 $(document).ready(function() {
     
     let tbody = $("#historyTable tbody");
-
     let currentPage = 1;
     let limit = 10; 
 
-    // HANDLER EVENT REPRINT VIA DIRECT WINDOWS PRINT SPOOLER
+    // HANDLER EVENT REPRINT MODAL
     $(document).on('click', '#mdBtnReprint', function(e) {
         e.preventDefault();
         let saleId = $(this).data('id');
-        directPrintSales(saleId, $(this));
+        
+        // Pilih metode cetak (Default: Generic Text-Only via window.print)
+        genericPrintSales(saleId, $(this));
+        
     });
 
     function loadFilteredHistory(page = 1) {
@@ -188,7 +199,6 @@ $(document).ready(function() {
                         
                         let dateObj = new Date(t.sales_date);
                         let formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-
                         let formattedTotal = t.sale_type === 'EXP' ? '<span class="text-muted">-</span>' : formatRupiah(t.total);
 
                         let tr = `
@@ -207,6 +217,9 @@ $(document).ready(function() {
                                     <div class="btn-group shadow-sm">
                                         <button type="button" class="btn btn-light btn-sm border text-primary" title="Lihat Detail Transaksi" onclick="viewDetail('${t.id}')">
                                             <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light btn-sm border text-secondary" title="Cetak Langsung" onclick="genericPrintSales('${t.id}', $(this))">
+                                            <i class="fa-solid fa-print"></i>
                                         </button>
                                     </div>
                                 </td>

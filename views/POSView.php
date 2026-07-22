@@ -14,7 +14,6 @@ class POSView {
 
         ob_start();
         ?>
-        
         <div class="row g-3">
             <div class="col-lg-8">
                 
@@ -375,10 +374,12 @@ class POSView {
         <?php 
             Component::shortcutLegend($is_allowed_edit, true); 
         ?>
+
+        <div id="print-area"><pre id="print-text-content"></pre></div>
         
         <?php
         $content = ob_get_clean();
-        
+        $extra_css = '<link rel="stylesheet" type="text/css" href="' . BASE_URL . '/assets/css/print.css">';
         // --- SUNTIKKAN DATA KE JAVASCRIPT ---
         $extra_js = '<script>';
         $extra_js .= 'const IS_VIEW_MODE = ' . ($isViewMode ? 'true' : 'false') . ';';

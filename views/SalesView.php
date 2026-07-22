@@ -174,8 +174,11 @@ class SalesView {
             </div>
         </div>
 
+        <div id="print-area"><pre id="print-text-content"></pre></div>
+
         <?php
         $content = ob_get_clean();
+        $extra_css = '<link rel="stylesheet" type="text/css" href="' . BASE_URL . '/assets/css/print.css">';
         $extra_js = '<script src="' . BASE_URL . '/assets/js/sales.js"></script>';
         include __DIR__ . '/layouts/main.php';
     }
