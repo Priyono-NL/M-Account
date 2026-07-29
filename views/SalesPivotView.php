@@ -101,7 +101,7 @@ class SalesPivotView {
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
             <link rel="stylesheet" type="text/css" href="' . BASE_URL . '/assets/css/cssPivot-min.css">';
 
-        $extra_js = "<script src='" . BASE_URL . "/assets/js/salesPivot-min.js' defer></script>";
+        $extra_js = "<script src='" . BASE_URL . "/assets/js/salesPivot.js' defer></script>";
 
         include __DIR__ . '/layouts/main.php';
     }
