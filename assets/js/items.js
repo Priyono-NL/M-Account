@@ -40,6 +40,7 @@ $(document).ready(function() {
                                 <td class="ps-4 fw-medium text-primary">${item.item_code}</td>
                                 <td class="fw-bold">${item.item_name}</td>
                                 <td><span class="badge bg-secondary bg-opacity-10 text-secondary border-0 fw-normal px-2">${catBadge}</span></td>
+                                <td class="text-center">${item.unit_weight ? `${item.unit_weight} ${item.weight_uom || ''}` : '-'}</td>
                                 <td class="text-center">${item.item_uom}</td>
                                 <td class="text-end fw-bold text-dark">Rp ${price}</td>
                                 <td class="text-center pe-4">
@@ -220,5 +221,22 @@ $(document).ready(function() {
             this.value = new Intl.NumberFormat('id-ID').format(value);
             if (this.value === '0' && value === '') this.value = '';
         });
+    });
+
+    $("#btnExportExcel").click(function() {
+        let sDateVal = $("#startDate").val() || "";
+        let eDateVal = $("#endDate").val() || "";
+
+        let payload = {
+            action: 'export_xls',
+            search: $("#search").val(),
+            category: $("#filterCategory").val(),
+        };
+
+        let dynamicFileName = 'Master_Data_Barang';
+
+        if (typeof downloadExcelAjax === "function") {
+            downloadExcelAjax(this, window.location.href, payload, dynamicFileName);
+        }
     });
 });

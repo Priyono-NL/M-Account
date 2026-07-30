@@ -10,6 +10,9 @@ class ItemsView {
                 <p class="text-muted small mb-0">Kelola daftar inventaris, harga jual, dan status barang.</p>
             </div>
             <div>
+                <button type="button" id="btnExportExcel" class="btn btn-success btn-sm px-3 rounded-3 shadow-sm">
+                    <i class="fa-solid fa-file-excel me-2"></i> Export Excel
+                </button>
                 <button class="btn btn-sm px-3 rounded-3 shadow-sm" id="btnTemplate">
                     <i class="fa-solid fa-download me-1"></i> Template
                 </button>   
@@ -63,6 +66,7 @@ class ItemsView {
                                 <th class="ps-4 py-3">Kode</th>
                                 <th>Nama Barang</th>
                                 <th>Organization ID</th>
+                                <th>Unit Weight</th>
                                 <th class="text-center">UOM</th>
                                 <th class="text-end">Harga Jual</th>
                                 <th class="text-center pe-4">Aksi</th>

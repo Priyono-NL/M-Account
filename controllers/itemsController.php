@@ -200,5 +200,42 @@ class ItemsController extends BaseController {
             return $this->jsonError($e->getMessage(), 400);
         }
     }
+
+    public function export_xls() {
+        $search    = $this->getPost('search', '');
+        $category = $this->getPost('category', '');
+
+        // Mengambil data pecahan item detail dari model baru
+        $data = $this->model->getFiltered($search, $category);
+
+        $rows = [[
+            '<b>No</b>', 
+            '<b>Kode Barang</b>',
+            '<b>Nama Barang</b>', 
+            '<b>Orgnization ID</b>', 
+            '<b>UOM</b>',  
+            '<b>Unit Weight</b>',
+            '<b>Harga Jual (Rp)</b>',
+        ]];
+
+        foreach ($data as $index => $item) {
+            $berat = !empty($item['unit_weight']) ? $item['unit_weight'] . ' ' . ($item['weight_uom'] ?? '') : '-';            
+            $hargaJual = (float)($item['unit_price'] ?? 0);
+            $rows[] = [
+                $index + 1,
+                $item['item_code'],
+                $item['item_name'],
+                $item['warehouse_name'] ?? '-',
+                $item['item_uom'] ?? '-',
+                $berat,
+                '<style nf="#,##0">' . $hargaJual . '</style>',
+            ];
+        }
+
+        $fileName = "Master_Data_Barang.xlsx";
+        
+        \Shuchkin\SimpleXLSXGen::fromArray($rows)->downloadAs($fileName);
+        exit;
+    }
 }
 ?>
