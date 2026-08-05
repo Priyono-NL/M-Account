@@ -77,6 +77,17 @@ class SalesPivotView {
                         </div>
                     </div>
 
+                <div class="row mt-3 border-top pt-2">
+                    <div class="col-12 d-flex justify-content-end align-items-center">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="showSubtotals" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold text-secondary" for="showSubtotals" style="cursor: pointer;">
+                                Tampilkan Subtotal
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 </div>
             </div>
         </div>

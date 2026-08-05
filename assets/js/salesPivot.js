@@ -163,6 +163,7 @@ $(document).ready(function() {
                         
                         onRefresh: function(config) {
                             let $table = $(".pvtTable");
+                            let $tbody = $table.find("tbody"); // Tangkap tbody untuk trik anti-lag
                             
                             $table.addClass("table table-sm table-bordered align-middle mt-2 mb-0")
                                   .css({"font-size": "12px", "width": "100%"});
@@ -174,17 +175,16 @@ $(document).ready(function() {
                             let rowsCount = rowsArray.length;
                             let qtyIdx = rowsArray.indexOf("Qty");
 
-                            // DYNAMIC TRIGGER DETECTION (BARU: AMBIL PALING LUAR)
+                            // DYNAMIC TRIGGER DETECTION (AMBIL PALING LUAR)
                             let colTanggal = rowsArray.indexOf("Tgl Penjualan");
-                            
                             let idxKode = rowsArray.indexOf("Kode Barang");
                             let idxNama = rowsArray.indexOf("Nama Barang");
                             let colBarang = -1;
                             
                             if (idxKode !== -1 && idxNama !== -1) {
-                                colBarang = Math.min(idxKode, idxNama); // Keduanya ada -> Ambil paling luar (kiri)
+                                colBarang = Math.min(idxKode, idxNama);
                             } else {
-                                colBarang = Math.max(idxKode, idxNama); // Cuma 1 yang ada -> Ambil yang ada
+                                colBarang = Math.max(idxKode, idxNama);
                             }
 
                             // ---------------------------------------------------------
@@ -193,6 +193,9 @@ $(document).ready(function() {
                             let grandTotalQty = 0;
                             let barangSubtotals = {}; 
                             let tanggalSubtotals = {}; 
+
+                            // CEK STATUS CHECKBOX TOGGLE
+                            let isShowSubtotals = $("#showSubtotals").is(":checked");
 
                             mappedData.forEach(item => {
                                 let isExcluded = false;
@@ -217,143 +220,139 @@ $(document).ready(function() {
                                     let qty = parseFloat(item["Qty"] || 0);
                                     let total = parseFloat(item["Total"] || 0);
 
-                                    grandTotalQty += qty;
+                                    grandTotalQty += qty; // Grand Total selalu dihitung
 
-                                    // Bangun Unique Key path untuk Barang
-                                    if (colBarang !== -1) {
-                                        let parts = [];
-                                        for(let i = 0; i <= colBarang; i++) parts.push(item[rowsArray[i]]);
-                                        let key = parts.join("|||");
-                                        if (!barangSubtotals[key]) barangSubtotals[key] = { qty: 0, total: 0, label: item[rowsArray[colBarang]] };
-                                        barangSubtotals[key].qty += qty;
-                                        barangSubtotals[key].total += total;
-                                    }
+                                    // Bangun Unique Key path untuk Subtotal (HANYA JIKA TOGGLE NYALA)
+                                    if (isShowSubtotals) {
+                                        if (colBarang !== -1) {
+                                            let parts = [];
+                                            for(let i = 0; i <= colBarang; i++) parts.push(item[rowsArray[i]]);
+                                            let key = parts.join("|||");
+                                            if (!barangSubtotals[key]) barangSubtotals[key] = { qty: 0, total: 0, label: item[rowsArray[colBarang]] };
+                                            barangSubtotals[key].qty += qty;
+                                            barangSubtotals[key].total += total;
+                                        }
 
-                                    // Bangun Unique Key path untuk Tanggal
-                                    if (colTanggal !== -1) {
-                                        let parts = [];
-                                        for(let i = 0; i <= colTanggal; i++) parts.push(item[rowsArray[i]]);
-                                        let key = parts.join("|||");
-                                        if (!tanggalSubtotals[key]) tanggalSubtotals[key] = { qty: 0, total: 0, label: item[rowsArray[colTanggal]] };
-                                        tanggalSubtotals[key].qty += qty;
-                                        tanggalSubtotals[key].total += total;
+                                        if (colTanggal !== -1) {
+                                            let parts = [];
+                                            for(let i = 0; i <= colTanggal; i++) parts.push(item[rowsArray[i]]);
+                                            let key = parts.join("|||");
+                                            if (!tanggalSubtotals[key]) tanggalSubtotals[key] = { qty: 0, total: 0, label: item[rowsArray[colTanggal]] };
+                                            tanggalSubtotals[key].qty += qty;
+                                            tanggalSubtotals[key].total += total;
+                                        }
                                     }
                                 }
                             });
 
                             // ---------------------------------------------------------
-                            // 2. DETEKSI AKHIR SETIAP KELOMPOK (INJEKSI TARGET)
+                            // EKSEKUSI INJEKSI DOM SUBTOTAL (HANYA JIKA TOGGLE NYALA)
                             // ---------------------------------------------------------
-                            $table.find(".pvtSubtotalRow").remove();
+                            if (isShowSubtotals) {
+                                $table.find(".pvtSubtotalRow").remove();
+                                $tbody.hide(); // MAGIC TRICK: Cegah lag
 
-                            let $rows = $table.find("tbody > tr");
-                            let insertions = {}; 
-                            let currentPath = [];
+                                let $rows = $table.find("tbody > tr");
+                                let insertions = {}; 
+                                let currentPath = [];
 
-                            $rows.each(function(rIdx) {
-                                let $tr = $(this);
-                                let $ths = $tr.children("th.pvtRowLabel");
-                                let nTh = $ths.length;
-                                if (nTh === 0) return;
+                                $rows.each(function(rIdx) {
+                                    let $tr = $(this);
+                                    let $ths = $tr.children("th.pvtRowLabel");
+                                    let nTh = $ths.length;
+                                    if (nTh === 0) return;
 
-                                let startCol = rowsCount - nTh;
+                                    let startCol = rowsCount - nTh;
 
-                                $ths.each(function(i) {
-                                    let actualCol = startCol + i;
-                                    let val = $(this).text().trim();
-                                    currentPath[actualCol] = val; // Merekam path baris yang aktif
+                                    $ths.each(function(i) {
+                                        let actualCol = startCol + i;
+                                        let val = $(this).text().trim();
+                                        currentPath[actualCol] = val; 
 
-                                    let span = parseInt($(this).attr("rowspan") || "1", 10);
-                                    let targetIdx = rIdx + span - 1; // Baris terakhir di mana kelompok ini berakhir
+                                        let span = parseInt($(this).attr("rowspan") || "1", 10);
+                                        let targetIdx = rIdx + span - 1; 
 
-                                    if (actualCol === colBarang) {
-                                        let key = currentPath.slice(0, colBarang + 1).join("|||");
-                                        if (barangSubtotals[key]) {
-                                            if (!insertions[targetIdx]) insertions[targetIdx] = [];
-                                            insertions[targetIdx].push({
-                                                colIdx: colBarang,
-                                                label: `Subtotal Barang (${val})`,
-                                                qty: barangSubtotals[key].qty,
-                                                total: barangSubtotals[key].total,
-                                                bgClass: "table-secondary"
-                                            });
-                                        }
-                                    }
-
-                                    if (actualCol === colTanggal) {
-                                        let key = currentPath.slice(0, colTanggal + 1).join("|||");
-                                        if (tanggalSubtotals[key]) {
-                                            if (!insertions[targetIdx]) insertions[targetIdx] = [];
-                                            insertions[targetIdx].push({
-                                                colIdx: colTanggal,
-                                                label: `Subtotal Tgl (${val})`,
-                                                qty: tanggalSubtotals[key].qty,
-                                                total: tanggalSubtotals[key].total,
-                                                bgClass: "table-light"
-                                            });
-                                        }
-                                    }
-                                });
-                            });
-
-                            // ---------------------------------------------------------
-                            // 3. EKSEKUSI INJEKSI & KALKULASI MATRIKS ROWSPAN
-                            // ---------------------------------------------------------
-                            let targetIndices = Object.keys(insertions).map(Number).sort((a, b) => b - a);
-                            let targetQtyCol = (qtyIdx !== -1) ? qtyIdx : (rowsCount - 1);
-
-                            targetIndices.forEach(targetIdx => {
-                                let $currentAnchor = $rows.eq(targetIdx);
-
-                                // Sort descending colIdx: Inner groups close first, then Outer groups
-                                insertions[targetIdx].sort((a, b) => b.colIdx - a.colIdx);
-
-                                insertions[targetIdx].forEach(sub => {
-                                    
-                                    // Ambil semua TH yang saat ini mengunci (span) row targetIdx
-                                    let activeThs = [];
-                                    $rows.slice(0, targetIdx + 1).each(function(pIdx) {
-                                        $(this).children("th.pvtRowLabel").each(function() {
-                                            let rSpan = parseInt($(this).attr("rowspan") || "1", 10);
-                                            if (pIdx + rSpan - 1 >= targetIdx) {
-                                                activeThs.push({ el: this, startRow: pIdx });
+                                        if (actualCol === colBarang) {
+                                            let key = currentPath.slice(0, colBarang + 1).join("|||");
+                                            if (barangSubtotals[key]) {
+                                                if (!insertions[targetIdx]) insertions[targetIdx] = [];
+                                                insertions[targetIdx].push({
+                                                    colIdx: colBarang,
+                                                    label: `Subtotal Barang (${val})`,
+                                                    qty: barangSubtotals[key].qty,
+                                                    total: barangSubtotals[key].total,
+                                                    bgClass: "table-secondary"
+                                                });
                                             }
-                                        });
-                                    });
-
-                                    let indentCols = sub.colIdx; 
-                                    
-                                    // Tambah rowspan HANYA untuk kolom Induk (Outer Level)
-                                    for (let i = 0; i < indentCols; i++) {
-                                        if (activeThs[i]) {
-                                            let rSpan = parseInt($(activeThs[i].el).attr("rowspan") || "1", 10);
-                                            $(activeThs[i].el).attr("rowspan", rSpan + 1);
                                         }
-                                    }
 
-                                    let labelColspan = targetQtyCol - indentCols;
-                                    if (labelColspan < 1) labelColspan = 1;
-
-                                    let borderTop = (sub.colIdx === 0) ? '2px solid #adb5bd' : '1px solid #dee2e6';
-
-                                    let subHtml = `<tr class="pvtSubtotalRow ${sub.bgClass} fw-bold" style="border-top: ${borderTop};">`;
-                                    subHtml += `<td colspan="${labelColspan}" class="text-end fw-bold align-middle py-2 text-dark">${sub.label}:</td>`;
-                                    
-                                    if (qtyIdx !== -1) {
-                                        subHtml += `<td class="text-end fw-bold text-dark align-middle py-2">${pivotNumberFormatter(sub.qty)}</td>`;
-                                    }
-
-                                    subHtml += `<td class="text-end fw-bold text-primary align-middle py-2">${pivotNumberFormatter(sub.total)}</td>`;
-                                    subHtml += `</tr>`;
-
-                                    let $newRow = $(subHtml);
-                                    $currentAnchor.after($newRow);
-                                    $currentAnchor = $newRow; 
+                                        if (actualCol === colTanggal) {
+                                            let key = currentPath.slice(0, colTanggal + 1).join("|||");
+                                            if (tanggalSubtotals[key]) {
+                                                if (!insertions[targetIdx]) insertions[targetIdx] = [];
+                                                insertions[targetIdx].push({
+                                                    colIdx: colTanggal,
+                                                    label: `Subtotal Tgl (${val})`,
+                                                    qty: tanggalSubtotals[key].qty,
+                                                    total: tanggalSubtotals[key].total,
+                                                    bgClass: "table-light"
+                                                });
+                                            }
+                                        }
+                                    });
                                 });
-                            });
+
+                                let targetIndices = Object.keys(insertions).map(Number).sort((a, b) => b - a);
+                                let targetQtyCol = (qtyIdx !== -1) ? qtyIdx : (rowsCount - 1);
+
+                                targetIndices.forEach(targetIdx => {
+                                    let $currentAnchor = $rows.eq(targetIdx);
+                                    insertions[targetIdx].sort((a, b) => b.colIdx - a.colIdx);
+
+                                    insertions[targetIdx].forEach(sub => {
+                                        let activeThs = [];
+                                        $rows.slice(0, targetIdx + 1).each(function(pIdx) {
+                                            $(this).children("th.pvtRowLabel").each(function() {
+                                                let rSpan = parseInt($(this).attr("rowspan") || "1", 10);
+                                                if (pIdx + rSpan - 1 >= targetIdx) {
+                                                    activeThs.push({ el: this, startRow: pIdx });
+                                                }
+                                            });
+                                        });
+
+                                        let indentCols = sub.colIdx; 
+                                        for (let i = 0; i < indentCols; i++) {
+                                            if (activeThs[i]) {
+                                                let rSpan = parseInt($(activeThs[i].el).attr("rowspan") || "1", 10);
+                                                $(activeThs[i].el).attr("rowspan", rSpan + 1);
+                                            }
+                                        }
+
+                                        let labelColspan = targetQtyCol - indentCols;
+                                        if (labelColspan < 1) labelColspan = 1;
+                                        let borderTop = (sub.colIdx === 0) ? '2px solid #adb5bd' : '1px solid #dee2e6';
+
+                                        let subHtml = `<tr class="pvtSubtotalRow ${sub.bgClass} fw-bold" style="border-top: ${borderTop};">`;
+                                        subHtml += `<td colspan="${labelColspan}" class="text-end fw-bold align-middle py-2 text-dark">${sub.label}:</td>`;
+                                        
+                                        if (qtyIdx !== -1) {
+                                            subHtml += `<td class="text-end fw-bold text-dark align-middle py-2">${pivotNumberFormatter(sub.qty)}</td>`;
+                                        }
+
+                                        subHtml += `<td class="text-end fw-bold text-primary align-middle py-2">${pivotNumberFormatter(sub.total)}</td>`;
+                                        subHtml += `</tr>`;
+
+                                        let $newRow = $(subHtml);
+                                        $currentAnchor.after($newRow);
+                                        $currentAnchor = $newRow; 
+                                    });
+                                });
+
+                                $tbody.show(); // MAGIC TRICK: Tampilkan kembali tbody
+                            }
 
                             // ---------------------------------------------------------
-                            // 4. GRAND TOTAL DI FOOTER TABEL
+                            // 4. GRAND TOTAL DI FOOTER TABEL (SELALU MUNCUL)
                             // ---------------------------------------------------------
                             let $totalRow = $table.find("tr:has(.pvtGrandTotal)");
                             let $totalLabel = $totalRow.find(".pvtTotalLabel");
@@ -414,6 +413,24 @@ $(document).ready(function() {
 
     const debouncedClearPivot = debounce(clearPivot, 250);
 
+    // ==========================================
+    // TRIGGER REFRESH SAAT CHECKBOX DICENTANG
+    // ==========================================
+    $("#showSubtotals").on("change", function() {
+        if ($("#pivot_output").html().trim() !== "") {
+            // Memaksa Pivot merender ulang sesuai status checkbox saat ini
+            let pivotConfig = $("#pivot_output").data("pivotUIOptions");
+            if (pivotConfig) {
+                // Trigger refresh ulang
+                $("#pivot_output").pivotUI(
+                    $("#pivot_output").data("pivotUIOptions").dataClass, 
+                    pivotConfig,
+                    true // true berarti overwrite/refresh
+                );
+            }
+        }
+    });
+
     $("#search").on("keyup", debouncedClearPivot);
     $("#filterWarehouse, #startDate, #endDate, #filterType").on("change", debouncedClearPivot);
     
@@ -440,6 +457,9 @@ $(document).ready(function() {
         $("#filterType").val("");
         $("#startDate").val(beforeLokal);
         $("#endDate").val(nowLokal);
+        
+        // Reset checkbox ke posisi mati
+        $("#showSubtotals").prop("checked", false);
         
         clearPivot();
     });
