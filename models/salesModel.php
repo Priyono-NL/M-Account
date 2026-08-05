@@ -9,7 +9,6 @@ class SalesModel extends DatabaseHelper {
 
     /**
      * OPTIMASI POIN 1: DELTA ADJUSTMENT (HIGH PERFORMANCE)
-     * Mengubah nilai stok secara instan tanpa perlu scan view mutasi bulanan.
      */
     private function adjustStock($item_id, $warehouse, $qty_delta) {
         $cekStock = $this->query_one("SELECT id FROM stocks WHERE item_id = :item_id AND warehouse = :warehouse LIMIT 1", [
@@ -60,16 +59,16 @@ class SalesModel extends DatabaseHelper {
                 $invoice_no = $oldHeader['invoice_no'];
                 $current_sale_id = $sale_id;
 
-                // 1. Ambil data item lama dan KEMBALIKAN stoknya ke gudang (karena penjualan dibatalkan = +)
+                // 1. Ambil data item lama dan KEMBALIKAN stoknya
                 $oldItems = $this->query_all("SELECT item_id, item_qty FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
                 foreach ($oldItems as $old) {
                     $this->adjustStock($old['item_id'], $warehouse, (float)$old['item_qty']);
                 }
 
-                // 2. WIPE (HAPUS BERSIH DATA LAMA)
+                // 2. WIPE
                 $this->query("DELETE FROM sales_detail WHERE sale_id = :id", ['id' => $sale_id]);
 
-                // 3. UPDATE HEADER (Ditambahkan kolom updated_by)
+                // 3. UPDATE HEADER
                 $this->query("UPDATE sales SET buyer = :buyer, sales_date = :sales_date, warehouse = :warehouse, updated_by = :updated_by, updated_at = NOW() WHERE id = :id", [
                     'buyer' => $buyer_id, 
                     'sales_date' => $sales_date, 
@@ -90,9 +89,16 @@ class SalesModel extends DatabaseHelper {
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $new_qty = (float)$item['qty'];
+                    
+                    // PERUBAHAN: Tangkap unit_price dari payload cart Javascript
+                    // Sesuaikan key 'unit_price' atau 'price' tergantung data dari frontend
+                    $item_price = isset($item['unit_price']) ? (float)$item['unit_price'] : (isset($item['price']) ? (float)$item['price'] : 0);
 
                     $this->insert('sales_detail', [
-                        'sale_id' => $sale_id, 'item_id' => $item_id, 'item_qty' => $new_qty 
+                        'sale_id' => $sale_id, 
+                        'item_id' => $item_id, 
+                        'item_qty' => $new_qty,
+                        'item_price' => $item_price // INSERT HARGA HISTORIS
                     ]);
 
                     $this->adjustStock($item_id, $warehouse, -$new_qty);
@@ -149,9 +155,15 @@ class SalesModel extends DatabaseHelper {
                 foreach ($aggregatedCart as $item) {
                     $item_id = $item['id'];
                     $qty = (float)$item['qty'];
+                    
+                    // PERUBAHAN: Tangkap unit_price dari payload cart Javascript
+                    $item_price = isset($item['unit_price']) ? (float)$item['unit_price'] : (isset($item['price']) ? (float)$item['price'] : 0);
 
                     $this->insert('sales_detail', [
-                        'sale_id'  => $sale_id, 'item_id'  => $item_id, 'item_qty' => $qty 
+                        'sale_id'    => $sale_id, 
+                        'item_id'    => $item_id, 
+                        'item_qty'   => $qty,
+                        'item_price' => $item_price // INSERT HARGA HISTORIS
                     ]);
 
                     $this->adjustStock($item_id, $warehouse, -$qty);
@@ -171,10 +183,10 @@ class SalesModel extends DatabaseHelper {
      * FUNGSI PRIVATE: Menghasilkan query filter WHERE yang bersih dari instruksi ORDER BY.
      */
     private function buildFilterQuery($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+        // PERUBAHAN: Ubah SUM(sd.item_qty * i.unit_price) menjadi SUM(sd.item_qty * sd.item_price)
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code, w.warehouse_name,
-                    (SELECT SUM(sd.item_qty * i.unit_price) 
+                    (SELECT SUM(sd.item_qty * sd.item_price) 
                     FROM sales_detail sd
-                    JOIN items i ON sd.item_id = i.id
                     WHERE sd.sale_id = s.id) as total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
@@ -223,10 +235,10 @@ class SalesModel extends DatabaseHelper {
     }
 
     public function getSalesHeader($sales_id) {
+        // PERUBAHAN: Ubah SUM(sd.item_qty * i.unit_price) menjadi SUM(sd.item_qty * sd.item_price)
         $sql = "SELECT s.*, b.buyer_name, b.buyer_code, w.warehouse_name,
-                    (SELECT SUM(sd.item_qty * i.unit_price) 
+                    (SELECT SUM(sd.item_qty * sd.item_price) 
                     FROM sales_detail sd
-                    JOIN items i ON sd.item_id = i.id
                     WHERE sd.sale_id = s.id) as total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
@@ -237,20 +249,23 @@ class SalesModel extends DatabaseHelper {
     }   
     
     public function getTransactionItems($sale_id, $warehouse_id = null) {
-        $sql = "SELECT sd.*, i.item_code, i.item_name, i.unit_price, i.item_uom,
-                       COALESCE(s.qty_total, 0) as current_stock
+        // PERUBAHAN: Gunakan sd.item_price dan alias sebagai unit_price agar frontend tidak error
+        $sql = "SELECT sd.*, i.item_code, i.item_name, i.item_uom,
+                       sd.item_price as unit_price,
+                       COALESCE(st.qty_total, 0) as current_stock
                 FROM sales_detail sd 
                 LEFT JOIN items i ON sd.item_id = i.id
-                LEFT JOIN stocks s ON s.item_id = i.id AND s.warehouse = :warehouse_id                
+                LEFT JOIN stocks st ON st.item_id = i.id AND st.warehouse = :warehouse_id                
                 WHERE sd.sale_id = :sale_id";
                 
         return $this->query_all($sql, ['sale_id' => (int)$sale_id, 'warehouse_id' => (int)$warehouse_id]);
     }
 
     public function searchInvoiceList($keyword, $warehouse = '') {
+        // PERUBAHAN: Kalkulasi total berdasarkan sd.item_price
         $sql = "SELECT s.id, s.invoice_no, s.sales_date, b.buyer_name, b.buyer_code,
-                       (SELECT SUM(sd.item_qty * i.unit_price) 
-                        FROM sales_detail sd JOIN items i ON sd.item_id = i.id 
+                       (SELECT SUM(sd.item_qty * sd.item_price) 
+                        FROM sales_detail sd 
                         WHERE sd.sale_id = s.id) as grand_total
                 FROM sales s
                 LEFT JOIN buyer b ON s.buyer = b.id
@@ -277,6 +292,7 @@ class SalesModel extends DatabaseHelper {
     }
 
     public function getDetailedFiltered($search = '', $warehouse = '', $startDate = '', $endDate = '', $type = '') {
+        // PERUBAHAN: Gunakan sd.item_price sebagai alias unit_price, dan subtotal dari sd.item_price
         $sql = "SELECT 
                     s.sales_date,
                     s.invoice_no,
@@ -288,8 +304,8 @@ class SalesModel extends DatabaseHelper {
                     i.item_name,
                     i.item_uom,
                     sd.item_qty,
-                    i.unit_price,
-                    (sd.item_qty * i.unit_price) AS subtotal
+                    sd.item_price AS unit_price,
+                    (sd.item_qty * sd.item_price) AS subtotal
                 FROM sales_detail sd
                 JOIN sales s ON sd.sale_id = s.id
                 LEFT JOIN items i ON sd.item_id = i.id

@@ -79,6 +79,7 @@ class ReceiveView {
                             <tr>
                                 <th class="text-center">Warehouse</th>
                                 <th>Document Number</th>
+                                <th>Catatan</th>
                                 <th>Penerima</th>
                                 <th>Tanggal Terima</th>
                                 <th class="text-center pe-4">Aksi</th>

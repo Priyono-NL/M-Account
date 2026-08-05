@@ -249,6 +249,7 @@ class StockInModel extends DatabaseHelper {
         $sql = "SELECT 
                     r.date_receive,
                     r.doc_number,
+                    r.notes,
                     r.received_by,
                     w.warehouse_name,
                     i.item_code,

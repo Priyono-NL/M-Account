@@ -226,7 +226,8 @@ class StockInController extends BaseController {
             '<b>No</b>', 
             '<b>Tanggal Terima</b>',
             '<b>Gudang Tujuan</b>', 
-            '<b>Nomor Dokumen</b>',  
+            '<b>Nomor Dokumen</b>',
+            '<b>Catatan</b>',  
             '<b>Penerima / Petugas</b>',
             '<b>Kode Barang</b>',
             '<b>Nama Barang</b>',
@@ -244,6 +245,7 @@ class StockInController extends BaseController {
                 $tanggal,
                 $item['warehouse_name'] ?? $item['warehouse'],
                 $item['doc_number'],
+                $item['notes'],
                 $item['received_by'],
                 $item['item_code'],
                 $item['item_name'],
@@ -254,7 +256,7 @@ class StockInController extends BaseController {
 
         // Baris Penutup: Akumulasi Jumlah Fisik Barang Masuk
         $rows[] = [
-            '', '', '', '', '', '', '',
+            '', '', '', '', '', '', '', '',
             '<b>TOTAL QUANTITY</b>',
             '<b>' . $total_qty . '</b>'
         ];

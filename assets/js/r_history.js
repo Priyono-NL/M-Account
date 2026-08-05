@@ -104,7 +104,8 @@ $(document).ready(function() {
                                         ${t.warehouse_name}
                                     </span>
                                 </td>                               
-                                <td class="fw-bold text-primary">${t.doc_number}</td>                                
+                                <td class="fw-bold text-primary">${t.doc_number}</td>
+                                <td class="fw-bold text-dark">${t.notes}</td>
                                 <td class="fw-medium text-dark">${t.received_by}</td>                                
                                 <td class="text-center text-muted">${formattedDate}</td>                               
                                 <td class="text-center pe-4">
@@ -125,7 +126,7 @@ $(document).ready(function() {
                 }
             },
             error: function() {
-                tbody.html('<tr><td colspan="5" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
+                tbody.html('<tr><td colspan="6" class="text-center text-danger py-4">Terjadi kesalahan saat memuat data.</td></tr>');
             }
         });
     }

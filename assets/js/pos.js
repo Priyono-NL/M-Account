@@ -30,11 +30,9 @@ function executeGenericPrint(saleId, callback = null) {
         },
         success: function(res) {
             if (res.status === true && res.raw_text) {
-                // Buat container print rahasia jika belum ada di HTML
                 if ($('#print-area').length === 0) {
                     $('body').append('<div id="print-area"><pre id="print-text-content"></pre></div>');
                 } else {
-                    // KUNCI: Pindahkan #print-area ke paling bawah tag <body> agar lepas dari div wrapper layout POS
                     $('#print-area').appendTo('body');
                 }
                 let cleanText = res.raw_text.trimEnd();
@@ -71,9 +69,6 @@ function executeGenericPrint(saleId, callback = null) {
     });
 }
 
-/**
- * Global function untuk cetak receipt (dipanggil dari luar / tabel histori)
- */
 function printReceipt(id) {
     executeGenericPrint(id);
 }
@@ -130,7 +125,6 @@ $(document).ready(function() {
     if (!isUserAllowed) $('#salesType option[value="EXP"]').prop('disabled', true).hide();
 
     if (isUserAllowed && !isViewOnly) {
-        
         function setInvoiceEmpty() {
             $('#invoiceTableBody').html(`<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-magnifying-glass fs-3 mb-2 d-block opacity-25"></i>Ketik nomor invoice atau nama pelanggan...</td></tr>`);
         }
@@ -239,7 +233,6 @@ $(document).ready(function() {
                         editingSaleId = header.id;
                         lastUpdatedAt = header.updated_at || '';
                         
-                        // Set header (Disabled)
                         $('#invoiceNo').val(header.invoice_no).prop('disabled', true);
                         $('#btnCancelEditInvoice').show(); 
                         
@@ -252,9 +245,9 @@ $(document).ready(function() {
                         $('#btnClearBuyer').hide();
                         $('#btnFindBuyer').hide();
 
-                        // Setup Cart
                         cart = items.map(function(item) {
-                            let hargaAsli = parseFloat(item.unit_price || 0);
+                            // Backend sekarang akan mengirimkan unit_price berdasar item_price transaksi saat itu
+                            let hargaHistori = parseFloat(item.unit_price || 0);
                             let qtyLama = parseFloat(item.item_qty || 0);
                             let stokGudangSaatIni = parseFloat(item.current_stock || 0);
 
@@ -263,8 +256,8 @@ $(document).ready(function() {
                                 kode: item.item_code,
                                 nama: item.item_name,
                                 uom: item.item_uom,
-                                harga_asli: hargaAsli,
-                                harga: (header.sales_type === 'EXP') ? 0 : hargaAsli,
+                                harga_asli: hargaHistori, 
+                                harga: (header.sale_type === 'EXP') ? 0 : hargaHistori,
                                 qty: qtyLama, 
                                 stok: stokGudangSaatIni + qtyLama
                             };
@@ -777,6 +770,18 @@ $(document).ready(function() {
             let btn = $(this);
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
+            // =========================================================================
+            // 🚀 KUNCI PERUBAHAN: Buat Payload khusus agar PHP menerima atribut 'unit_price'
+            // Mengambil 'item.harga' yang sudah otomatis jadi 0 jika tipe Expense
+            // =========================================================================
+            let payloadCart = cart.map(item => {
+                return {
+                    id: item.id,
+                    qty: item.qty,
+                    unit_price: item.harga 
+                };
+            });
+
             $.ajax({
                 url: 'index.php?page=pos', type: 'POST', dataType: 'json',
                 data: {
@@ -786,7 +791,7 @@ $(document).ready(function() {
                     sales_date: $('#salesDate').val(),
                     sales_type: $('#salesType').val(), 
                     remark: $('#remark').val(), 
-                    cart: JSON.stringify(cart),
+                    cart: JSON.stringify(payloadCart), // Menggunakan payload khusus yang sudah difilter
                     is_edit_mode: isEditMode ? 1 : 0,
                     sale_id: editingSaleId,
                     last_updated_at: lastUpdatedAt
