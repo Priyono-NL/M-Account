@@ -240,13 +240,20 @@ $(document).ready(function() {
                         $('#buyerNameDisplay').val(header.buyer_name + ' - ' + header.buyer_code).prop('disabled', true);
                         $('#salesDate').val(header.sales_date).prop('disabled', true);
                         $('#warehouseSelect').val(header.warehouse).prop('disabled', true);
+                        
+                        // =======================================================
+                        // 🚀 BUG FIX: Memaksa browser mengizinkan opsi EXP dipilih 
+                        // =======================================================
+                        if (header.sale_type === 'EXP') {
+                            $('#salesType option[value="EXP"]').prop('disabled', false);
+                        }
                         $('#salesType').val(header.sale_type).prop('disabled', true);
+
                         $('#remark').val(header.remark).prop('disabled', true);
                         $('#btnClearBuyer').hide();
                         $('#btnFindBuyer').hide();
 
                         cart = items.map(function(item) {
-                            // Backend sekarang akan mengirimkan unit_price berdasar item_price transaksi saat itu
                             let hargaHistori = parseFloat(item.unit_price || 0);
                             let qtyLama = parseFloat(item.item_qty || 0);
                             let stokGudangSaatIni = parseFloat(item.current_stock || 0);
@@ -567,6 +574,9 @@ $(document).ready(function() {
             let tbody = $('#itemTableBody');
             tbody.html('<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-spinner fa-spin me-2 fs-3 mb-2 d-block opacity-50"></i> Mencari...</td></tr>');
 
+            // Tangkap status SalesType untuk UI Modal Barang
+            let currentSalesType = $('#salesType').val();
+
             $.ajax({
                 url: 'index.php?page=pos',
                 type: 'POST', dataType: 'json',
@@ -585,7 +595,14 @@ $(document).ready(function() {
                         let isChecked = itemDraft.find(d => d.id == item.id) ? 'checked' : '';
                         let stok = parseFloat(item.current_stock);
                         let hargaAsli = parseFloat(item.unit_price || 0);
-                        let formattedHarga = typeof formatRupiah !== 'undefined' ? formatRupiah(hargaAsli) : hargaAsli;
+                        
+                        // 🚀 MODIFIKASI UI MODAL BARANG: Jika mode EXP, tampilkan teks (EXP Rp 0) agar kasir tidak bingung
+                        let displayHarga = (currentSalesType === 'EXP') ? 0 : hargaAsli;
+                        let formattedHarga = typeof formatRupiah !== 'undefined' ? formatRupiah(displayHarga) : displayHarga;
+                        
+                        if (currentSalesType === 'EXP') {
+                            formattedHarga = '<span class="text-warning fw-bold"><i class="fa-solid fa-tag me-1"></i>EXP (Rp 0)</span>';
+                        }
 
                         tbody.append(`
                             <tr>
@@ -770,10 +787,6 @@ $(document).ready(function() {
             let btn = $(this);
             btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...');
 
-            // =========================================================================
-            // 🚀 KUNCI PERUBAHAN: Buat Payload khusus agar PHP menerima atribut 'unit_price'
-            // Mengambil 'item.harga' yang sudah otomatis jadi 0 jika tipe Expense
-            // =========================================================================
             let payloadCart = cart.map(item => {
                 return {
                     id: item.id,
@@ -791,7 +804,7 @@ $(document).ready(function() {
                     sales_date: $('#salesDate').val(),
                     sales_type: $('#salesType').val(), 
                     remark: $('#remark').val(), 
-                    cart: JSON.stringify(payloadCart), // Menggunakan payload khusus yang sudah difilter
+                    cart: JSON.stringify(payloadCart),
                     is_edit_mode: isEditMode ? 1 : 0,
                     sale_id: editingSaleId,
                     last_updated_at: lastUpdatedAt
