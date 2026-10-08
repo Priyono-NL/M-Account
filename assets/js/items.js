@@ -40,7 +40,7 @@ $(document).ready(function() {
                                 <td class="ps-4 fw-medium text-primary">${item.item_code}</td>
                                 <td class="fw-bold">${item.item_name}</td>
                                 <td><span class="badge bg-secondary bg-opacity-10 text-secondary border-0 fw-normal px-2">${catBadge}</span></td>
-                                <td class="text-center">${item.unit_weight ? `${item.unit_weight} ${item.weight_uom || ''}` : '-'}</td>
+                                <td class="text-center">${item.unit_weight ? item.unit_weight + ' ' + (item.weight_uom || '') : '-'}</td>
                                 <td class="text-center">${item.item_uom}</td>
                                 <td class="text-end fw-bold text-dark">Rp ${price}</td>
                                 <td class="text-center pe-4">
@@ -71,7 +71,7 @@ $(document).ready(function() {
 
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
-        let $parent = $(this).parent();
+        let $parent =$(this).parent();
         if ($parent.hasClass('disabled') || $parent.hasClass('active')) return;
         
         let targetPage = $(this).data('page');
@@ -114,9 +114,17 @@ $(document).ready(function() {
         $("#itemCode").val(data.item_code).prop("readonly", true);
         $("#itemName").val(data.item_name);
         $("#itemCategory").val(data.organization_id);
-        $("#itemUom").val(data.item_uom);
+        
+        $('#itemUom option').filter(function() {
+            return $(this).val().toLowerCase() === (data.item_uom || '').toLowerCase();
+        }).prop('selected', true);
+        
         $("#unitWeight").val(data.unit_weight);
-        $("#weightUom").val(data.weight_uom);
+        
+        $('#weightUom option').filter(function() {
+            return $(this).val().toLowerCase() === (data.weight_uom || '').toLowerCase();
+        }).prop('selected', true);
+
         $("#originCode").val(data.origin_code).trigger('change');
         $("#itemPrice").val(new Intl.NumberFormat('id-ID').format(data.unit_price));
         $("#itemCost").val(new Intl.NumberFormat('id-ID').format(data.unit_cost));
@@ -138,7 +146,7 @@ $(document).ready(function() {
         let originalValues = [];
         
         inputHarga.each(function() {
-            originalValues.push({ el: $(this), val: $(this).val() });
+            originalValues.push({ el: $(this), val:$(this).val() });
             $(this).val($(this).val().replace(/\./g, ""));
         });
         
@@ -158,15 +166,15 @@ $(document).ready(function() {
                     originalValues.forEach(item => item.el.val(item.val));  
                 }
             },
-			error: function(xhr, status, error) {
-				let apiMessage = null;
-				try {
-					const response = JSON.parse(xhr.responseText);
-					apiMessage = response.message; 
-				} catch(e) { }
-				if(typeof showNotification === "function") showNotification(apiMessage ||"Terjadi kesalahan sistem.", "danger");
-				originalValues.forEach(item => item.el.val(item.val));
-			},
+            error: function(xhr, status, error) {
+                let apiMessage = null;
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    apiMessage = response.message; 
+                } catch(e) { }
+                if(typeof showNotification === "function") showNotification(apiMessage ||"Terjadi kesalahan sistem.", "danger");
+                originalValues.forEach(item => item.el.val(item.val));
+            },
             complete: function() { 
                 btn.prop('disabled', false).text(originalText); 
                 if ($("#modalItem").is(":visible")) originalValues.forEach(item => item.el.val(item.val));
@@ -179,7 +187,7 @@ $(document).ready(function() {
         const id = $(this).data("id");
         const name = $(this).data("name");
         
-        if(confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
+        if(confirm("Apakah Anda yakin ingin menghapus " + name + "?")) {
             $.ajax({
                 url: "index.php?page=items",
                 type: "POST",
@@ -224,9 +232,6 @@ $(document).ready(function() {
     });
 
     $("#btnExportExcel").click(function() {
-        let sDateVal = $("#startDate").val() || "";
-        let eDateVal = $("#endDate").val() || "";
-
         let payload = {
             action: 'export_xls',
             search: $("#search").val(),

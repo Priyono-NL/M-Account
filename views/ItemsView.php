@@ -130,19 +130,22 @@ class ItemsView {
                                     ?>
                                 </div>                                
                                 <div class="col-6 mb-3">
-                                    <label class="form-label text-muted small fw-bold">UOM</label><span class="text-danger">*</span>
-                                    <select class="form-select form-select-sm" name="item_uom" id="itemUom" required>
+                                    <label class="form-label text-muted small fw-bold">UOM</label>
+                                    <select class="form-select form-select-sm" name="item_uom" id="itemUom">
+										<option value=""></option>
                                         <option value="Bal">Bal</option>
                                         <option value="Box">Box</option>
                                         <option value="Ea">Each</option>
                                         <option value="Kg">Kg</option>
                                         <option value="Tin">Tin</option>
                                         <option value="Zak">Zak</option>
+										<option value="Jar">Jar</option>
+                                    </select>
                                     </select>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">UNIT WEIGHT</label>
-                                    <input type="text" class="form-control form-control-sm" name="unit_weight" id="unitWeight" required>
+                                    <input type="text" class="form-control form-control-sm" name="unit_weight" id="unitWeight">
                                 </div>
                                 <div class="col-6 mb-3">
                                     <label class="form-label text-muted small fw-bold">WEIGHT UOM</label>
